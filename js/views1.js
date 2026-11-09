@@ -144,7 +144,7 @@ T.convocatoria = m => {
   return `<section class="card">
     <div class="card-h"><h3>¿Quién no viene?</h3><span class="count ${done ? "ok" : ""}">Convocados <b>${nCalled}</b> de ${ps.length}</span></div>
     <p class="muted small">Todos están convocados por defecto. Marca el motivo solo de quien no va: <b>D.T</b> Decisión técnica · <b>L.S</b> Lesionado · <b>M.P</b> Motivos personales${isF11() ? ` · <b>Sancionado</b> Suspensión deportiva` : ""}.</p>
-    ${pending.length ? `<div class="notice warn"><b>Hay sanciones pendientes</b><p class="small muted">${pending.map(x => `${esc((Store.player(x.p)||{}).name||"Jugador")} · ${x.remaining} partido(s)`).join(" · ")}</p>${btn("Aplicar sanciones pendientes", "applySanctions", {}, "ghost", "lock")}</div>` : ""}
+    ${pending.length ? `<div class="card flat"><b>Hay sanciones pendientes</b><p class="small muted">${pending.map(x => `${esc((Store.player(x.p)||{}).name||"Jugador")} · ${x.remaining} partido(s)`).join(" · ")}</p>${btn("Aplicar sanciones pendientes", "applySanctions", {}, "ghost", "lock")}</div>` : ""}
     <ul class="clist">${rows}</ul>
     <div class="row between gap wrap foot">
       <span class="muted small">${done ? "Convocatoria confirmada." : "Aún sin confirmar."}</span>
