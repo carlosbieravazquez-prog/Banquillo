@@ -332,6 +332,35 @@ Incluye:
 
 No se ha implementado todavía el módulo ni se han ejecutado cambios SQL. No se ha modificado Supabase, `main` ni la web publicada. La equivalencia 1 F11 = 2 F7 se aplica como capacidad simultánea únicamente si el campo es físicamente divisible y el club lo declara; no se permite sobre-reservar el campo padre.
 
+
+
+### 4.13 Prototipo aislado del club de demostración — 9-11-2026
+
+Se ha añadido una primera interfaz funcional independiente en la rama de desarrollo:
+- `demo-club.html`: punto de entrada del prototipo.
+- `css/demo-club.css`: estilos adaptables a escritorio y móvil.
+- `js/demo-club.js`: lógica del prototipo y datos ficticios.
+
+Funcionalidad incluida:
+- Club ficticio Atlético Monteverde CF (Dos Hermanas, Sevilla; temporada 2026/2027).
+- 15 equipos ficticios repartidos entre Fútbol 7 y Fútbol 11.
+- Dos directores deportivos ficticios con idéntica capacidad de acceso; selector para cambiar el director activo.
+- Preferencia de modalidad F7/F11 por director, con selector superior F7/F11/Todo el club. La preferencia no restringe permisos.
+- Vista de equipos, ficha resumida de dirección deportiva, ajuste de nombre/territorio/temporada y configuración inicial de campos F11/F7 y divisibilidad.
+- Alta local de equipo de demostración y restablecimiento de datos ficticios.
+- Persistencia únicamente en localStorage con clave propia `banquillo_demo_atletico_monteverde_v1`.
+
+Aislamiento: la página carga solo su CSS y su JS propios; no carga `config.js`, Auth, Cloud, SDK de Supabase ni realiza solicitudes al backend. Por tanto, este prototipo no puede leer ni modificar los datos reales de los usuarios.
+
+Validación realizada: se volvieron a descargar desde GitHub los tres archivos recién creados y se comprobó su contenido y referencias; la página enlaza el JS aislado y los tres archivos no contienen referencias a Supabase. No se ha ejecutado todavía una prueba visual en navegador ni una comprobación automatizada completa de interacción. Los apartados Calendario y Comunicaciones son marcadores de fase futura, no funciones implementadas.
+
+Commits:
+- `ef5dccaf7d316f245ab1f77536ac20d5c6d15119` — página de demostración.
+- `480ac7699dfc9dc2bc59ca37408652ae1d75685e` — estilos responsive.
+- `9226e6d0df37be5c451180766588cfcfd01a2609` — lógica local y datos ficticios.
+
+No se ha modificado `main`, GitHub Pages, Supabase ni los datos reales. El prototipo está disponible en la rama `feature/fase-1-clubes-equipos` en la ruta `demo-club.html`.
+
 ## 5.1 Próxima ampliación del catálogo
 1. Verificar una por una las fichas 2026/2027 de todas las divisiones por categoría.
 2. Completar las competiciones femeninas y sus modalidades.
