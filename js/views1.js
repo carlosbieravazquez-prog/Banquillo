@@ -27,10 +27,10 @@ const callMessageText = m => {
   const mode = m.callMessageMode || "called";
   if (mode === "notCalled") {
     const rows = ps.filter(p => p.id in nc).map(p => `• ${p.name} — ${({ LS: "Lesión", MP: "Motivos personales", DT: "Decisión técnica" })[nc[p.id]] || "Sin motivo indicado"}`);
-    return [...header, "", "No convocados:", ...(rows.length ? rows : ["Ningún jugador"])].join("\\n");
+    return [...header, "", "No convocados:", ...(rows.length ? rows : ["Ningún jugador"])].join("\n");
   }
   const rows = ps.filter(p => !(p.id in nc)).map(p => `• ${p.name}`);
-  return [...header, "", "Convocados:", ...(rows.length ? rows : ["Ningún jugador"])].join("\\n");
+  return [...header, "", "Convocados:", ...(rows.length ? rows : ["Ningún jugador"])].join("\n");
 };
 
 /* ---------- INICIO ---------- */
