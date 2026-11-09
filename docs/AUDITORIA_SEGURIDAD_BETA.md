@@ -89,3 +89,15 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 
 - **Resultado informado por usuario: superada.** Cuenta principal invitada a la temporada ficticia SEGURIDAD TEST 2026 con rol Solo lectura: puede consultar jugadores, pero no modificarlos desde la interfaz.
 - **Alcance:** confirma controles visibles de edición. Sigue pendiente verificar rechazo de escritura directamente en API por RLS y que un editor no pueda cambiar roles ni hacerse propietario.
+
+## Prueba 18 y auditoría SQL de aislamiento (9 noviembre 2026)
+
+- **Prueba 18:** el usuario aclaró que el comportamiento del rol Entrenador es correcto (puede editar jugadores y no administrar permisos). Registrar como **superada**. No hubo fallo confirmado y no se ha realizado corrección innecesaria.
+- En Supabase constan dos temporadas, tres membresías y dos usuarios (solo **recuentos**, sin consultar datos personales); uno pertenece a una temporada y otro a dos.
+- Al buscar el documento raíz con nombre exacto `SEGURIDAD TEST 2026` se obtuvieron **cero coincidencias**. No asumir que el nombre visible en navegador corresponde exactamente a los metadatos de esta base; verificar antes de borrar o modificar un entorno de pruebas.
+- **Prueba RLS directa con usuario que solo pertenece a una temporada**, usando transacción `READ ONLY`, `SET LOCAL ROLE authenticated` y claim temporal: `is_member` propia = true; 21 documentos propios visibles; `is_member` ajena = false; `can_edit` ajena = false; 0 documentos ajenos visibles. **Superada para lectura y comprobación de autorización**; sin seleccionar documentos ni identificadores.
+- En el otro caso comprobado, una identidad con rol editor pertenece a las dos temporadas; por eso ambas son legibles legítimamente y ese caso no sirve para una prueba de aislamiento.
+- [x] SQL de prueba reproducible en `supabase/security/test_rls_aislamiento_SOLO_LECTURA.sql`.
+- [ ] Falta una prueba real del rechazo de escrituras `INSERT`/`UPDATE`/`DELETE` como usuario no autorizado. No ejecutar DML sobre producción sin staging y reversión segura.
+- [ ] Falta probar usuario viewer (actualmente 0 membresías con rol viewer en esta base).
+- Los Security Advisors siguen indicando `anon_security_definer_function_executable` (dos funciones internas) y otras advertencias; el borrador de corrección sigue **sin aplicarse**. No revocar funciones RPC legítimas indiscriminadamente.
