@@ -166,7 +166,7 @@ ACT.reopenSeason = () => { const s = Store.season(); s.status = "active"; Store.
 /* ---------- AJUSTES de la temporada ---------- */
 ACT.openSettings = () => {
   const s = Store.season(), st = s.settings || {};
-  UI.sheet = { type: "settings", wide: true, d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
+  UI.sheet = { type: "settings", wide: true, d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, format: st.format || "F7", trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
 };
 const DAYSEL = [[1, "Lun"], [2, "Mar"], [3, "Mié"], [4, "Jue"], [5, "Vie"], [6, "Sáb"], [0, "Dom"]];
 V.sheet.settings = sh => {
@@ -174,7 +174,7 @@ V.sheet.settings = sh => {
   return `<h2>Ajustes de la temporada ${esc(Store.season().name)}</h2>
     <div class="form"><label class="fld"><span>Club</span><input type="text" class="inp" data-inp="setClub" value="${esc(d.club)}"></label>
     <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="setCat" value="${esc(d.category)}"></label>
-    <label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="${esc(d.matchMinutes)}"></label>
+    <label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="setFormat"><option value="F7" ${d.format === "F7" ? "selected" : ""}>Fútbol 7</option><option value="F11" ${d.format === "F11" ? "selected" : ""}>Fútbol 11</option></select></label><label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="${esc(d.matchMinutes)}"></label>
     <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${d.trainDays.includes(v) ? "on" : ""}" data-act="setDay" data-v="${v}">${l}</button>`).join("")}</div></div>
     <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="setStart" value="${esc(d.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="setEnd" value="${esc(d.trainEnd)}"></label></div>
     <p class="muted small">Si cambias las fechas, las faltas ya marcadas se conservan. Las sesiones nuevas aparecen en Entrenos.</p></div>
@@ -182,7 +182,7 @@ V.sheet.settings = sh => {
 };
 INP.setClub = el => { UI.sheet.d.club = el.value; };
 INP.setCat = el => { UI.sheet.d.category = el.value; };
-INP.setMin = el => { UI.sheet.d.matchMinutes = el.value; };
+INP.setMin = el => { UI.sheet.d.matchMinutes = el.value; }; CHG.setFormat = el => { UI.sheet.d.format = el.value; };
 INP.setStart = el => { UI.sheet.d.trainStart = el.value; };
 INP.setEnd = el => { UI.sheet.d.trainEnd = el.value; };
 ACT.setDay = el => { const v = +el.dataset.v, a = UI.sheet.d.trainDays; UI.sheet.d.trainDays = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; };
@@ -192,7 +192,7 @@ ACT.saveSettings = () => {
   if (d.trainStart && d.trainEnd && d.trainStart > d.trainEnd) { toast("El último entreno no puede ser anterior al primero.", "err"); return; }
   if (!d.trainDays.length) { toast("Elige al menos un día de entrenamiento.", "err"); return; }
   const s = Store.season(); s.club = d.club.trim(); s.category = d.category.trim();
-  s.settings = { matchMinutes: mm, trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
+  s.settings = { ...(s.settings || {}), matchMinutes: mm, format: d.format || "F7", trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
   Store.save("season", s); UI.sheet = null; toast("Ajustes guardados.", "ok");
 };
 
@@ -209,7 +209,7 @@ ACT.wizStart = el => {
   const players = first ? [] : Store.activePlayers().map(p => ({ id: null, name: p.name, dorsal: "", keep: true }));
   const matches = first ? [] : Store.matches.map(() => ({ date: "", rival: "", home: true, rest: false }));
   UI.wiz = { step: 1, name: first ? "" : nextSeasonName(cur.name), club: (cur && cur.club) || "", category: (cur && cur.category) || "",
-    matchMinutes: st.matchMinutes || 50, trainDays: [...(st.trainDays || [1, 3])], trainStart: addYear(st.trainStart), trainEnd: addYear(st.trainEnd),
+    matchMinutes: st.matchMinutes || 50, format: st.format || "F7", trainDays: [...(st.trainDays || [1, 3])], trainStart: addYear(st.trainStart), trainEnd: addYear(st.trainEnd),
     players, matches, copyNote: !first, progress: null, done: false, newId: null };
   UI.sheet = { type: "wizard", wide: true };
 };
@@ -222,7 +222,7 @@ V.sheet.wizard = () => {
     body = `<div class="form"><div class="row gap wrap"><label class="fld grow"><span>Temporada</span><input type="text" class="inp" data-inp="wName" value="${esc(w.name)}" placeholder="2027/28"></label>
       <label class="fld grow"><span>Duración del partido (min)</span><input type="text" inputmode="numeric" class="inp" data-inp="wMin" value="${esc(w.matchMinutes)}"></label></div>
       <label class="fld"><span>Club</span><input type="text" class="inp" data-inp="wClub" value="${esc(w.club)}" placeholder="Nombre de tu club"></label>
-      <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="wCat" value="${esc(w.category)}" placeholder="Benjamín · Liga Educa"></label>
+      <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="wCat" value="${esc(w.category)}" placeholder="Benjamín · Liga Educa"></label><label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="wFormat"><option value="F7" ${w.format === "F7" ? "selected" : ""}>Fútbol 7</option><option value="F11" ${w.format === "F11" ? "selected" : ""}>Fútbol 11</option></select></label>
       <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${w.trainDays.includes(v) ? "on" : ""}" data-act="wDay" data-v="${v}">${l}</button>`).join("")}</div></div>
       <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="wStart" value="${esc(w.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="wEnd" value="${esc(w.trainEnd)}"></label></div>
       ${w.copyNote ? `<p class="muted small">La plantilla y el número de jornadas se copian de la temporada ${esc(Store.season().name)}. Los dorsales quedan en blanco por si cambian.</p>` : ""}</div>`;
@@ -250,7 +250,7 @@ V.sheet.wizard = () => {
 INP.wName = el => { UI.wiz.name = el.value; };
 INP.wMin = el => { UI.wiz.matchMinutes = el.value; };
 INP.wClub = el => { UI.wiz.club = el.value; };
-INP.wCat = el => { UI.wiz.category = el.value; };
+INP.wCat = el => { UI.wiz.category = el.value; }; CHG.wFormat = el => { UI.wiz.format = el.value; };
 INP.wStart = el => { UI.wiz.trainStart = el.value; };
 INP.wEnd = el => { UI.wiz.trainEnd = el.value; };
 ACT.wDay = el => { const w = UI.wiz, v = +el.dataset.v; w.trainDays = w.trainDays.includes(v) ? w.trainDays.filter(x => x !== v) : [...w.trainDays, v]; };
@@ -310,7 +310,7 @@ ACT.wCreate = async () => {
   const mlist = w.matches.map((m, i) => ({ id: "j" + String(i + 1).padStart(2, "0"), n: i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
   w.progress = [0, 1 + plist.length + mlist.length + 1]; w.err = null; render(true);
   try {
-    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
+    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), format: w.format || "F7", trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
       (n, t) => { w.progress = [n, t]; render(true); });
     w.newId = id; w.done = true; w.progress = null;
   } catch (e) { console.error(e); w.progress = null; w.err = "No se pudo guardar la temporada completa. Comprueba tu conexión e inténtalo de nuevo: continuará donde se quedó."; }
