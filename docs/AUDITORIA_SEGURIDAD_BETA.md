@@ -70,3 +70,13 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Supabase SQL: `docs_guard`, `handle_new_user` y `rls_auto_enable` siguen concediendo EXECUTE a `anon` y `authenticated`. SQL corrector solo preparado, no aplicado. **No ejecutar sin staging y backup restaurable**.
 - [ ] Revisar en dashboard Auth los ajustes de confirmación de correo, mínimo de contraseña, MFA y protección contra contraseñas filtradas según plan.
 - [ ] Probar en navegador: crear cuenta nueva con contraseña inferior a 12 caracteres (debe bloquearse antes de enviar), recuperación de contraseña y cerrar sesión con conexión normal/desconectada.
+
+## Endurecimiento de sesiones (9 noviembre 2026)
+
+- [x] `js/store.js`: identificador de generación `epoch` para descartar resultados de lecturas de permisos, carga de temporadas y escrituras pendientes pertenecientes a sesiones anteriores.
+- [x] `js/auth.js`: no reanudar el renderizado de una sesión que ya ha cerrado o ha cambiado de identidad; controla fallos de inicialización sin mostrar información previa.
+- [x] `js/cloud.js`: impide que una respuesta tardía de `my_profile` reponga datos del perfil de una cuenta después del cierre/cambio de sesión.
+- [x] `tests/session-safety.test.cjs`: pruebas automáticas locales de carreras de acceso a roles y de la cola de guardado. Se ejecutaron comprobaciones equivalentes sobre el `Store` real en un motor JavaScript aislado: roles antiguos descartados, nueva cola preservada y guardado completado (3/3).
+- [ ] **Prueba de navegador pendiente:** alternar inicio/cierre de sesión y cambio entre pestañas mientras las consultas cargan. Un guardado ya enviado antes del cierre puede completarse en el servidor; el cambio evita aplicarlo localmente a la sesión siguiente, no revoca una petición HTTP ya enviada.
+- [ ] **Prueba con dos cuentas:** comprobar restricciones de escritura de `viewer`, `editor` y `owner` mediante API y RLS sin datos de menores.
+- [ ] **Staging + restauración:** preparar entorno aislado y copia recuperable antes de ejecutar ajustes DDL en producción.
