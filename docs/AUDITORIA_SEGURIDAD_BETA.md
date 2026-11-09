@@ -101,3 +101,10 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Falta una prueba real del rechazo de escrituras `INSERT`/`UPDATE`/`DELETE` como usuario no autorizado. No ejecutar DML sobre producción sin staging y reversión segura.
 - [ ] Falta probar usuario viewer (actualmente 0 membresías con rol viewer en esta base).
 - Los Security Advisors siguen indicando `anon_security_definer_function_executable` (dos funciones internas) y otras advertencias; el borrador de corrección sigue **sin aplicarse**. No revocar funciones RPC legítimas indiscriminadamente.
+
+## Preparación sin participación del usuario
+
+- [x] Protocolo de staging y matriz de permisos por rol en `docs/PROTOCOLO_PRUEBAS_RLS_STAGING.md`.
+- [x] Ocho comprobaciones estructurales ejecutadas en proyecto Supabase conectado: **8/8 true** (RLS, prohibiciones de lectura pública, ejecución de funciones de Silbatos y políticas sobre documentos y perfiles).
+- [x] SQL `supabase/security/check_baseline_SOLO_LECTURA.sql` incorporado para repetir la comprobación sin leer datos personales.
+- [ ] Sin entorno staging separado ni restauración comprobada: no se aplicaron cambios DDL ni pruebas de escritura sobre producción.
