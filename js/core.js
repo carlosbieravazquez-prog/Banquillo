@@ -135,7 +135,7 @@ function doRender() {
   $$("[data-scroll]").forEach(e => { const v = keep.sc[e.dataset.scroll]; if (v) { e.scrollLeft = v[0]; e.scrollTop = v[1]; } });
   window.scrollTo(0, keep.y);
   const sh = $("#sheetRoot .sheet"); if (sh) sh.scrollTop = keep.sheetY;
-  if (Store.readOnly()) $$("#main input,#main select,#main textarea").forEach(e => { e.disabled = true; });
+  if (Store.readOnly()) $("#main input:not([readonly]),#main select,#main textarea:not([readonly])").forEach(e => { e.disabled = true; });
   if (V.after) V.after();
 }
 function lateRender() {
