@@ -279,7 +279,47 @@ ACT.reopenActa=()=>{
   });
   toast("Acta reabierta. Revisa y vuelve a cerrar las jornadas en orden.","ok");
 };
-CHG.ocrFile=async el=>{const file=el.files&&el.files[0];if(!file)return;UI.ocr={busy:true};render(true);try{if(!window.Tesseract)throw new Error("Motor OCR no disponible.");let src;if(file.type==="application/pdf"){if(!window.pdfjsLib)throw new Error("Lector PDF no disponible.");pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,page=await pdf.getPage(1),vp=page.getViewport({scale:1.7}),canvas=document.createElement("canvas");canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:canvas.getContext("2d"),viewport:vp}).promise;src=canvas;}else{src=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=URL.createObjectURL(file);});}const out=await Tesseract.recognize(src,"spa"),txt=out.data.text||"",sc=txt.match(/(\d{1,2})\s*[-–:]\s*(\d{1,2})/),lines=txt.split(/\n+/),detected=[];Store.activePlayers().forEach(p=>{const line=lines.find(l=>norm(l).includes(norm(p.name))&&/(amarill|yellow|roja|expuls|red)/i.test(l));if(line)detected.push({p:p.id,type:/(roja|expuls|red)/i.test(line)?"R":"Y"});});UI.ocr={busy:false,text:txt,ourGoals:sc?sc[1]:"",rivalGoals:sc?sc[2]:"",cards:detected};}catch(e){UI.ocr={busy:false,error:e.message||"No se pudo leer el acta."};}render(true);};
+CHG.ocrFile=async el=>{
+  const file=el.files&&el.files[0];if(!file)return;
+  UI.ocr={busy:true,progress:"Preparando el lector…"};render(true);
+  let worker=null,imageUrl=null;
+  try{
+    if(!window.Tesseract)throw new Error("Motor OCR no disponible.");
+    const sources=[];
+    const isPdf=file.type==="application/pdf"||/\\.pdf$/i.test(file.name||"");
+    if(isPdf){
+      if(!window.pdfjsLib)throw new Error("Lector PDF no disponible.");
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+      if(pdf.numPages>10)throw new Error("El PDF tiene más de 10 páginas. Divide el documento y vuelve a subirlo.");
+      for(let n=1;n<=pdf.numPages;n++){
+        const page=await pdf.getPage(n),vp=page.getViewport({scale:1.7}),canvas=document.createElement("canvas");
+        canvas.width=vp.width;canvas.height=vp.height;
+        await page.render({canvasContext:canvas.getContext("2d"),viewport:vp}).promise;
+        sources.push(canvas);
+      }
+    }else{
+      imageUrl=URL.createObjectURL(file);
+      const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error("No se pudo abrir la imagen."));im.src=imageUrl;});
+      sources.push(img);
+    }
+    worker=await Tesseract.createWorker("spa");
+    const texts=[];
+    for(let i=0;i<sources.length;i++){
+      UI.ocr.progress=`Leyendo página ${i+1} de ${sources.length}…`;render(true);
+      const result=await worker.recognize(sources[i]);
+      texts.push(result.data.text||"");
+    }
+    const txt=texts.join("\\n\\n"),sc=txt.match(/(\\d{1,2})\\s*[-–:]\\s*(\\d{1,2})/),lines=txt.split(/\\n+/),detected=[];
+    Store.activePlayers().forEach(p=>{
+      const line=lines.find(l=>norm(l).includes(norm(p.name))&&/(amarill|yellow|roja|expuls|red)/i.test(l));
+      if(line)detected.push({p:p.id,type:/(roja|expuls|red)/i.test(line)?"R":"Y"});
+    });
+    UI.ocr={busy:false,text:txt,ourGoals:sc?sc[1]:"",rivalGoals:sc?sc[2]:"",cards:detected,pages:sources.length};
+  }catch(e){UI.ocr={busy:false,error:e.message||"No se pudo leer el acta."};}
+  finally{if(worker)await worker.terminate().catch(()=>{});if(imageUrl)URL.revokeObjectURL(imageUrl);}
+  render(true);
+};
 INP.ocrText=el=>{if(UI.ocr)UI.ocr.text=el.value;}; CHG.ocrCardType=el=>{if(UI.ocr&&UI.ocr.cards[+el.dataset.k])UI.ocr.cards[+el.dataset.k].type=el.value;}; ACT.removeOcrCard=el=>{if(UI.ocr)UI.ocr.cards.splice(+el.dataset.k,1);};INP.ocrOur=el=>{if(UI.ocr)UI.ocr.ourGoals=el.value;};INP.ocrRiv=el=>{if(UI.ocr)UI.ocr.rivalGoals=el.value;};
 ACT.applyOcr=()=>{const m=curMatch(),o=UI.ocr;if(!o)return;const a=o.ourGoals===""?null:Number(o.ourGoals),b=o.rivalGoals===""?null:Number(o.rivalGoals);if((a!==null&&(!Number.isInteger(a)||a<0||a>99))||(b!==null&&(!Number.isInteger(b)||b<0||b>99))){toast("Revisa el marcador.","err");return;}if(!confirm("¿Aplicar los datos revisados al partido?"))return;if(a!==null&&b!==null){m.ourGoals=a;m.rivalGoals=b;m.scorers=(m.scorers||[]).slice(0,a);while(m.scorers.length<a)m.scorers.push(null);}if(isF11()&&o.cards?.length){m.cards=m.cards||[];o.cards.forEach(c=>m.cards.push({id:uid("card"),p:c.p,type:c.type,matches:null}));}m.ocrSource="revisado";touch(m);UI.ocr=null;toast("Datos revisados aplicados.","ok");};
 
