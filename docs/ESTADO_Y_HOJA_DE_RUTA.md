@@ -261,3 +261,14 @@ Motivo: evitar ambigüedad sobre qué archivo debe modificarse y mantener una ú
 - Rama de trabajo: `feature/fase-1-clubes-equipos`.
 - Limpieza de 18 archivos heredados/duplicados completada mediante commits separados en la rama de trabajo. El último commit resultante debe verificarse en GitHub antes de integrar.
 - No se ha desplegado esta limpieza a GitHub Pages.
+
+### Commits de la mejora de convocatorias — 9-11-2026
+
+- `js/views1.js`: panel de mensaje automático, selección de convocados/no convocados, equipación por partido, hora y punto de encuentro, copia y alternativa de selección manual.
+- `js/views3.js`: campos de equipaciones en el asistente de nueva temporada.
+- `js/store.js`: persistencia de los nuevos campos del partido.
+- `js/core.js`: permiso de solo lectura para copiar el mensaje sin editar la convocatoria.
+- `js/util.js`: motivo de ausencia unificado como «Lesión».
+- Commits de implementación: `0034a24`, `e4294a3`, `fbed85a`, `9579c7a`, `260e9f3`, `8c5eca0`, `a6f982e`, `d4f46ec` y `10bf7f9`.
+- Documento actualizado en `d052282`; se mantiene pendiente la prueba en navegador antes de integrar en `main`.
+
