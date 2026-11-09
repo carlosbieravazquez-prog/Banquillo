@@ -53,3 +53,10 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 ## Prueba manual adicional: aislamiento de interfaz
 
 - **Prueba 14:** con una segunda cuenta de prueba, sin invitación a temporadas, el usuario confirmó que no aparecen temporadas ni jugadores de su cuenta principal. **Superada a nivel interfaz**. No demuestra por sí sola la imposibilidad de acceso vía API; se mantiene pendiente una prueba real cruzada de RLS y escritura entre dos usuarios y temporadas de prueba.
+
+## Pruebas 14 y 15, y estabilidad de reconexión
+
+- **Prueba 14:** segunda cuenta sin membresía no visualiza temporadas ni jugadores de primera cuenta (validación manual realizada por usuario).
+- **Prueba 15:** temporada ficticia creada en segunda cuenta únicamente aparece en ella y no en la principal (validación manual realizada por usuario).
+- **Pendiente:** prueba directa cruzada de acceso a datos vía API con sesión de cada cuenta y verificación de privilegios de escritura, con entorno y cuentas de prueba.
+- **Cambio Beta** `js/cloud.js`: limpieza de temporizadores y escuchas `visibilitychange` cuando no quedan suscripciones; evitadas lecturas simultáneas por suscripción al recuperar foco. Comprobada sintaxis JS. Falta validar comportamiento real en navegador con varias sesiones/temporadas.
