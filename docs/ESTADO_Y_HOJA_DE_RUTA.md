@@ -115,7 +115,7 @@ Créditos/IA: `spend_tokens`, `refund_tokens`, `refill_if_due`.
 
 Resultados de los asesores Supabase:
 - RLS activado sin políticas en `seasons_meta` y `join_attempts`. Revisar exposición efectiva y permisos antes de decidir corrección; no añadir políticas genéricas sin entender el flujo RPC.
-- `handle_new_user()` y `rls_auto_enable()` aparecen como SECURITY DEFINER ejecutables por PUBLIC/anon/authenticated. Deben limitarse sus permisos al uso necesario. `handle_new_user` se ejecuta mediante trigger y no necesita ser RPC pública.
+- `handle_new_user()` y `rls_auto_enable()` aparecen como SECURITY DEFINER ejecutables por PUBLIC/anon/authenticated. Deben limitarse sus permisos al uso necesario. `handle_new_user` está asociado al trigger de alta de usuario y `rls_auto_enable` al event trigger `ensure_rls`; no son operaciones que deban exponerse como RPC de la aplicación. La consulta de `pg_event_trigger` confirmó ese vínculo.
 - Protección de contraseñas filtradas desactivada en Auth.
 - Índice pendiente en la FK `seasons_meta.owner_id`.
 - Aviso de optimización de `profiles_select_own` por evaluación repetida de `auth.uid()`.
@@ -199,7 +199,7 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 | 2026-11-09 | Conexión a GitHub y Supabase | Acceso a repositorio y proyecto confirmado |
 | 2026-11-09 | Auditoría inicial de repositorio | Aplicación HTML/CSS/JS con gestión de temporadas identificada |
 | 2026-11-09 | Auditoría inicial de Supabase | 5 tablas, 1 temporada y 33 documentos; sin migraciones registradas |
-| 2026-11-09 | Revisión de seguridad inicial | Hallazgos RLS, SECURITY DEFINER, Auth e índices documentados |
+| 2026-11-09 | Revisión de seguridad inicial | Hallazgos RLS, SECURITY DEFINER, Auth e índices documentados; confirmado que rls_auto_enable es event trigger ensure_rls |
 | 2026-11-09 | Documento maestro | Primera versión creada; Fase 1 pendiente |
 | 2026-11-09 | Revisión de rutas y despliegue | `index.html` confirma uso de `js/` y `css/`; detectadas copias duplicadas y Edge Function IA no desplegada |
 
