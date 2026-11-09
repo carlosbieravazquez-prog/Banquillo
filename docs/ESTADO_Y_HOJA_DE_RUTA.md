@@ -386,3 +386,76 @@ Archivos modificados:
 **Alcance y cautelas:** cambios únicamente en la página pública de la rama de desarrollo. No se ha cambiado el acceso/registro, la gestión de temporadas, Supabase, `main` ni GitHub Pages. La opción de equipo independiente conserva el flujo de entrada actual; la gestión de clubes aparece como próxima modalidad y no se presenta falsamente como funcional.
 
 **Pendiente de validación:** revisar visualmente en navegador móvil y escritorio, comprobar anclas y enlace de entrada, y revisar contraste/legibilidad en modo oscuro.
+
+
+---
+
+## 9. Revisión de continuidad y prioridades — 9 de noviembre de 2026
+
+### 9.1 Estado verificado en esta revisión
+
+- La rama de trabajo feature/fase-1-clubes-equipos existe y contiene cambios de prototipo y landing. La rama main sigue siendo la referencia de producción; no se ha fusionado ni publicado este trabajo.
+- La landing de la rama de trabajo ofrece dos caminos: gestionar un equipo de forma independiente y, en el futuro, gestionar un club. Incluye la sección del creador y deja el correo oficial pendiente, sin inventar una dirección.
+- El prototipo demo-club.html contiene 15 equipos ficticios, dos directores deportivos con el mismo nivel de acceso, filtros F7/F11/todo el club y una configuración básica de instalaciones. Usa almacenamiento local del navegador y no está conectado a Auth, Supabase ni datos reales.
+- En el prototipo, calendario y comunicaciones siguen siendo apartados pendientes; no deben presentarse como funciones terminadas.
+- La consulta de solo lectura a Supabase confirma 5 tablas públicas: profiles (2 filas), seasons_meta (1), season_members (1), docs (33) y join_attempts (0). No hay tablas de clubes, equipos, notificaciones o auditoría.
+- El historial de migraciones de Supabase continúa vacío. No se ha aplicado ninguna migración ni se ha modificado información.
+- Los asesores vuelven a señalar RLS sin políticas en seasons_meta y join_attempts; funciones SECURITY DEFINER ejecutables por roles externos (incluidas handle_new_user y rls_auto_enable); protección de contraseñas filtradas desactivada; FK seasons_meta.owner_id sin índice; política de profiles con llamada repetida a auth.uid(); y join_attempts sin clave primaria. Son avisos que requieren inspección de definiciones y pruebas antes de corregirlos; no se deben aplicar revocaciones genéricas que puedan romper el alta, invitaciones o sincronización.
+
+### 9.2 Orden de ejecución para una primera versión fiable
+
+**P0 — preservar y cerrar riesgos antes de tocar datos**
+1. Obtener una copia de seguridad verificable y documentar cómo restaurarla.
+2. Exportar y revisar el esquema completo, políticas RLS, funciones, triggers y configuración Auth.
+3. Identificar qué funciones SECURITY DEFINER necesitan ser llamadas desde cliente y cuáles son exclusivamente internas. Aplicar mínimo privilegio función por función, con pruebas de registro, login, recuperación, creación/unión a temporada, cambio de rol y sincronización.
+4. Confirmar aislamiento entre dos cuentas y que un miembro no puede leer ni modificar temporadas ajenas.
+5. Preparar migraciones versionadas, procedimiento de rollback y un entorno de prueba. No reconstruir la base ni sobrescribir docs.
+
+**P1 — modelo de club compatible con la aplicación actual**
+1. Crear Club, Team, membresías y roles sin eliminar ni renombrar las tablas actuales.
+2. Mantener el modo de equipo independiente: crear/gestionar una temporada sin pertenecer a un club debe seguir funcionando.
+3. Permitir uno o dos directores deportivos por club, con idénticos permisos; el director puede también ser entrenador de uno o varios equipos.
+4. El director ve todos los equipos del club; cada entrenador ve únicamente los equipos que tenga asignados.
+5. Mantener el límite acordado de 12 equipos por club hasta que el propietario decida cambiarlo. Los 15 equipos del prototipo son exclusivamente datos de demostración.
+6. Relacionar temporadas existentes con equipos de forma aditiva, verificando que los 33 documentos observados y cualquier dato nuevo permanecen intactos.
+7. Añadir auditoría de cambios con actor, fecha, entidad, campo y valores anterior/nuevo.
+
+**P2 — operaciones deportivas del club**
+1. Campanita de notificaciones con categorías, lectura/no lectura, destinatarios por club/equipo y registro de quién publicó.
+2. Planificador de partidos en casa con calendario mensual/semanal/diario, partidos pendientes de asignar, filtros F7/F11 y lista lateral de equipos locales.
+3. Modelo real de instalaciones: campos físicos, disponibilidad, bloqueos y divisibilidad. Un F11 solo equivale a dos F7 cuando la instalación puede dividirse y ambos espacios pueden usarse simultáneamente. Evitar solapamientos entre campo padre y subcampos.
+4. Ayudante de planificación inicialmente determinista y explicable: mostrar conflictos y alternativas, nunca mover citas publicadas sin aprobación.
+5. Publicación controlada de horarios y exportación de mensajes/imagen para el cuerpo técnico. Los partidos visitantes se muestran como información y no reservan campos del club.
+6. Catálogo de competiciones por país, comunidad, provincia, organizador, modalidad, categoría y temporada; permitir Otros para competiciones locales/municipales sin mezclarlas con las federativas.
+
+**P3 — calidad y lanzamiento**
+1. Pruebas reales en móvil y escritorio, navegación accesible, estados vacíos, errores de red y recuperación de sesión.
+2. Pruebas de roles, concurrencia, aislamiento entre clubes y conservación de datos.
+3. Revisar textos legales, privacidad y minimización de datos de menores; no incluir datos médicos ni información innecesaria.
+4. Revisar que la landing no prometa funciones que aún no estén operativas.
+5. Crear una versión candidata, revisar el cambio completo y solo entonces abrir la fusión a main y publicar.
+
+### 9.3 Propuestas de mejora recomendadas (no bloquean el MVP)
+
+- **Centro de tareas deportivas:** tareas con responsable, equipo, fecha límite y estado; útil para documentación, asistencia y resultados pendientes.
+- **Informe semanal del club:** resumen de actividad, partidos, convocatorias, asistencia y tareas pendientes, con enlaces directos a cada equipo.
+- **Plantillas reutilizables:** temporadas, convocatorias, mensajes y configuraciones de equipos para reducir trabajo repetido.
+- **Importación y exportación controladas:** CSV/Excel para altas y descarga de datos del club, con validación previa y sin duplicar jugadores.
+- **Historial y recuperación:** registro de cambios primero; deshacer con control de versiones después, para no sobrescribir cambios simultáneos.
+- **PWA y modo de conectividad limitada:** permitir consultar información reciente cuando la cobertura del campo sea mala; las escrituras se sincronizarán solo cuando sea seguro y sin conflictos.
+- **Catálogo de instalaciones compartible:** reutilizar campos del club y sus horarios, manteniendo bloqueos y permisos.
+- **Privacidad desde el diseño:** nombres mínimos, acceso por función, plazos de conservación y exportación/eliminación según las obligaciones aplicables.
+
+### 9.4 Criterio de finalización
+
+Banquillo no se considerará listo por tener pantallas o datos de demostración. La primera versión se dará por válida cuando el acceso independiente por equipo siga funcionando; club, equipos y roles estén protegidos por RLS y comprobaciones del servidor; directores y entrenadores solo puedan operar dentro de su ámbito; la temporada actual conserve íntegros sus datos; notificaciones y registro de cambios funcionen; las pruebas automatizadas y manuales de móvil/escritorio pasen; la copia de seguridad y el procedimiento de recuperación estén documentados; y la versión se haya revisado antes de publicarse.
+
+### 9.5 Actividad de esta revisión
+
+| Fecha | Trabajo | Resultado |
+|---|---|---|
+| 2026-11-09 | Revisión de continuidad de rama de trabajo | Confirmada la existencia de feature/fase-1-clubes-equipos; cambios separados de main |
+| 2026-11-09 | Revisión del prototipo de club | Confirmados 15 equipos ficticios, dos directores equivalentes y calendario/comunicaciones aún pendientes |
+| 2026-11-09 | Revisión de Supabase | Solo lectura; 5 tablas, 33 documentos, 0 migraciones; sin cambios de datos o esquema |
+| 2026-11-09 | Nueva consulta de asesores | Hallazgos de seguridad y rendimiento siguen pendientes de revisión específica |
+| 2026-11-09 | Priorización de MVP y mejoras | Definidos P0–P3 y backlog recomendado; no se ha desplegado nada |
