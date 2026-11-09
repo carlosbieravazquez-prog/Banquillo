@@ -235,7 +235,7 @@ V.sheet.wizard = () => {
     body = `<p class="muted small">Quita a quien se va, corrige nombres y añade los jugadores nuevos. Los dorsales se pueden poner ahora o más tarde.</p>
       <ul class="wlist">${w.players.map((p, i) => `<li class="${p.keep ? "" : "off"}"><input type="checkbox" data-chg="wKeep" data-i="${i}" ${p.keep ? "checked" : ""} aria-label="Seguir en la plantilla"><input type="text" class="inp" data-inp="wPName" data-i="${i}" value="${esc(p.name)}" placeholder="Nombre" aria-label="Nombre"><input type="text" inputmode="numeric" class="inp mini" data-inp="wPDors" data-i="${i}" value="${esc(p.dorsal)}" placeholder="Nº" maxlength="2" aria-label="Dorsal"><button type="button" class="ix" data-act="wDelP" data-i="${i}" aria-label="Quitar">${icon("x")}</button></li>`).join("")}</ul>
       <div class="row gap wrap tool">${btn("Añadir jugador", "wAddP", {}, "ghost", "plus")}<button type="button" class="link" data-act="wPaste">Pegar una lista de nombres</button></div>
-      ${UI.pasteOpen === "p" ? `<textarea class="inp area" rows="5" data-inp="wPasteP" placeholder="Un nombre por línea"></textarea><div class="row end">${btn("Añadir nombres", "wPasteP", {}, "primary")}</div>` : ""}`;
+      ${UI.pasteOpen === "p" ? `<textarea class="inp area" rows="7" data-inp="wPasteP" placeholder="1 – Leo El Muro Vane&#10;- **12** – Alistair Vance&#10;2. Marcus Blackstone"></textarea><p class="muted small">Puedes pegar dorsales y nombres en líneas como 1 – Nombre, 12. Nombre o - **2** – Nombre. Se quitarán las viñetas y el formato automáticamente.</p><div class="row end">${btn("Añadir jugadores", "wPasteP", {}, "primary")}</div>` : ""}`;
   } else if (w.step === 3) {
     body = `<p class="muted small">Fecha, rival y campo de cada jornada. Si aún no los tienes, déjalos en blanco y complétalos después en Partidos.</p>
       <ul class="wm">${w.matches.map((m, i) => `<li class="${m.rest ? "off" : ""}"><b>J${i + 1}</b><input type="date" class="inp" data-inp="wMDate" data-i="${i}" value="${esc(m.date)}" aria-label="Fecha">${m.rest ? `<span class="muted grow">Descansa</span>` : `<input type="text" class="inp grow" data-inp="wMRival" data-i="${i}" value="${esc(m.rival)}" placeholder="Rival" aria-label="Rival"><select class="sel" data-chg="wMHome" data-i="${i}" aria-label="Campo"><option value="1" ${m.home ? "selected" : ""}>Local</option><option value="0" ${!m.home ? "selected" : ""}>Visitante</option></select>`}<label class="chk" title="Jornada de descanso"><input type="checkbox" data-chg="wMRest" data-i="${i}" ${m.rest ? "checked" : ""}>Desc.</label><button type="button" class="ix" data-act="wDelM" data-i="${i}" aria-label="Quitar jornada">${icon("x")}</button></li>`).join("")}</ul>
@@ -266,9 +266,29 @@ ACT.wDelP = el => { UI.wiz.players.splice(+el.dataset.i, 1); };
 ACT.wAddP = () => { UI.wiz.players.push({ id: null, name: "", dorsal: "", keep: true }); };
 ACT.wPaste = () => { UI.pasteOpen = UI.pasteOpen === "p" ? false : "p"; };
 INP.wPasteP = el => { UI.wizPasteP = el.value; };
+const parsePastedPlayer = line => {
+  let raw = String(line || "").trim();
+  // Elimina viñetas Markdown (-, *, •) sin confundirlas con los números de dorsal.
+  raw = raw.replace(/^(?:[-*•]\s+)+/, "").trim();
+  const found = raw.match(/^(?:\*\*(\d{1,2})\*\*|(\d{1,2}))(?:\s*[-–—.:)]\s*|\s+)(.+)$/u);
+  let dorsal = found ? Number(found[1] || found[2]) : null;
+  let name = found ? found[3] : raw;
+  name = name.replace(/^\*\*(.*?)\*\*$/u, "$1").trim().replace(/\s+/g, " ");
+  if (!name || /^[-–—.:)]+$/.test(name)) return null;
+  return { name, dorsal };
+};
 ACT.wPasteP = () => {
-  (UI.wizPasteP || "").split(/\n+/).map(x => x.trim()).filter(Boolean).forEach(n => { if (!UI.wiz.players.some(p => norm(p.name) === norm(n))) UI.wiz.players.push({ id: null, name: n, dorsal: "", keep: true }); });
+  const rows = (UI.wizPasteP || "").split(/\r?\n+/).map(parsePastedPlayer).filter(Boolean);
+  let added = 0, duplicates = 0, numberConflicts = 0;
+  for (const row of rows) {
+    if (UI.wiz.players.some(p => norm(p.name) === norm(row.name))) { duplicates++; continue; }
+    const taken = row.dorsal !== null && UI.wiz.players.some(p => p.keep && String(p.dorsal) === String(row.dorsal));
+    if (taken) numberConflicts++;
+    UI.wiz.players.push({ id: null, name: row.name, dorsal: taken ? "" : row.dorsal === null ? "" : String(row.dorsal), keep: true });
+    added++;
+  }
   UI.wizPasteP = ""; UI.pasteOpen = false;
+  toast(`${added} jugadores añadidos.${duplicates ? " "+duplicates+" nombres repetidos omitidos." : ""}${numberConflicts ? " "+numberConflicts+" dorsales duplicados dejados en blanco." : ""}`, "ok");
 };
 INP.wMDate = el => { UI.wiz.matches[+el.dataset.i].date = el.value; };
 INP.wMRival = el => { UI.wiz.matches[+el.dataset.i].rival = el.value; };
