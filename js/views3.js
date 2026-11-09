@@ -166,7 +166,7 @@ ACT.reopenSeason = () => { const s = Store.season(); s.status = "active"; Store.
 /* ---------- AJUSTES de la temporada ---------- */
 ACT.openSettings = () => {
   const s = Store.season(), st = s.settings || {};
-  UI.sheet = { type: "settings", wide: true, d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
+  UI.sheet = { type: "settings", wide: true, d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])], kit1Color: st.kit1Color || "", kit2Color: st.kit2Color || "", kit3Color: st.kit3Color || "" } };
 };
 const DAYSEL = [[1, "Lun"], [2, "Mar"], [3, "Mié"], [4, "Jue"], [5, "Vie"], [6, "Sáb"], [0, "Dom"]];
 V.sheet.settings = sh => {
@@ -175,6 +175,10 @@ V.sheet.settings = sh => {
     <div class="form"><label class="fld"><span>Club</span><input type="text" class="inp" data-inp="setClub" value="${esc(d.club)}"></label>
     <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="setCat" value="${esc(d.category)}"></label>
     <label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="${esc(d.matchMinutes)}"></label>
+    <div class="card-h"><h3>Equipaciones del equipo</h3></div>
+    <div class="row gap wrap"><label class="fld grow"><span>Primera equipación</span><input type="text" class="inp" data-inp="setKit1" value="${esc(d.kit1Color)}" placeholder="Ej. Roja y blanca"></label>
+    <label class="fld grow"><span>Segunda equipación</span><input type="text" class="inp" data-inp="setKit2" value="${esc(d.kit2Color)}" placeholder="Ej. Azul"></label></div>
+    <label class="fld"><span>Tercera equipación (opcional)</span><input type="text" class="inp" data-inp="setKit3" value="${esc(d.kit3Color)}" placeholder="Ej. Negra"></label>
     <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${d.trainDays.includes(v) ? "on" : ""}" data-act="setDay" data-v="${v}">${l}</button>`).join("")}</div></div>
     <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="setStart" value="${esc(d.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="setEnd" value="${esc(d.trainEnd)}"></label></div>
     <p class="muted small">Si cambias las fechas, las faltas ya marcadas se conservan. Las sesiones nuevas aparecen en Entrenos.</p></div>
@@ -183,6 +187,9 @@ V.sheet.settings = sh => {
 INP.setClub = el => { UI.sheet.d.club = el.value; };
 INP.setCat = el => { UI.sheet.d.category = el.value; };
 INP.setMin = el => { UI.sheet.d.matchMinutes = el.value; };
+INP.setKit1 = el => { UI.sheet.d.kit1Color = el.value; };
+INP.setKit2 = el => { UI.sheet.d.kit2Color = el.value; };
+INP.setKit3 = el => { UI.sheet.d.kit3Color = el.value; };
 INP.setStart = el => { UI.sheet.d.trainStart = el.value; };
 INP.setEnd = el => { UI.sheet.d.trainEnd = el.value; };
 ACT.setDay = el => { const v = +el.dataset.v, a = UI.sheet.d.trainDays; UI.sheet.d.trainDays = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; };
@@ -192,7 +199,7 @@ ACT.saveSettings = () => {
   if (d.trainStart && d.trainEnd && d.trainStart > d.trainEnd) { toast("El último entreno no puede ser anterior al primero.", "err"); return; }
   if (!d.trainDays.length) { toast("Elige al menos un día de entrenamiento.", "err"); return; }
   const s = Store.season(); s.club = d.club.trim(); s.category = d.category.trim();
-  s.settings = { matchMinutes: mm, trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
+  s.settings = { ...s.settings, matchMinutes: mm, trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd, kit1Color: (d.kit1Color || "").trim(), kit2Color: (d.kit2Color || "").trim(), kit3Color: (d.kit3Color || "").trim() };
   Store.save("season", s); UI.sheet = null; toast("Ajustes guardados.", "ok");
 };
 
@@ -210,6 +217,7 @@ ACT.wizStart = el => {
   const matches = first ? [] : Store.matches.map(() => ({ date: "", rival: "", home: true, rest: false }));
   UI.wiz = { step: 1, name: first ? "" : nextSeasonName(cur.name), club: (cur && cur.club) || "", category: (cur && cur.category) || "",
     matchMinutes: st.matchMinutes || 50, trainDays: [...(st.trainDays || [1, 3])], trainStart: addYear(st.trainStart), trainEnd: addYear(st.trainEnd),
+    kit1Color: st.kit1Color || "", kit2Color: st.kit2Color || "", kit3Color: st.kit3Color || "",
     players, matches, copyNote: !first, progress: null, done: false, newId: null };
   UI.sheet = { type: "wizard", wide: true };
 };
@@ -223,6 +231,11 @@ V.sheet.wizard = () => {
       <label class="fld grow"><span>Duración del partido (min)</span><input type="text" inputmode="numeric" class="inp" data-inp="wMin" value="${esc(w.matchMinutes)}"></label></div>
       <label class="fld"><span>Club</span><input type="text" class="inp" data-inp="wClub" value="${esc(w.club)}" placeholder="Nombre de tu club"></label>
       <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="wCat" value="${esc(w.category)}" placeholder="Benjamín · Liga Educa"></label>
+      <div class="card-h"><h3>Equipaciones del equipo</h3></div>
+      <p class="muted small">Indica los colores para que aparezcan automáticamente en el mensaje de convocatoria. La tercera es opcional.</p>
+      <div class="row gap wrap"><label class="fld grow"><span>Primera equipación</span><input type="text" class="inp" data-inp="wKit1" value="${esc(w.kit1Color)}" placeholder="Ej. Roja y blanca"></label>
+      <label class="fld grow"><span>Segunda equipación</span><input type="text" class="inp" data-inp="wKit2" value="${esc(w.kit2Color)}" placeholder="Ej. Azul"></label></div>
+      <label class="fld"><span>Tercera equipación (opcional)</span><input type="text" class="inp" data-inp="wKit3" value="${esc(w.kit3Color)}" placeholder="Ej. Negra"></label>
       <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${w.trainDays.includes(v) ? "on" : ""}" data-act="wDay" data-v="${v}">${l}</button>`).join("")}</div></div>
       <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="wStart" value="${esc(w.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="wEnd" value="${esc(w.trainEnd)}"></label></div>
       ${w.copyNote ? `<p class="muted small">La plantilla y el número de jornadas se copian de la temporada ${esc(Store.season().name)}. Los dorsales quedan en blanco por si cambian.</p>` : ""}</div>`;
@@ -251,6 +264,9 @@ INP.wName = el => { UI.wiz.name = el.value; };
 INP.wMin = el => { UI.wiz.matchMinutes = el.value; };
 INP.wClub = el => { UI.wiz.club = el.value; };
 INP.wCat = el => { UI.wiz.category = el.value; };
+INP.wKit1 = el => { UI.wiz.kit1Color = el.value; };
+INP.wKit2 = el => { UI.wiz.kit2Color = el.value; };
+INP.wKit3 = el => { UI.wiz.kit3Color = el.value; };
 INP.wStart = el => { UI.wiz.trainStart = el.value; };
 INP.wEnd = el => { UI.wiz.trainEnd = el.value; };
 ACT.wDay = el => { const w = UI.wiz, v = +el.dataset.v; w.trainDays = w.trainDays.includes(v) ? w.trainDays.filter(x => x !== v) : [...w.trainDays, v]; };
@@ -307,10 +323,10 @@ ACT.wCreate = async () => {
   if (!w.sid) w.sid = w.name.replace(/\s*[\/-]\s*/, "-") + "-" + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
   const id = w.sid;
   const plist = w.players.filter(p => p.keep && p.name.trim()).map((p, i) => ({ id: "p" + String(i + 1).padStart(2, "0"), name: p.name.trim(), dorsal: parseNum(p.dorsal), order: i + 1, active: true, notes: "" }));
-  const mlist = w.matches.map((m, i) => ({ id: "j" + String(i + 1).padStart(2, "0"), n: i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
+  const mlist = w.matches.map((m, i) => ({ id: "j" + String(i + 1).padStart(2, "0"), n: i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, kit: m.home === false ? "second" : "first", rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false, callMessageMode: "called" }));
   w.progress = [0, 1 + plist.length + mlist.length + 1]; w.err = null; render(true);
   try {
-    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
+    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd, kit1Color: w.kit1Color.trim(), kit2Color: w.kit2Color.trim(), kit3Color: w.kit3Color.trim() }, players: plist, matches: mlist },
       (n, t) => { w.progress = [n, t]; render(true); });
     w.newId = id; w.done = true; w.progress = null;
   } catch (e) { console.error(e); w.progress = null; w.err = "No se pudo guardar la temporada completa. Comprueba tu conexión e inténtalo de nuevo: continuará donde se quedó."; }
