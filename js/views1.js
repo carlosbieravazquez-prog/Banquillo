@@ -6,6 +6,32 @@ const nextMatchOf = () => { const t = todayKey(); return Store.matches.find(m =>
 const calledPlayers = m => { const nc = Calc.noCallMap(m); return Store.activePlayers().filter(p => !(p.id in nc)); };
 const seasonSessions = () => Calc.sessionList((Store.season() || {}).settings, Store.training);
 const trainStats = () => Calc.trainingStats(Store.activePlayers(), seasonSessions(), Store.training, todayKey());
+const matchKitOptions = () => {
+  const st = (Store.season() || {}).settings || {};
+  return [
+    { id: "first", name: "Primera", color: st.kit1Color || "" },
+    { id: "second", name: "Segunda", color: st.kit2Color || "" },
+    { id: "third", name: "Tercera", color: st.kit3Color || "" },
+  ].filter((k, i) => i < 2 || k.color.trim());
+};
+const callMessageText = m => {
+  const ps = Store.activePlayers(), nc = Calc.noCallMap(m), club = (Store.season().club || "Nuestro equipo").trim();
+  const kit = matchKitOptions().find(k => k.id === (m.kit || (m.home === false ? "second" : "first")));
+  const header = [
+    `⚽ ${club} · Jornada ${m.n}`,
+    m.rival ? `🆚 ${m.rival}` : "",
+    m.home == null ? "" : (m.home ? "📍 Partido como LOCAL" : "📍 Partido como VISITANTE"),
+    m.date ? `📅 ${fmtLong(m.date)}` : "",
+    kit ? `👕 Equipación: ${kit.name}${kit.color ? ` (${kit.color})` : ""}` : "",
+  ].filter(Boolean);
+  const mode = m.callMessageMode || "called";
+  if (mode === "notCalled") {
+    const rows = ps.filter(p => p.id in nc).map(p => `• ${p.name} — ${({ LS: "Lesión", MP: "Motivos personales", DT: "Decisión técnica" })[nc[p.id]] || "Sin motivo indicado"}`);
+    return [...header, "", "No convocados:", ...(rows.length ? rows : ["Ningún jugador"])].join("\\n");
+  }
+  const rows = ps.filter(p => !(p.id in nc)).map(p => `• ${p.name}`);
+  return [...header, "", "Convocados:", ...(rows.length ? rows : ["Ningún jugador"])].join("\\n");
+};
 
 /* ---------- INICIO ---------- */
 V.inicio = () => {
@@ -94,7 +120,7 @@ V.partidos = () => {
 ACT.setFilter = el => { UI.filter = el.dataset.v; };
 ACT.addMatch = () => {
   const n = Store.matches.reduce((a, m) => Math.max(a, m.n || 0), 0) + 1;
-  const m = { id: "j" + String(n).padStart(2, "0"), n, date: null, rival: "", home: true, rest: false, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false };
+  const m = { id: "j" + String(n).padStart(2, "0"), n, date: null, rival: "", home: true, kit: "first", rest: false, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false, callMessageMode: "called" };
   Store.matches.push(m); Store.save("match", m);
   go("partido", n); UI.matchTab = "datos";
 };
@@ -133,15 +159,25 @@ T.convocatoria = m => {
     return `<li class="crow ${cur ? "out" : ""}"><span class="cn">${dorsalBadge(p)}<b>${esc(p.name)}</b></span>
       <span class="cseg">${opts.map(([v, l]) => `<button type="button" class="${cur === v ? "on " + (v || "ok") : ""}" data-act="setCall" data-p="${p.id}" data-v="${v}" title="${v ? MOTIVOS[v] : "Convocado"}">${l}</button>`).join("")}</span></li>`;
   }).join("");
-  const done = Calc.isRegistered(m);
+  const done = Calc.isRegistered(m), mode = m.callMessageMode || "called", message = callMessageText(m);
   return `<section class="card">
     <div class="card-h"><h3>¿Quién no viene?</h3><span class="count ${done ? "ok" : ""}">Convocados <b>${nCalled}</b> de ${ps.length}</span></div>
-    <p class="muted small">Todos están convocados por defecto. Marca el motivo solo de quien no va: <b>D.T</b> Decisión técnica · <b>L.S</b> Lesionado · <b>M.P</b> Motivos personales.</p>
+    <p class="muted small">Todos están convocados por defecto. Marca el motivo solo de quien no va: <b>D.T</b> Decisión técnica · <b>L.S</b> Lesión · <b>M.P</b> Motivos personales.</p>
     <ul class="clist">${rows}</ul>
     <div class="row between gap wrap foot">
       <span class="muted small">${done ? "Convocatoria confirmada." : "Aún sin confirmar."}</span>
       ${done ? btn("Ir a la ficha", "setTab", { v: "ficha" }, "primary", "ball") : btn("Confirmar convocatoria", "confirmCall", {}, "primary", "check")}
-    </div></section>`;
+    </div></section>
+    <section class="card">
+      <div class="card-h"><h3>Mensaje para las familias</h3><span class="tag info">Automático</span></div>
+      <p class="muted small">Se prepara con la jornada, rival, condición de local o visitante, fecha, equipación y la lista que elijas.</p>
+      <div class="seg two">
+        <button type="button" class="${mode === "called" ? "on" : ""}" data-act="setCallMessageMode" data-v="called">Solo convocados</button>
+        <button type="button" class="${mode === "notCalled" ? "on" : ""}" data-act="setCallMessageMode" data-v="notCalled">Solo no convocados</button>
+      </div>
+      <textarea class="inp area" rows="8" readonly aria-label="Mensaje generado">${esc(message)}</textarea>
+      <div class="row end gap foot">${btn("Copiar mensaje", "copyCallMessage", {}, "primary", "copy")}</div>
+    </section>`;
 };
 ACT.setCall = el => {
   const m = curMatch(), p = el.dataset.p, v = el.dataset.v;
@@ -156,6 +192,12 @@ ACT.setCall = el => {
   m.callDone = true; touch(m);
 };
 ACT.confirmCall = () => { const m = curMatch(); m.callDone = true; touch(m); toast("Convocatoria confirmada.", "ok"); };
+ACT.setCallMessageMode = el => { const m = curMatch(); m.callMessageMode = el.dataset.v === "notCalled" ? "notCalled" : "called"; touch(m); };
+ACT.copyCallMessage = async () => {
+  const m = curMatch(); if (!m) return;
+  try { await navigator.clipboard.writeText(callMessageText(m)); toast("Mensaje de convocatoria copiado.", "ok"); }
+  catch (e) { toast("No se pudo copiar automáticamente. Selecciona el texto del mensaje y cópialo.", "err"); }
+};
 
 /* ----- Ficha ----- */
 const goalOptions = (m, sel) => {
@@ -315,7 +357,8 @@ T.datos = m => {
     <label class="fld"><span>Fecha</span><input type="date" class="inp" data-chg="mDate" value="${esc(m.date || "")}"></label>
     <label class="fld"><span>Descanso</span><span class="sw"><input type="checkbox" data-chg="mRest" ${m.rest ? "checked" : ""}><i></i><em>Esta jornada el equipo descansa</em></span></label>
     ${m.rest ? "" : `<label class="fld"><span>Rival</span><input type="text" class="inp" list="rivalList" data-chg="mRival" value="${esc(m.rival || "")}" placeholder="Nombre del equipo rival" autocomplete="off"><datalist id="rivalList">${rivals.map(r => `<option value="${esc(r)}">`).join("")}</datalist></label>
-    <div class="fld"><span>Campo</span><div class="seg two"><button type="button" class="${m.home ? "on" : ""}" data-act="setHome" data-v="1">Local</button><button type="button" class="${m.home === false ? "on" : ""}" data-act="setHome" data-v="0">Visitante</button></div></div>`}
+    <div class="fld"><span>Campo</span><div class="seg two"><button type="button" class="${m.home ? "on" : ""}" data-act="setHome" data-v="1">Local</button><button type="button" class="${m.home === false ? "on" : ""}" data-act="setHome" data-v="0">Visitante</button></div></div>
+    <label class="fld"><span>Equipación para este partido</span><select class="sel" data-chg="mKit">${matchKitOptions().map(k => `<option value="${k.id}" ${(m.kit || (m.home === false ? "second" : "first")) === k.id ? "selected" : ""}>${k.name}${k.color ? " · " + esc(k.color) : ""}</option>`).join("")}</select></label>`}
     <label class="fld"><span>Observaciones</span><textarea class="inp area" rows="3" data-inp="mNotes" placeholder="Hora, campo, incidencias…">${esc(m.notes || "")}</textarea></label>
     <div class="row between foot"><span></span>${btn("Eliminar jornada", "delMatchAsk", {}, "danger-ghost", "trash")}</div></section>`;
 };
@@ -323,7 +366,8 @@ CHG.mDate = el => { const m = curMatch(); m.date = el.value || null; touch(m); }
 CHG.mRival = el => { const m = curMatch(); m.rival = el.value.trim(); touch(m); };
 CHG.mRest = el => { const m = curMatch(); m.rest = el.checked; touch(m); };
 INP.mNotes = el => { const m = curMatch(); m.notes = el.value; touch(m); };
-ACT.setHome = el => { const m = curMatch(); m.home = el.dataset.v === "1"; touch(m); };
+ACT.setHome = el => { const m = curMatch(); m.home = el.dataset.v === "1"; if (!m.kit) m.kit = m.home ? "first" : "second"; touch(m); };
+CHG.mKit = el => { const m = curMatch(); m.kit = el.value; touch(m); };
 ACT.delMatchAsk = () => { const m = curMatch(); confirmSheet(`¿Eliminar la jornada ${m.n}?`, "Se borrarán su convocatoria, goles y minutos. No se puede deshacer.", "Eliminar", "delMatch", { n: m.n }); };
 ACT.delMatch = el => {
   const m = Store.match(el.dataset.n); if (!m) return;
