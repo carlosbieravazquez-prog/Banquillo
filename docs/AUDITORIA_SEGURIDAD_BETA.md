@@ -60,3 +60,13 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - **Prueba 15:** temporada ficticia creada en segunda cuenta únicamente aparece en ella y no en la principal (validación manual realizada por usuario).
 - **Pendiente:** prueba directa cruzada de acceso a datos vía API con sesión de cada cuenta y verificación de privilegios de escritura, con entorno y cuentas de prueba.
 - **Cambio Beta** `js/cloud.js`: limpieza de temporizadores y escuchas `visibilitychange` cuando no quedan suscripciones; evitadas lecturas simultáneas por suscripción al recuperar foco. Comprobada sintaxis JS. Falta validar comportamiento real en navegador con varias sesiones/temporadas.
+
+## Avance: acceso anónimo, contraseñas y cierre de sesión (noviembre 2026)
+
+- [x] Supabase SQL, solo lectura: `anon` carece de `SELECT` sobre `public.docs` y `public.season_members` (false/false).
+- [x] Supabase SQL, solo lectura: simulación de usuario autenticado inexistente mediante claim temporal devuelve 0 filas para `docs`, `season_members` y `profiles`. Esta prueba es parcial; faltan pruebas positivas y negativas cruzadas con dos usuarios de prueba reales.
+- [x] `js/auth.js` en rama Beta: formularios de registro y recuperación requieren al menos 12 caracteres. Esta es una validación de interfaz, **no** una regla global impuesta por Auth. Revisar política de contraseñas del proyecto en Supabase antes de certificarla.
+- [x] `js/auth.js`: `signOut({scope: "global"})` con gestión de error. Ya no afirma que se cerró la sesión si la operación falla; pendiente prueba en navegador y comprobación de duración JWT. Los access tokens existentes pueden seguir válidos hasta expirar.
+- [ ] Supabase SQL: `docs_guard`, `handle_new_user` y `rls_auto_enable` siguen concediendo EXECUTE a `anon` y `authenticated`. SQL corrector solo preparado, no aplicado. **No ejecutar sin staging y backup restaurable**.
+- [ ] Revisar en dashboard Auth los ajustes de confirmación de correo, mínimo de contraseña, MFA y protección contra contraseñas filtradas según plan.
+- [ ] Probar en navegador: crear cuenta nueva con contraseña inferior a 12 caracteres (debe bloquearse antes de enviar), recuperación de contraseña y cerrar sesión con conexión normal/desconectada.
