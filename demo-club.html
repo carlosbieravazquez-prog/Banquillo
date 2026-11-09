@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102a43">
+<title>Atlético Monteverde CF · Banquillo</title>
+<link rel="stylesheet" href="css/demo-club.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#inicio"><span class="brand-mark">AM</span><span><b>EL BANQUILLO</b><small>GESTIÓN DE CLUBES</small></span></a>
+    <div class="club-switch"><span class="club-crest">AM</span><span><b id="sideClubName">Atlético Monteverde CF</b><small>Dos Hermanas · Sevilla</small></span><span class="chev">⌄</span></div>
+    <div class="nav-label">CLUB</div>
+    <nav id="mainNav">
+      <button class="nav-item active" data-view="resumen"><span>▦</span> Resumen</button>
+      <button class="nav-item" data-view="equipos"><span>⚽</span> Equipos <i id="teamCount">15</i></button>
+      <button class="nav-item" data-view="directores"><span>♙</span> Directores deportivos</button>
+      <button class="nav-item" data-view="instalaciones"><span>▤</span> Instalaciones</button>
+      <button class="nav-item" data-view="calendario"><span>▦</span> Calendario</button>
+      <div class="nav-label space-top">COMUNICACIÓN</div>
+      <button class="nav-item" data-view="comunicaciones"><span>✉</span> Comunicaciones</button>
+      <button class="nav-item" data-view="ajustes"><span>⚙</span> Ajustes del club</button>
+    </nav>
+    <div class="sidebar-bottom"><span class="demo-dot"></span> Entorno de demostración<br><small>Datos ficticios · Solo este navegador</small></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><div class="eyebrow">ATLÉTICO MONTEVERDE CF <span class="demo-pill">DEMO</span></div><h1 id="pageTitle">Resumen del club</h1></div>
+      <div class="top-actions"><div class="role-chip"><span class="avatar">DP</span><span><b id="activeDirectorName">Director deportivo</b><small>Dirección deportiva</small></span></div><button class="icon-btn" id="resetDemo" title="Restablecer demostración">↻</button></div>
+    </header>
+    <div class="modality-bar"><span class="mod-label">ÁMBITO DE TRABAJO</span><div class="segmented" role="group" aria-label="Cambiar modalidad"><button class="selected" data-modality="F7">Fútbol 7</button><button data-modality="F11">Fútbol 11</button><button data-modality="todos">Todo el club</button></div><span class="mod-note" id="modalityNote">Vista de equipos de Fútbol 7</span></div>
+    <section id="viewRoot" aria-live="polite"></section>
+    <footer>Prototipo funcional de demostración · No conectado a cuentas ni a Supabase</footer>
+  </main>
+</div>
+<script src="js/demo-club.js"></script>
+</body>
+</html>
