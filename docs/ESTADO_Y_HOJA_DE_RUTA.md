@@ -254,7 +254,7 @@ Se ha implementado en la rama de trabajo una mejora de convocatoria, sin modific
 - En los datos de cada partido se selecciona la equipación que se utilizará. Por defecto, los partidos locales parten de primera y los visitantes de segunda; el entrenador puede cambiarla.
 - Los nuevos datos se guardan en los documentos JSON existentes (ajustes de temporada y documento de partido). Se amplió la lista de campos serializados para conservar equipación, modo de mensaje, hora y lugar de citación. No requiere migración SQL.
 
-**Validación realizada:** revisión de los fragmentos modificados y de los campos de serialización. No se ha ejecutado todavía una prueba real en navegador ni una prueba de copia en móvil; tampoco se ha modificado Supabase. La funcionalidad permanece aislada en `feature/fase-1-clubes-equipos`, sin afectar a `main` ni a GitHub Pages.
+**Validación realizada:** revisión de los fragmentos modificados y de los campos de serialización. No se ha ejecutado todavía una prueba real en navegador ni una prueba de copia en móvil; tampoco se ha modificado Supabase. El repositorio no devolvió comprobaciones CI asociadas al último commit. La funcionalidad permanece aislada en `feature/fase-1-clubes-equipos`, sin afectar a `main` ni a GitHub Pages.
 
 ## 9. Cambios GitHub y commits
 
@@ -269,6 +269,6 @@ Se ha implementado en la rama de trabajo una mejora de convocatoria, sin modific
 - `js/store.js`: persistencia de los nuevos campos del partido.
 - `js/core.js`: permiso de solo lectura para copiar el mensaje sin editar la convocatoria.
 - `js/util.js`: motivo de ausencia unificado como «Lesión».
-- Commits de implementación: `0034a24`, `e4294a3`, `fbed85a`, `9579c7a`, `260e9f3`, `8c5eca0`, `a6f982e`, `d4f46ec` y `10bf7f9`.
-- Documento actualizado en `d052282`; se mantiene pendiente la prueba en navegador antes de integrar en `main`.
+- Commits de implementación: `0034a24`, `e4294a3`, `fbed85a`, `9579c7a`, `260e9f3`, `8c5eca0`, `a6f982e`, `d4f46ec`, `10bf7f9` y `470ad6b`.
+- Documento actualizado y reordenado en `2c6c1fa`; se mantiene pendiente la prueba en navegador antes de integrar en `main`.
 
