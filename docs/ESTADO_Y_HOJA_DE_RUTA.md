@@ -130,8 +130,8 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 ### 4.7 Despliegue, estructura y otros hallazgos
 
 - `index.html` carga expresamente los módulos desde `js/` y los estilos desde `css/`; esas son las rutas activas del frontend publicado.
-- El repositorio conserva copias antiguas en la raíz de varios archivos que también existen en `js/` y `css/`. En algunos casos coinciden, pero `core.js` de la raíz y `js/core.js` tienen hashes distintos. Para evitar editar el archivo equivocado, los cambios del frontend deben hacerse en las rutas que carga `index.html`.
-- Hay páginas legales tanto en la raíz como en `legal/`; el HTML principal enlaza las páginas dentro de `legal/`. La documentación debe señalar una única fuente canónica y revisar los textos legales antes de un lanzamiento público.
+- En la rama de trabajo se han retirado las copias heredadas de la raíz que no carga `index.html` (módulos JS, CSS, SQL y fuentes duplicadas de la Edge Function), además de un archivo vacío `download`. Se conserva como fuente activa `js/`, `css/` y `supabase/`.
+- Se han retirado de la raíz las páginas legales antiguas no enlazadas. Las páginas canónicas son `legal/privacidad.html` y `legal/aviso-legal.html`, que son las que enlaza `index.html`. Sus textos siguen siendo plantillas pendientes de completar y revisión antes de un lanzamiento público.
 - El código fuente de la Edge Function `ai-report` está en `supabase/functions/ai-report/`, pero el proyecto Supabase no devuelve ninguna función desplegada. Por tanto, la función IA no debe darse por operativa en producción.
 - El archivo `GUIA.md` describe la publicación mediante GitHub Pages y la configuración del proyecto. Debe actualizarse cuando se consolide el nuevo modelo de clubes y equipos.
 - El usuario facilitó la URL publicada y un enlace directo a `/#partido-2`. La herramienta de navegación no pudo recuperar la página en esta sesión; la URL por sí sola no confirma que la ruta cargue correctamente en el navegador del usuario.
@@ -156,6 +156,7 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 - [x] Inspeccionar tablas, funciones, políticas y recuentos.
 - [x] Crear este documento maestro inicial.
 - [ ] Confirmar que el enlace publicado carga correctamente en navegador.
+- [x] Identificar rutas activas y retirar duplicados heredados en rama aislada.
 - [ ] Revisar completamente funciones SQL sensibles y reglas RLS.
 - [ ] Obtener/exportar una copia de seguridad verificable antes de cambios.
 - [ ] Definir estrategia de migraciones versionadas y rollback.
@@ -218,3 +219,25 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 ## 8. Pendiente inmediato
 
 Completar la revisión de funciones y políticas, comprobar la web publicada en una sesión de prueba, y preparar una copia de seguridad verificable. Después presentar el diseño de migración de clubes/equipos antes de aplicar cambios.
+
+
+### 4.9 Limpieza inicial del repositorio — 9-11-2026
+
+En la rama aislada `feature/fase-1-clubes-equipos` se ha realizado una limpieza conservadora basada en las referencias del HTML principal:
+
+- Eliminadas copias de raíz de los módulos JavaScript que se cargan desde `js/`: `auth.js`, `boot.js`, `calc.js`, `cloud.js`, `core.js`, `export.js`, `store.js`, `util.js`, `views1.js`, `views2.js` y `views3.js`.
+- Eliminado `app.css` de la raíz; la aplicación carga `css/app.css`.
+- Eliminado `schema.sql` de la raíz; la guía y la estructura del proyecto usan `supabase/schema.sql`.
+- Eliminadas las copias de raíz `handler.ts` e `index.ts`; se conservan las fuentes de la Edge Function en `supabase/functions/ai-report/`.
+- Eliminadas las páginas legales antiguas de la raíz; se conservan las páginas enlazadas desde `index.html` en `legal/`.
+- Eliminado el archivo vacío `download`.
+
+Motivo: evitar ambigüedad sobre qué archivo debe modificarse y mantener una única ubicación canónica para cada componente. Se comprobó que `index.html` carga los módulos desde `js/` y `css/`, y enlaza las páginas legales dentro de `legal/`. Las copias SQL y Edge Function se conservaron dentro de `supabase/`.
+
+**Importante:** esta limpieza solo se ha aplicado a `feature/fase-1-clubes-equipos`; no se ha modificado `main` ni la web publicada. No se ha borrado ningún dato de Supabase. Antes de integrar la rama se hará una revisión de referencias y pruebas de carga.
+
+## 9. Cambios GitHub y commits
+
+- Rama de trabajo: `feature/fase-1-clubes-equipos`.
+- Limpieza de 18 archivos heredados/duplicados completada mediante commits separados en la rama de trabajo. El último commit resultante debe verificarse en GitHub antes de integrar.
+- No se ha desplegado esta limpieza a GitHub Pages.
