@@ -46,7 +46,14 @@ const Cloud = { sb: null, cfg: window.BQ_CONFIG || {}, profile: null, db: null, 
   C.tokens = () => (C.profile ? C.profile.tokens : 0);
 
   /* ---------- IA (Edge Function: descuenta Silbatos y llama a Claude en el servidor) ---------- */
-  C.ai = async (prompt, kind, signal) => {
+  // Consentimiento por sesión: se envían estadísticas seudonimizadas, nunca nombres ni notas libres.
+  C.aiPrivacyAccepted = false;
+    C.ai = async (prompt, kind, signal) => {
+    if (!C.aiPrivacyAccepted) {
+      const accepted = window.confirm("Privacidad de IA: se enviarán estadísticas deportivas sin nombres ni notas privadas a un proveedor externo para generar el texto. ¿Quieres continuar? Puedes cancelar y redactar el informe manualmente.");
+      if (!accepted) throw { code: "cancelled" };
+      C.aiPrivacyAccepted = true;
+    }
     const { data: s } = await C.sb.auth.getSession();
     if (!s.session) throw { code: "auth" };
     let res;
