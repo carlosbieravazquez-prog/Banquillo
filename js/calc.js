@@ -36,7 +36,7 @@ const Calc = (() => {
 
   /** Estadísticas de un jugador en todos los partidos. */
   function playerStats(pid, matches) {
-    const s = { goals: 0, conv: 0, noconv: 0, DT: 0, LS: 0, MP: 0, T: 0, S: 0, played: 0, min: 0, gk: 0, clean: 0 };
+    const s = { goals: 0, conv: 0, noconv: 0, DT: 0, LS: 0, MP: 0, SA: 0, T: 0, S: 0, played: 0, min: 0, gk: 0, clean: 0 };
     matches.forEach(m => {
       if (m.rest) return;
       const nc = noCallMap(m);
