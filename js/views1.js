@@ -22,6 +22,8 @@ const callMessageText = m => {
     m.rival ? `🆚 ${m.rival}` : "",
     m.home == null ? "" : (m.home ? "📍 Partido como LOCAL" : "📍 Partido como VISITANTE"),
     m.date ? `📅 ${fmtLong(m.date)}` : "",
+    m.meetingTime ? `🕒 Citación: ${m.meetingTime}` : "",
+    m.meetingPlace ? `📌 Encuentro: ${m.meetingPlace}` : "",
     kit ? `👕 Equipación: ${kit.name}${kit.color ? ` (${kit.color})` : ""}` : "",
   ].filter(Boolean);
   const mode = m.callMessageMode || "called";
@@ -355,6 +357,8 @@ T.datos = m => {
   const rivals = [...new Set(Store.matches.map(x => x.rival).filter(Boolean))].sort(sortEs);
   return `<section class="card form">
     <label class="fld"><span>Fecha</span><input type="date" class="inp" data-chg="mDate" value="${esc(m.date || "")}"></label>
+    <label class="fld"><span>Hora de citación (opcional)</span><input type="time" class="inp" data-chg="mMeetingTime" value="${esc(m.meetingTime || "")}"></label>
+    <label class="fld"><span>Lugar de encuentro (opcional)</span><input type="text" class="inp" data-inp="mMeetingPlace" value="${esc(m.meetingPlace || "")}" placeholder="Ej. Puerta principal del campo"></label>
     <label class="fld"><span>Descanso</span><span class="sw"><input type="checkbox" data-chg="mRest" ${m.rest ? "checked" : ""}><i></i><em>Esta jornada el equipo descansa</em></span></label>
     ${m.rest ? "" : `<label class="fld"><span>Rival</span><input type="text" class="inp" list="rivalList" data-chg="mRival" value="${esc(m.rival || "")}" placeholder="Nombre del equipo rival" autocomplete="off"><datalist id="rivalList">${rivals.map(r => `<option value="${esc(r)}">`).join("")}</datalist></label>
     <div class="fld"><span>Campo</span><div class="seg two"><button type="button" class="${m.home ? "on" : ""}" data-act="setHome" data-v="1">Local</button><button type="button" class="${m.home === false ? "on" : ""}" data-act="setHome" data-v="0">Visitante</button></div></div>
@@ -363,6 +367,8 @@ T.datos = m => {
     <div class="row between foot"><span></span>${btn("Eliminar jornada", "delMatchAsk", {}, "danger-ghost", "trash")}</div></section>`;
 };
 CHG.mDate = el => { const m = curMatch(); m.date = el.value || null; touch(m); };
+CHG.mMeetingTime = el => { const m = curMatch(); m.meetingTime = el.value || ""; touch(m); };
+INP.mMeetingPlace = el => { const m = curMatch(); m.meetingPlace = el.value; touch(m); };
 CHG.mRival = el => { const m = curMatch(); m.rival = el.value.trim(); touch(m); };
 CHG.mRest = el => { const m = curMatch(); m.rest = el.checked; touch(m); };
 INP.mNotes = el => { const m = curMatch(); m.notes = el.value; touch(m); };
