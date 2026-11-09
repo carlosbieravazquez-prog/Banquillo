@@ -241,7 +241,25 @@ T.ficha = m => {
   const ocrCard = `<section class="card"><div class="card-h"><h3>Acta escaneada</h3><span class="tag info">OCR local</span></div><p class="muted small">Sube una foto o PDF. El archivo se procesa en este dispositivo y no se guarda en el servidor. Revisa el texto y el marcador antes de aplicarlos.</p><input type="file" class="inp" accept="image/*,application/pdf" data-chg="ocrFile">${UI.ocr?.busy ? `<p class="muted small">${esc(UI.ocr.progress || "Reconociendo…")}</p>` : ""}${UI.ocr?.text ? `<label class="fld"><span>Texto reconocido (editable)</span><textarea class="inp area" rows="5" data-inp="ocrText">${esc(UI.ocr.text)}</textarea></label><div class="row gap wrap"><label class="fld grow"><span>Goles propios</span><input class="inp mini" type="number" min="0" max="99" data-inp="ocrOur" value="${esc(UI.ocr.ourGoals ?? "")}"></label><label class="fld grow"><span>Goles rival</span><input class="inp mini" type="number" min="0" max="99" data-inp="ocrRiv" value="${esc(UI.ocr.rivalGoals ?? "")}"></label></div><div class="row end">${btn("Revisar y aplicar", "applyOcr", {}, "primary", "check")}</div>` : ""}${UI.ocr?.cards?.length ? `<p class="muted small">Posibles tarjetas detectadas (comprueba cada una):</p><ul class="slist">${UI.ocr.cards.map((c,k)=>`<li><span>${esc((Store.player(c.p)||{}).name||"Jugador")}</span><select class="sel" data-chg="ocrCardType" data-k="${k}"><option value="Y" ${c.type==="Y"?"selected":""}>Amarilla</option><option value="R" ${c.type==="R"?"selected":""}>Roja</option></select><button type="button" class="ix" data-act="removeOcrCard" data-k="${k}">×</button></li>`).join("")}</ul>` : ""}${UI.ocr?.error ? `<p class="err small">${esc(UI.ocr.error)}</p>` : ""}</section>`; return (m.closed ? `<section class="card"><div class="row between gap wrap"><div><b>Acta cerrada</b><p class="muted small">Los datos están bloqueados. Para corregirlos tendrás que reabrir esta acta y revisar las jornadas posteriores.</p></div>${btn("Reabrir acta", "reopenActa", {}, "ghost", "edit")}</div></section>` : "") + `<div class="row end foot acta-tools"><span class="muted small">Acta del partido · puedes imprimir esta ficha y rellenarla a mano.</span><button type="button" class="btn ghost" data-act="printActa">${icon("printer")}<span>Imprimir acta</span></button></div>` + ocrCard + scoreBox + scorersCard + cardsCard + players + subCard + crono;
 };
 
-ACT.printActa = () => window.print();
+ACT.printActa = () => {
+  const m = curMatch(), season = Store.season() || {}, format = (season.settings || {}).format || "F7";
+  if (!m || m.rest) { toast("Esta jornada no tiene acta.", "err"); return; }
+  const players = calledPlayers(m), scores = m.scorers || [], f7 = format === "F7";
+  const rows = players.map((p, i) => {
+    const d = (m.players || {})[p.id] || {}, goals = scores.filter(id => id === p.id).length;
+    const cell = value => "<td>" + (value == null ? "" : esc(String(value))) + "</td>";
+    return "<tr>" + cell(i + 1) + cell(p.dorsal) + "<td class=\"name\">" + esc(p.name) + "</td>" + cell(d.role === "T" ? "X" : "") + cell(d.role === "S" ? "X" : "") + cell(goals || "") + (f7 ? cell(d.gk ? "X" : "") : "") + cell(d.min) + "<td></td></tr>";
+  }).join("");
+  const css = "@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{font:11px Arial,sans-serif;color:#14253c;margin:0}h1{font-size:21px;margin:0}.head{border-bottom:3px solid #17365d;padding-bottom:9px;display:flex;justify-content:space-between}.sub{color:#58677a;margin-top:6px}.meta{display:grid;grid-template-columns:2fr 2fr 1fr 1fr;gap:8px;margin:12px 0}.meta div{border:1px solid #b8c3d0;padding:8px;min-height:45px}.meta b{display:block;color:#53657c;font-size:9px;text-transform:uppercase;margin-bottom:5px}.meta span{font-size:13px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #aeb9c7;padding:5px;text-align:center;height:25px}th{background:#17365d;color:white}th.name,td.name{text-align:left;width:30%}tbody tr:nth-child(even){background:#eef2f7}.foot{margin-top:12px;display:flex;gap:12px}.foot div{flex:1;min-height:46px;padding:9px;border:1px solid #b8c3d0} @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}";
+  const meta = (label, value) => "<div><b>" + esc(label) + "</b><span>" + esc(String(value)) + "</span></div>";
+  const heading = "<header class=\"head\"><div><h1>ACTA DE PARTIDO · JORNADA " + esc(String(m.n)) + "</h1><div class=\"sub\">" + esc(season.club || "Mi equipo") + " · " + esc(season.category || "") + " · " + esc(season.name || "") + "</div></div><b>" + (f7 ? "FÚTBOL 7" : "FÚTBOL 11") + " · " + (m.home ? "LOCAL" : "VISITANTE") + "</b></header>";
+  const info = "<div class=\"meta\">" + meta("Rival", m.rival || "Sin indicar") + meta("Fecha", m.date ? fmtLong(m.date) : "Sin indicar") + meta("Hora", m.time || "Sin indicar") + meta("Marcador", (m.ourGoals ?? "___") + " - " + (m.rivalGoals ?? "___")) + "</div>";
+  const head = "<thead><tr><th style=\"width:4%\">Nº</th><th style=\"width:6%\">Dorsal</th><th class=\"name\">Jugadores convocados</th><th style=\"width:7%\">Titular</th><th style=\"width:7%\">Suplente</th><th style=\"width:7%\">Goles</th>" + (f7 ? "<th style=\"width:8%\">Portero X</th>" : "") + "<th style=\"width:8%\">Minutos</th><th>Observaciones</th></tr></thead>";
+  const html = "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Acta jornada " + esc(String(m.n)) + "</title><style>" + css + "</style></head><body>" + heading + info + "<table>" + head + "<tbody>" + rows + "</tbody></table><div class=\"foot\"><div><b>Incidencias / tarjetas:</b></div><div><b>Notas del entrenador:</b></div></div></body></html>";
+  const win = window.open("", "_blank");
+  if (!win) { toast("Permite ventanas emergentes para imprimir el acta.", "err"); return; }
+  win.document.open(); win.document.write(html); win.document.close(); win.focus(); win.print();
+};
 ACT.addCard=()=>{const m=curMatch(),p=document.getElementById("cardPlayer")?.value,type=document.getElementById("cardType")?.value;if(!p){toast("Selecciona un jugador.","err");return;}m.cards=m.cards||[];m.cards.push({id:uid("card"),p,type:type==="R"?"R":"Y",matches:null});m.closed=false;touch(m);};
 ACT.delCard=el=>{const m=curMatch();m.cards=(m.cards||[]).filter((c,k)=>k!==+el.dataset.k);m.closed=false;touch(m);};
 ACT.closeActa=()=>{
@@ -292,6 +310,7 @@ ACT.reopenActa=()=>{
   });
   toast("Acta reabierta. Revisa y vuelve a cerrar las jornadas en orden.","ok");
 };
+const ocrTimeout=(promise,ms,message)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]).finally(()=>clearTimeout(timer));};
 CHG.ocrFile=async el=>{
   const file=el.files&&el.files[0];if(!file)return;
   UI.ocr={busy:true,progress:"Preparando el lector…"};render(true);
@@ -316,11 +335,12 @@ CHG.ocrFile=async el=>{
       const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error("No se pudo abrir la imagen."));im.src=imageUrl;});
       sources.push(img);
     }
-    worker=await Tesseract.createWorker("spa");
+    UI.ocr.progress="Preparando reconocimiento en español (requiere conexión al iniciar)…";render(true);
+     worker=await ocrTimeout(Tesseract.createWorker("spa"),45000,"No se ha podido iniciar OCR. Comprueba tu conexión a Internet.");
     const texts=[];
     for(let i=0;i<sources.length;i++){
       UI.ocr.progress=`Leyendo página ${i+1} de ${sources.length}…`;render(true);
-      const result=await worker.recognize(sources[i]);
+      const result=await ocrTimeout(worker.recognize(sources[i]),60000,"OCR ha tardado demasiado. Prueba una imagen JPG más pequeña y nítida.");
       texts.push(result.data.text||"");
     }
     const txt=texts.join("\n\n"),sc=txt.match(/(\d{1,2})\s*[-–:]\s*(\d{1,2})/),lines=txt.split(/\n+/),detected=[];
@@ -330,7 +350,7 @@ CHG.ocrFile=async el=>{
     });
     UI.ocr={busy:false,text:txt,ourGoals:sc?sc[1]:"",rivalGoals:sc?sc[2]:"",cards:detected,pages:sources.length};
   }catch(e){UI.ocr={busy:false,error:e.message||"No se pudo leer el acta."};}
-  finally{if(worker)await worker.terminate().catch(()=>{});if(imageUrl)URL.revokeObjectURL(imageUrl);}
+  finally{if(worker)worker.terminate().catch(()=>{});if(imageUrl)URL.revokeObjectURL(imageUrl);}
   render(true);
 };
 INP.ocrText=el=>{if(UI.ocr)UI.ocr.text=el.value;}; CHG.ocrCardType=el=>{if(UI.ocr&&UI.ocr.cards[+el.dataset.k])UI.ocr.cards[+el.dataset.k].type=el.value;}; ACT.removeOcrCard=el=>{if(UI.ocr)UI.ocr.cards.splice(+el.dataset.k,1);};INP.ocrOur=el=>{if(UI.ocr)UI.ocr.ourGoals=el.value;};INP.ocrRiv=el=>{if(UI.ocr)UI.ocr.rivalGoals=el.value;};
@@ -427,6 +447,7 @@ T.datos = m => {
   const rivals = [...new Set(Store.matches.map(x => x.rival).filter(Boolean))].sort(sortEs);
   return `<section class="card form">
     <label class="fld"><span>Fecha</span><input type="date" class="inp" data-chg="mDate" value="${esc(m.date || "")}"></label>
+     <label class="fld"><span>Hora</span><input type="time" class="inp" data-chg="mTime" value="${esc(m.time || "")}"></label>
     <label class="fld"><span>Descanso</span><span class="sw"><input type="checkbox" data-chg="mRest" ${m.rest ? "checked" : ""}><i></i><em>Esta jornada el equipo descansa</em></span></label>
     ${m.rest ? "" : `<label class="fld"><span>Rival</span><input type="text" class="inp" list="rivalList" data-chg="mRival" value="${esc(m.rival || "")}" placeholder="Nombre del equipo rival" autocomplete="off"><datalist id="rivalList">${rivals.map(r => `<option value="${esc(r)}">`).join("")}</datalist></label>
     <div class="fld"><span>Campo</span><div class="seg two"><button type="button" class="${m.home ? "on" : ""}" data-act="setHome" data-v="1">Local</button><button type="button" class="${m.home === false ? "on" : ""}" data-act="setHome" data-v="0">Visitante</button></div></div>`}
@@ -434,6 +455,7 @@ T.datos = m => {
     <div class="row between foot"><span></span>${btn("Eliminar jornada", "delMatchAsk", {}, "danger-ghost", "trash")}</div></section>`;
 };
 CHG.mDate = el => { const m = curMatch(); m.date = el.value || null; touch(m); };
+CHG.mTime = el => { const m = curMatch(); m.time = el.value || null; touch(m); };
 CHG.mRival = el => { const m = curMatch(); m.rival = el.value.trim(); touch(m); };
 CHG.mRest = el => { const m = curMatch(); m.rest = el.checked; touch(m); };
 INP.mNotes = el => { const m = curMatch(); m.notes = el.value; touch(m); };
