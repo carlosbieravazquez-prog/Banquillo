@@ -352,7 +352,7 @@ Funcionalidad incluida:
 
 Aislamiento: la página carga solo su CSS y su JS propios; no carga `config.js`, Auth, Cloud, SDK de Supabase ni realiza solicitudes al backend. Por tanto, este prototipo no puede leer ni modificar los datos reales de los usuarios.
 
-Validación realizada: se volvieron a descargar desde GitHub los tres archivos recién creados y se comprobó su contenido y referencias; la página enlaza el JS aislado y los tres archivos no contienen referencias a Supabase. No se ha ejecutado todavía una prueba visual en navegador ni una comprobación automatizada completa de interacción. Los apartados Calendario y Comunicaciones son marcadores de fase futura, no funciones implementadas.
+Validación realizada: se volvieron a descargar desde GitHub los tres archivos recién creados y se comprobó su contenido y referencias; la página enlaza el JS y CSS aislados, hay 15 equipos semilla, la persistencia usa una clave local propia y no existen referencias a Supabase/Auth/Cloud. El JavaScript pasó una comprobación de sintaxis mediante compilación V8 (`new Function`, sin ejecutar el código). No se ha ejecutado todavía una prueba visual en navegador ni una comprobación automatizada completa de interacción. Los apartados Calendario y Comunicaciones son marcadores de fase futura, no funciones implementadas.
 
 Commits:
 - `ef5dccaf7d316f245ab1f77536ac20d5c6d15119` — página de demostración.
