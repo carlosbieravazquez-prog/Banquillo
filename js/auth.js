@@ -9,7 +9,10 @@ const FORM = {};
     "Invalid login credentials": "El correo o la contraseña no son correctos.",
     "Email not confirmed": "Aún no has confirmado tu correo. Abre el mensaje que te enviamos y pulsa el enlace.",
     "User already registered": "Ya existe una cuenta con ese correo. Prueba a entrar o a recuperar la contraseña.",
-    "Password should be at least": "La contraseña debe tener al menos 8 caracteres.",
+    "Password should be at least": "La contraseña no cumple la longitud mínima exigida.",
+    "over_request_rate_limit": "Demasiados intentos de acceso. Por seguridad, inténtalo más tarde.",
+    "over_email_send_rate_limit": "Demasiadas solicitudes de correo. Inténtalo más tarde.",
+    "captcha_failed": "No se ha podido verificar el control antirrobots. Vuelve a intentarlo.",
     "Unable to validate email address": "Ese correo no parece válido.",
     "email rate limit exceeded": "Se han pedido demasiados correos. Espera unos minutos e inténtalo de nuevo.",
     "over_email_send_rate_limit": "Se han pedido demasiados correos. Espera unos minutos e inténtalo de nuevo.",
@@ -18,6 +21,7 @@ const FORM = {};
   };
   const friendly = e => {
     const m = String((e && (e.message || e.msg)) || e || "");
+    if ((e && e.status === 429) || /rate.?limit|too many requests|too many attempts/i.test(m)) return "Demasiados intentos. Por seguridad, espera antes de volver a intentarlo.";
     const k = Object.keys(MSG).find(x => m.includes(x) || (e && e.code === x));
     if (k) return MSG[k];
     if (/failed to fetch|network|load failed/i.test(m)) return "No hay conexión con el servidor. Comprueba tu internet e inténtalo de nuevo.";
