@@ -206,3 +206,61 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 ## 8. Pendiente inmediato
 
 Completar la revisión de funciones y políticas, comprobar la web publicada en una sesión de prueba, y preparar una copia de seguridad verificable. Después presentar el diseño de migración de clubes/equipos antes de aplicar cambios.
+
+## 9. Revisión de continuidad — 9 de noviembre de 2026
+
+### 9.1 GitHub y separación entre ramas
+
+- Rama auditada: `main`. HEAD observado antes de esta actualización: `19faea9c739d08bc421778bb9061ef24bf6ca8af` (`docs: clarify trigger function security findings`).
+- Los tres commits más recientes de `main` son documentales: `19faea9`, `33c9bfe` y `528cb85`. Los dos commits anteriores del listado son cargas iniciales de archivos. No se observan cambios recientes de código en `main`.
+- El estado combinado de CI para el HEAD consultado no devuelve comprobaciones registradas; esto no equivale a una compilación o prueba superada.
+- Existe `feature/fase-1-clubes-equipos`, que está **50 commits por delante y 0 por detrás** de `main`. No está fusionada ni publicada por esta revisión.
+- Esa rama incorpora prototipos y documentación adicionales, entre ellos `demo-club.html`, `js/demo-club.js`, un catálogo de competiciones y un planificador. La documentación de esa rama describe el demo con 15 equipos ficticios y dos directores deportivos equivalentes; usa almacenamiento local y no está conectado a Auth ni a Supabase. Calendario y comunicaciones siguen pendientes en el prototipo.
+- Diferencia funcional relevante: `js/store.js` de `main` no persiste `kit`, `meetingTime`, `meetingPlace` ni `callMessageMode`; esos campos sí aparecen en la rama de desarrollo. Por tanto, las mejoras recientes de mensajes de convocatoria no forman parte de `main` ni deben darse por publicadas.
+- Antes de fusionar, revisar los 50 commits como conjunto, separar prototipos de funcionalidades terminadas y validar regresiones. No se ha realizado merge ni despliegue.
+
+### 9.2 Estado vivo de Supabase — consulta de solo lectura
+
+- Proyecto: estado `ACTIVE_HEALTHY`, PostgreSQL 17.11, región `eu-central-1` (Frankfurt).
+- Siguen existiendo 5 tablas públicas: `profiles` (2 filas), `seasons_meta` (1), `season_members` (1), `docs` (33) y `join_attempts` (0).
+- No hay migraciones registradas y no hay Edge Functions desplegadas.
+- No existen todavía tablas de clubes, equipos, membresías de club, auditoría de cambios ni notificaciones. La Fase 1 no está implementada en la base de datos.
+- RLS está activado en las cinco tablas. Hay seis políticas: cuatro en `docs` (SELECT/INSERT/UPDATE/DELETE), una en `profiles` (solo perfil propio) y una en `season_members` (miembros de la temporada). `seasons_meta` y `join_attempts` no tienen políticas.
+- ACL de tablas comprobadas en vivo: `anon` no tiene privilegios directos sobre ninguna de las cinco tablas. `authenticated` tiene CRUD en `docs`, SELECT en `profiles` y `season_members`, y ningún privilegio directo en `seasons_meta` ni `join_attempts`. Por ello, el aviso de RLS sin políticas en estas dos últimas tablas no implica por sí solo acceso directo por REST; el acceso previsto se canaliza mediante funciones SECURITY DEFINER y debe seguir revisándose función por función.
+- Hay 17 funciones SECURITY DEFINER ejecutables por `authenticated`. Solo dos de ellas, `handle_new_user()` y `rls_auto_enable()`, también son ejecutables por `anon`. La primera está asociada al trigger `on_auth_user_created` de `auth.users`; la segunda al event trigger `ensure_rls`. Son funciones internas, no RPC de la aplicación, y sus permisos requieren una revocación específica y probada. No revocar en bloque las RPC de temporada que sí necesita la aplicación.
+- Las funciones internas de Silbatos consultadas (`spend_tokens`, `refund_tokens`, `refill_if_due`) no son ejecutables por `anon` ni por `authenticated`. Las funciones SECURITY DEFINER consultadas tienen `search_path` fijado; `rls_auto_enable` usa `pg_catalog`.
+- Asesores de seguridad: dos avisos INFO por RLS sin políticas; dos funciones SECURITY DEFINER accesibles por anon (WARN); 17 accesibles por usuarios autenticados (WARN); y protección de contraseñas filtradas desactivada (WARN).
+- Asesores de rendimiento: FK `seasons_meta.owner_id` sin índice; optimización pendiente de `profiles_select_own` por evaluación de `auth.uid()`; `join_attempts` sin clave primaria; e índice `join_attempts_idx` sin uso observado. El asesor de salud no devuelve hallazgos.
+- No se han modificado datos, tablas, funciones, permisos, políticas ni configuración de Auth. Tampoco se ha aplicado ninguna migración.
+
+### 9.3 Comprobaciones del frontend en main
+
+- Se comprobó la sintaxis de los 11 módulos JavaScript cargados por `index.html`: **11/11 parsean sin errores** (`calc`, `util`, `store`, `core`, `views1`, `views2`, `export`, `views3`, `cloud`, `auth`, `boot`).
+- Es una comprobación estática de sintaxis, no una prueba de ejecución. No se ha probado la web en navegador, móvil, escritorio, ni el portapapeles. No se afirma que la aplicación funcione correctamente en esos entornos.
+- La landing de `main` anuncia informes con IA y menciona un plan premium/Silbatos, pero el proyecto no tiene Edge Functions desplegadas. El esquema conserva campos heredados de plan y créditos. Antes de un lanzamiento debe revisarse que la landing no prometa IA operativa que no está desplegada. No se implementarán cobros ni suscripciones en Fase 1; estos elementos existentes no amplían el alcance acordado.
+
+### 9.4 Estado y siguientes pasos
+
+La Fase 1 sigue pendiente en `main` y en la base de datos: clubes, equipos, director deportivo, límite inicial de 12 equipos por club, auditoría con valor anterior/nuevo, notificaciones agrupadas y vinculación compatible del Prebenjamín existente.
+
+Orden recomendado:
+1. Obtener una copia de seguridad y comprobar que el procedimiento de restauración es utilizable antes de cualquier DDL o cambio de permisos.
+2. Revisar los cuerpos y ACL de las funciones SECURITY DEFINER, preparar una corrección mínima para `handle_new_user` y `rls_auto_enable`, y definir pruebas de alta de cuenta y event trigger. No aplicar todavía.
+3. Revisar la configuración Auth y valorar activar la protección de contraseñas filtradas, con autorización y prueba de recuperación/registro.
+4. Preparar migraciones versionadas y rollback para Club, Team, membresías, auditoría y notificaciones, manteniendo las tablas y documentos de temporada actuales.
+5. Probar con cuentas ficticias los roles de propietario, director deportivo, entrenador y lector, incluido aislamiento entre clubes y conservación íntegra de los documentos existentes.
+6. Revisar y validar la rama de desarrollo antes de decidir qué cambios se integran en `main`.
+
+Se mantiene fuera de Fase 1 cualquier cobro o suscripción. Se mantienen en la hoja de ruta posterior los avisos de IA, la identidad e historial de jugadores entre categorías/temporadas y la opción de deshacer cambios.
+
+### 9.5 Actividad de esta revisión
+
+| Fecha | Trabajo | Resultado |
+|---|---|---|
+| 2026-11-09 | Revisión de commits y ramas de GitHub | HEAD de main `19faea9`; tres commits recientes documentales; rama feature 50 commits por delante, sin merge |
+| 2026-11-09 | Comparación de frontend entre ramas | Confirmado que los campos de equipación y mensaje de convocatoria están en feature, no en main |
+| 2026-11-09 | Auditoría de tablas, RLS y ACL en Supabase | Cinco tablas; seis políticas; sin acceso directo de anon a tablas; seasons_meta y join_attempts sin grants directos a usuarios de API |
+| 2026-11-09 | Revisión de funciones y event triggers | 17 funciones SECURITY DEFINER para authenticated; handle_new_user y rls_auto_enable también accesibles por anon y vinculadas a triggers |
+| 2026-11-09 | Asesores de Supabase | Persisten avisos de seguridad y rendimiento; salud sin hallazgos |
+| 2026-11-09 | Validación estática de JavaScript en main | 11/11 módulos parseados; sin prueba de navegador |
+| 2026-11-09 | Cambios de producción | Ninguno: solo lecturas; sin migraciones, cambios de permisos ni modificaciones de datos |
