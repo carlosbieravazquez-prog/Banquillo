@@ -157,7 +157,7 @@ document.addEventListener("click", e => {
   const fn = ACT[el.dataset.act];
   if (!fn) return;
   const lockedMatch = UI.route.name === "partido" && !!(Store.match(UI.route.arg) || {}).closed;
-  const lockedAllowed = new Set(["go", "setTab", "printActa", "reopenActa", "copyCron", "genCron", "closeSheet"]);
+  const lockedAllowed = new Set(["go", "setTab", "printActa", "reopenActa", "setRedSanction", "copyCron", "genCron", "closeSheet"]);
   if (lockedMatch && !lockedAllowed.has(el.dataset.act)) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (Store.readOnly() && !READ_OK.has(el.dataset.act) && !inWizard(el.dataset.act)) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
