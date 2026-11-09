@@ -77,10 +77,11 @@
   return out;
  }
  const parentResource=id=>String(id||"").replace(/-[ab]$/,"");
+ const resourcesConflict=(a,b)=>{if(a===b)return true;const pa=parentResource(a),pb=parentResource(b);if(pa!==pb)return false;return a===pa||b===pb;};
  const overlap=(a,b)=>{const a0=Number(a.time.slice(0,2))*60+Number(a.time.slice(3,5)),b0=Number(b.time.slice(0,2))*60+Number(b.time.slice(3,5));return a0<b0+Number(b.duration||90)&&b0<a0+Number(a.duration||90)};
  function conflicts(candidate,ignoreId){
   if(!candidate.home||!candidate.resource||!candidate.time)return [];
-  return state.schedule.filter(m=>m.id!==ignoreId&&m.home&&m.date===candidate.date&&m.resource&&m.time&&parentResource(m.resource)===parentResource(candidate.resource)&&overlap(candidate,m));
+  return state.schedule.filter(m=>m.id!==ignoreId&&m.home&&m.date===candidate.date&&m.resource&&m.time&&resourcesConflict(m.resource,candidate.resource)&&overlap(candidate,m));
  }
  function matchLabel(m){
   const t=teamOf(m.teamId),side=m.home?"🏠 Local":"✈️ Visitante",res=resourceList(m.modality).find(x=>x.id===m.resource);
