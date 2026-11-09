@@ -286,7 +286,7 @@ CHG.ocrFile=async el=>{
   try{
     if(!window.Tesseract)throw new Error("Motor OCR no disponible.");
     const sources=[];
-    const isPdf=file.type==="application/pdf"||/\\.pdf$/i.test(file.name||"");
+    const isPdf=file.type==="application/pdf"||/\.pdf$/i.test(file.name||"");
     if(isPdf){
       if(!window.pdfjsLib)throw new Error("Lector PDF no disponible.");
       pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
@@ -310,7 +310,7 @@ CHG.ocrFile=async el=>{
       const result=await worker.recognize(sources[i]);
       texts.push(result.data.text||"");
     }
-    const txt=texts.join("\\n\\n"),sc=txt.match(/(\\d{1,2})\\s*[-–:]\\s*(\\d{1,2})/),lines=txt.split(/\\n+/),detected=[];
+    const txt=texts.join("\n\n"),sc=txt.match(/(\d{1,2})\s*[-–:]\s*(\d{1,2})/),lines=txt.split(/\n+/),detected=[];
     Store.activePlayers().forEach(p=>{
       const line=lines.find(l=>norm(l).includes(norm(p.name))&&/(amarill|yellow|roja|expuls|red)/i.test(l));
       if(line)detected.push({p:p.id,type:/(roja|expuls|red)/i.test(line)?"R":"Y"});
