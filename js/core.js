@@ -156,6 +156,9 @@ document.addEventListener("click", e => {
   if (!el || el.disabled) return;
   const fn = ACT[el.dataset.act];
   if (!fn) return;
+  const lockedMatch = UI.route.name === "partido" && !!(Store.match(UI.route.arg) || {}).closed;
+  const lockedAllowed = new Set(["go", "setTab", "printActa", "reopenActa", "copyCron", "genCron", "closeSheet"]);
+  if (lockedMatch && !lockedAllowed.has(el.dataset.act)) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (Store.readOnly() && !READ_OK.has(el.dataset.act) && !inWizard(el.dataset.act)) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
   render(true);
@@ -165,6 +168,7 @@ document.addEventListener("change", e => {
   if (!el) return;
   const fn = CHG[el.dataset.chg];
   if (!fn) return;
+  if (UI.route.name === "partido" && (Store.match(UI.route.arg) || {}).closed) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (Store.readOnly() && !UI.wiz) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
   UI.dirty = true; lateRender();
@@ -173,6 +177,7 @@ document.addEventListener("input", e => {
   const el = e.target.closest("[data-inp]");
   if (!el) return;
   const fn = INP[el.dataset.inp];
+  if (UI.route.name === "partido" && (Store.match(UI.route.arg) || {}).closed) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (fn && (!Store.readOnly() || UI.wiz || UI.sheet && UI.sheet.type === "join")) fn(el, e);
 });
 document.addEventListener("focusout", () => { if (UI.dirty) lateRender(); });
