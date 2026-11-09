@@ -82,7 +82,7 @@ function shell() {
   const seasonChip = s ? `<button type="button" class="schip" data-act="go" data-to="temporadas" title="Cambiar de temporada">${esc(s.name)}${s.status === "closed" ? " · cerrada" : ""}${icon("chev")}</button>` : "";
   return `<div class="shell ${Store.readOnly() ? "ro" : ""}">
     <aside class="side">
-      <div class="brand"><span class="mark">${icon("ball")}</span><div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
+      <div class="brand"><span class="mark">${icon("ball")}</span><div><b>El Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
       <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button></nav>
       <div class="side-foot">${seasonChip}${syncBadge()}${accountBtn()}</div>
     </aside>
