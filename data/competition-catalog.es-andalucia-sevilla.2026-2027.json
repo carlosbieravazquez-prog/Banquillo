@@ -1,0 +1,423 @@
+{
+  "catalog_id": "es-andalucia-sevilla-2026-2027",
+  "version": 1,
+  "status": "seed_verified_partial",
+  "territory": {
+    "country": "ES",
+    "autonomous_community": "Andalucía",
+    "province": "Sevilla",
+    "demo_municipality": "Dos Hermanas"
+  },
+  "season": "2026/2027",
+  "scope": "Fútbol federado masculino de base; los catálogos femeninos, fútbol sala y competiciones municipales se mantienen separados.",
+  "rules": {
+    "never_infer_group": true,
+    "only_show_active_for_season": true,
+    "manual_competition_allowed": true,
+    "verify_before_enabling_unconfirmed_entries": true,
+    "distinguish_federation_from_municipal_or_educational": true
+  },
+  "competitions": [
+    {
+      "id": "rfaf-sev-prebenjamin-3a-2026-27",
+      "name": "3.ª Andaluza Prebenjamín (Sevilla)",
+      "category": "Prebenjamín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466367"
+      ]
+    },
+    {
+      "id": "rfaf-sev-prebenjamin-4a-2026-27",
+      "name": "4.ª Andaluza Prebenjamín (Sevilla)",
+      "category": "Prebenjamín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codgrupo=48466427"
+      ]
+    },
+    {
+      "id": "rfaf-sev-benjamin-2a-2026-27",
+      "name": "2.ª Andaluza Benjamín (Sevilla)",
+      "category": "Benjamín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466207"
+      ]
+    },
+    {
+      "id": "rfaf-sev-benjamin-3a-2026-27",
+      "name": "3.ª Andaluza Benjamín (Sevilla)",
+      "category": "Benjamín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-sev-benjamin-4a-2026-27",
+      "name": "4.ª Andaluza Benjamín (Sevilla)",
+      "category": "Benjamín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-and-alevin-1a-2026-27",
+      "name": "1.ª Andaluza Alevín",
+      "category": "Alevín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF",
+      "territorial_scope": "autonómico",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codcompeticion=48465914&codgrupo=48465915"
+      ]
+    },
+    {
+      "id": "rfaf-sev-alevin-2a-2026-27",
+      "name": "2.ª Andaluza Alevín (Sevilla)",
+      "category": "Alevín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466204"
+      ]
+    },
+    {
+      "id": "rfaf-sev-alevin-3a-2026-27",
+      "name": "3.ª Andaluza Alevín (Sevilla)",
+      "category": "Alevín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-sev-alevin-4a-2026-27",
+      "name": "4.ª Andaluza Alevín (Sevilla)",
+      "category": "Alevín",
+      "gender": "masculino",
+      "modality": "Fútbol 7",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-and-infantil-dh-2026-27",
+      "name": "División de Honor Infantil",
+      "category": "Infantil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF",
+      "territorial_scope": "autonómico",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Grupo?cod_primaria=1000123&codequipo=100124&codgrupo=48466089"
+      ]
+    },
+    {
+      "id": "rfaf-sev-infantil-2a-2026-27",
+      "name": "2.ª Andaluza Infantil (Sevilla)",
+      "category": "Infantil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-sev-infantil-3a-2026-27",
+      "name": "3.ª Andaluza Infantil (Sevilla)",
+      "category": "Infantil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Equipo?cod_primaria=1000123&codequipo=1010616"
+      ]
+    },
+    {
+      "id": "rfaf-sev-infantil-4a-2026-27",
+      "name": "4.ª Andaluza Infantil (Sevilla)",
+      "category": "Infantil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-and-cadete-1a-2026-27",
+      "name": "1.ª Andaluza Cadete",
+      "category": "Cadete",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF",
+      "territorial_scope": "autonómico",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codcompeticion=48466085"
+      ]
+    },
+    {
+      "id": "rfaf-sev-cadete-2a-2026-27",
+      "name": "2.ª Andaluza Cadete (Sevilla)",
+      "category": "Cadete",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466159"
+      ]
+    },
+    {
+      "id": "rfaf-sev-cadete-3a-2026-27",
+      "name": "3.ª Andaluza Cadete (Sevilla)",
+      "category": "Cadete",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-sev-cadete-4a-2026-27",
+      "name": "4.ª Andaluza Cadete (Sevilla)",
+      "category": "Cadete",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466247"
+      ]
+    },
+    {
+      "id": "rfaf-national-juvenil-dh-2026-27",
+      "name": "División de Honor Juvenil",
+      "category": "Juvenil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFEF",
+      "territorial_scope": "nacional",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VerClub?cod_primaria=1000118&codigo_club=1001"
+      ]
+    },
+    {
+      "id": "rfaf-national-juvenil-ln-2026-27",
+      "name": "Liga Nacional Juvenil",
+      "category": "Juvenil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFEF",
+      "territorial_scope": "nacional",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VerClub?cod_primaria=1000118&codigo_club=1001"
+      ]
+    },
+    {
+      "id": "rfaf-sev-juvenil-2a-2026-27",
+      "name": "2.ª Andaluza Juvenil (Sevilla)",
+      "category": "Juvenil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codgrupo=48466132"
+      ]
+    },
+    {
+      "id": "rfaf-sev-juvenil-3a-2026-27",
+      "name": "3.ª Andaluza Juvenil (Sevilla)",
+      "category": "Juvenil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "source_urls": [
+        "https://www.rfaf.es/pnfg/NBdd_DesDocumento?cod_documento=63004&cod_primaria=5002432"
+      ]
+    },
+    {
+      "id": "rfaf-sev-juvenil-4a-2026-27",
+      "name": "4.ª Andaluza Juvenil (Sevilla)",
+      "category": "Juvenil",
+      "gender": "masculino",
+      "modality": "Fútbol 11",
+      "organizer": "RFAF · Delegación de Sevilla",
+      "territorial_scope": "provincial",
+      "season": "2026/2027",
+      "status": "verified",
+      "groups_published": true,
+      "source_urls": [
+        "https://rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466231"
+      ]
+    }
+  ],
+  "separate_non_federated_catalogues": [
+    {
+      "name": "Juegos Deportivos Municipales · Fútbol 7",
+      "organizer": "IMD Ayuntamiento de Sevilla",
+      "territorial_scope": "municipal",
+      "season": "2026/2027",
+      "status": "verified_but_municipality_specific",
+      "available_categories": [
+        "Prebenjamín",
+        "Benjamín",
+        "Alevín",
+        "Infantil",
+        "Cadete",
+        "Juvenil"
+      ],
+      "note": "El programa consultado es del municipio de Sevilla capital; no se debe ofrecer automáticamente a un club de Dos Hermanas.",
+      "source_urls": [
+        "https://imd.sevilla.org/programas-deportivos/juegos-deportivos-municipales",
+        "https://imd.sevilla.org/programas-deportivos/juegos-deportivos-municipales/categorias"
+      ]
+    },
+    {
+      "name": "Liga Educa",
+      "organizer": "Organización de la competición correspondiente",
+      "territorial_scope": "local/privado/educativo",
+      "season": "2026/2027",
+      "status": "manual_entry_only",
+      "note": "No tratar como competición federada RFAF/RFEF. Permitir alta manual con organizador y localidad."
+    }
+  ],
+  "pending_verification": [
+    "Comprobar en la ficha federativa 2026/2027 si existe 1.ª Andaluza Juvenil para esta temporada y su ámbito exacto antes de activarla.",
+    "Comprobar si hay otras competiciones autonómicas de Infantil además de División de Honor.",
+    "Completar las competiciones femeninas por categoría y modalidad con sus fichas 2026/2027.",
+    "Comprobar competiciones municipales propias de Dos Hermanas antes de ofrecerlas a Atlético Monteverde CF.",
+    "Obtener grupos concretos solo cuando se haya seleccionado una competición; no asignar un grupo automáticamente."
+  ],
+  "sources": [
+    {
+      "name": "RFAF · ficha 3.ª Andaluza Prebenjamín Sevilla 2026/2027",
+      "url": "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466367"
+    },
+    {
+      "name": "RFAF · ficha 2.ª Andaluza Alevín Sevilla 2026/2027",
+      "url": "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466204"
+    },
+    {
+      "name": "RFAF · ficha 2.ª Andaluza Benjamín Sevilla 2026/2027",
+      "url": "https://www.rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466207"
+    },
+    {
+      "name": "RFAF · ficha 4.ª Andaluza Cadete Sevilla 2026/2027",
+      "url": "https://rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466247"
+    },
+    {
+      "name": "RFAF · ficha 4.ª Andaluza Juvenil Sevilla 2026/2027",
+      "url": "https://rfaf.es/pnfg/NPcd/NFG_VisCompeticiones_Vis?cod_primaria=1000123&codcompeticion=48466231"
+    },
+    {
+      "name": "RFAF · grupo 2.ª Andaluza Juvenil Sevilla 2026/2027",
+      "url": "https://rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codgrupo=48466132"
+    },
+    {
+      "name": "RFAF · 1.ª Andaluza Alevín 2026/2027",
+      "url": "https://rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codcompeticion=48465914&codgrupo=48465915"
+    },
+    {
+      "name": "RFAF · 1.ª Andaluza Cadete 2026/2027",
+      "url": "https://rfaf.es/pnfg/NPcd/NFG_VisGrupos_Vis?cod_primaria=1000123&codcompeticion=48466085"
+    },
+    {
+      "name": "RFAF · consulta de club Sevilla FC (ejemplo de equipos en categorías nacionales y autonómicas)",
+      "url": "https://rfaf.es/pnfg/NPcd/NFG_VerClub?cod_primaria=1000118&codigo_club=1001"
+    },
+    {
+      "name": "IMD Sevilla · Juegos Deportivos Municipales 2026/2027",
+      "url": "https://imd.sevilla.org/programas-deportivos/juegos-deportivos-municipales"
+    }
+  ]
+}
