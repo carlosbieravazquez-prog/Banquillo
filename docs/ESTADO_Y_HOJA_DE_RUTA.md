@@ -314,6 +314,24 @@ Matices importantes:
 
 Este JSON es por ahora un catálogo semilla versionado en la rama de desarrollo. **Todavía no está conectado a la interfaz de creación de clubes/equipos ni se ha escrito en Supabase.** No se ha modificado producción, la rama `main` ni los datos reales.
 
+
+
+### 4.12 Especificación del planificador de partidos e instalaciones — 9-11-2026
+
+Se ha creado `docs/PLANIFICADOR_PARTIDOS_E_INSTALACIONES.md` (commit `02361cc3bfaea59ab520f869ed6f459860e18732`) con la especificación funcional acordada para el club de demostración y la futura plataforma multi-club.
+
+Incluye:
+- Uno o dos directores deportivos con permisos idénticos; preferencia F7/F11 sin restringir acceso y cambio de modalidad desde la barra.
+- Inventario de campos, disponibilidad semanal, bloqueos y divisibilidad real de campos F11 en dos recursos F7.
+- Calendario mensual/semanal/diario, panel lateral de partidos locales pendientes y partidos visitantes informativos.
+- Estados pendiente/propuesto/publicado/modificado/cancelado, publicación explícita e historial de cambios.
+- Detección de solapamientos y control de ediciones simultáneas.
+- Asistente inicial determinista y explicable; IA generativa aplazada hasta desplegar un backend seguro (la Edge Function IA no está desplegada según auditoría).
+- Mensaje de WhatsApp e imagen semanal/mensual, con 🏠 local, ✈️ visitante y 🕒 pendiente.
+- Modelo de datos objetivo y criterios de aceptación.
+
+No se ha implementado todavía el módulo ni se han ejecutado cambios SQL. No se ha modificado Supabase, `main` ni la web publicada. La equivalencia 1 F11 = 2 F7 se aplica como capacidad simultánea únicamente si el campo es físicamente divisible y el club lo declara; no se permite sobre-reservar el campo padre.
+
 ## 5.1 Próxima ampliación del catálogo
 1. Verificar una por una las fichas 2026/2027 de todas las divisiones por categoría.
 2. Completar las competiciones femeninas y sus modalidades.
