@@ -36,3 +36,16 @@ Evaluar en staging revocar EXECUTE a `PUBLIC`, `anon` y `authenticated` específ
 
 ## Criterio de salida
 Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentadas, informe de seguridad revisado, copia de seguridad verificable, ausencia de fallos críticos y aprobación expresa.
+
+## Avance de implementación del 9 de noviembre de 2026
+
+- [x] Verificación SQL sin acceso a datos personales: como `anon`, `SELECT` sobre `docs` es rechazado por falta de privilegios; como `authenticated` sin usuario JWT, `SELECT COUNT(*)` devuelve cero filas visibles. **Esto no sustituye la prueba entre dos usuarios reales**.
+- [x] Código Beta `js/views3.js`: el generador de informes ya no manda al proveedor IA nombre, dorsal, observaciones libres, motivos concretos de ausencia ni nombre del club. Los nombres se insertan localmente al recibir la respuesta. Estadísticas deportivas seudonimizadas siguen saliendo del dispositivo si se utiliza IA; revisar licitud y tratamiento antes de producción.
+- [x] Código Beta `js/views3.js`: crónica de partido sin nombres de futbolistas, equipos ni notas libres.
+- [x] Código Beta `js/cloud.js` + `js/auth.js`: consentimiento informado por sesión para el envío de estadísticas deportivas seudonimizadas al proveedor externo; se reinicia al cerrar sesión. No es consentimiento jurídico por sí solo.
+- [x] Borrador de SQL de mínimos privilegios creado en `supabase/security/privilegios_internos_STAGING_NO_EJECUTAR.sql`. **No aplicado a producción**.
+- [ ] Validación visual/manual en navegador de los informes IA, nombres insertados y modal de consentimiento.
+- [ ] Pruebas RLS con dos cuentas/temporadas independientes en staging. No se han creado cuentas ni copiado datos de jugadores.
+- [ ] Crear y verificar backup restaurable y staging antes de ejecutar borrador SQL.
+
+**Prioridad de privacidad:** evite nombres completos y datos de salud de menores en notas de libre redacción; no enviar plantillas reales a la IA; no anunciar seguridad absoluta.
