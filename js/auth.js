@@ -136,16 +136,25 @@ const FORM = {};
     });
   };
   A.enter = async session => {
-    A.uid = session.user.id; A.state = "in";
+    const sessionUser = session.user.id;
+    A.uid = sessionUser; A.state = "in";
+    Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
+    Cloud.profile = null;
     document.body.classList.add("in-app");
     Store.connecting = true; render(true);
-    Store.reset(); Store.user = { uid: session.user.id, email: session.user.email };
-    await Store.init(Cloud.db, { uid: session.user.id, email: session.user.email });
-    Store.connecting = false;
-    await Cloud.loadProfile();
-    render(true);
+    Store.reset(); Store.user = { uid: sessionUser, email: session.user.email };
+    try {
+      await Store.init(Cloud.db, { uid: sessionUser, email: session.user.email });
+      if (A.uid !== sessionUser || A.state !== "in") return;
+      Store.connecting = false;
+      await Cloud.loadProfile();
+      if (A.uid === sessionUser && A.state === "in") render(true);
+    } catch (e) {
+      if (A.uid === sessionUser && A.state === "in") { Store.connecting = false; render(true); }
+    }
   };
   A.leave = () => {
+    Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
     A.uid = null; A.state = "out"; Cloud.profile = null; Cloud.aiPrivacyAccepted = false; Store.reset(); Store.connecting = false;
     UI.sheet = null; UI.wiz = null; UI.ai = {};
     A.ui = { mode: "login", busy: false, msg: null, email: "", name: "" };
