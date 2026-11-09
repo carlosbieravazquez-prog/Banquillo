@@ -471,3 +471,34 @@ La inspección de solo lectura de pg_policies, ACL de funciones, triggers y defi
 - El código de esquema del repositorio y el estado real de la base deben compararse antes de generar una migración, porque el esquema SQL inicial y el estado vivo pueden haber divergido.
 
 No se aplicaron cambios de permisos. El siguiente paso seguro sigue siendo verificar una copia de seguridad recuperable y preparar una corrección estrecha y reversible.
+
+
+### 9.7 Preparación de demo para presentación — 9 de noviembre de 2026
+
+**Cambios en la rama de desarrollo (feature/fase-1-clubes-equipos), sin publicación ni cambios de Supabase:**
+- Se completó el módulo de calendario semanal del prototipo de club: navegación de semanas, resumen de partidos, distinción local/visitante y lista de encuentros locales pendientes.
+- Los partidos locales pendientes ahora permiten asignar fecha, hora y campo desde la propia lista. Al guardar, el estado pasa a propuesto; la publicación es una acción separada y explícita.
+- Se añadió comprobación de solapamientos de recursos: el campo F11 completo entra en conflicto con cualquiera de sus mitades; las dos mitades F7 de un F11 divisible pueden utilizarse simultáneamente; dos reservas sobre el mismo recurso no pueden solaparse.
+- Se añadió alta de partido, estados pendiente/propuesto/publicado, eliminación de partidos no publicados y vista semanal imprimible.
+- Se completó el generador de mensaje semanal para WhatsApp, con partidos locales/visitantes y marcas explícitas de horarios/campos pendientes.
+- Se añadió enlace desde la landing a la demo y se acortó el título SEO visible a «Banquillo». La URL canónica sigue siendo GitHub Pages; banquillo.app no se ha registrado ni configurado.
+- La demo conserva datos ficticios en localStorage del navegador. No comparte cambios entre usuarios, no usa Auth ni Supabase y no constituye todavía la gestión real de clubes multiusuario.
+- Los 15 equipos de ejemplo son datos ficticios de demostración. El límite acordado para clubes reales continúa siendo 12, pendiente de implementación backend.
+- No se modificó main, no se fusionó la rama, no se publicó una versión nueva y no se alteraron tablas, permisos ni datos de Supabase.
+
+**Pruebas ejecutadas:**
+- Sintaxis JavaScript del módulo de demostración: correcta.
+- Render inicial y render de las vistas Calendario y Comunicaciones con DOM simulado: correctos.
+- Asignación de un partido local a un recurso libre: estado cambia a propuesto.
+- Intento de asignación con solapamiento sobre el mismo F11: bloqueado y permanece pendiente.
+- Dos reservas F7 en mitades distintas del mismo F11 divisible: permitidas.
+- Reserva F11 completo cuando una mitad ya está ocupada: bloqueada.
+- Enlace de demo, título de landing y estilos responsive/impresión: comprobados en los archivos.
+- No se ha realizado aún prueba visual real en navegador, prueba real de portapapeles ni prueba de accesibilidad con dispositivos físicos.
+
+**Pendiente antes de presentar/publicar:**
+1. Abrir la demo en navegador de escritorio y móvil y revisar visualmente desbordamientos y controles.
+2. Confirmar que la demostración se abre desde un alojamiento accesible. Los cambios están solo en la rama de desarrollo y aún no están en la URL pública de GitHub Pages.
+3. Mantener visible la etiqueta de prototipo/datos ficticios.
+4. No fusionar todo el historial de la rama de desarrollo: revisar cambios de forma selectiva y mantener la aplicación independiente de equipos intacta.
+5. No presentar calendario, roles de club ni comunicaciones como sincronizados entre cuentas hasta implementar backend y permisos.
