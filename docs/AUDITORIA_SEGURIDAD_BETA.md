@@ -80,3 +80,7 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] **Prueba de navegador pendiente:** alternar inicio/cierre de sesión y cambio entre pestañas mientras las consultas cargan. Un guardado ya enviado antes del cierre puede completarse en el servidor; el cambio evita aplicarlo localmente a la sesión siguiente, no revoca una petición HTTP ya enviada.
 - [ ] **Prueba con dos cuentas:** comprobar restricciones de escritura de `viewer`, `editor` y `owner` mediante API y RLS sin datos de menores.
 - [ ] **Staging + restauración:** preparar entorno aislado y copia recuperable antes de ejecutar ajustes DDL en producción.
+
+## Resultado de prueba manual de cambio de sesión
+
+- **Confirmado por el usuario:** tras actualizar la Beta, iniciar sesión con una cuenta de prueba, salir y entrar con otra cuenta, la aplicación funciona correctamente. Se registra como **prueba manual superada** según su confirmación. Esto no certifica por sí solo la revocación inmediata de JWT ni sustituye pruebas de seguridad vía API.
