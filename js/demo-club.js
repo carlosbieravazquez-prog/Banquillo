@@ -126,7 +126,9 @@
   const a=e.target.closest("[data-action]");if(!a)return;
   const id=a.dataset.id;
   if(a.dataset.action==="go"){UI.view=a.dataset.view;render()}
-  if(a.dataset.action==="edit-team"){UI.teamId=id;UI.view="equipo";render();return}\n  if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}\n  if(a.dataset.action==="switch-director"){state.activeDirector=id;state.modality=active().preferred;save();render()}
+  if(a.dataset.action==="edit-team"){UI.teamId=id;UI.view="equipo";render();return}
+  if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}
+  if(a.dataset.action==="switch-director"){state.activeDirector=id;state.modality=active().preferred;save();render()}
   if(a.dataset.action==="add-director"&&state.directors.length<2){state.directors.push({id:"d2",name:"Marta León",initials:"ML",preferred:"F11"});save();render()}
   if(a.dataset.action==="new-team"){const name=prompt("Nombre del nuevo equipo (demo):");if(!name||!name.trim())return;const modality=confirm("Aceptar = Fútbol 7 · Cancelar = Fútbol 11")?"F7":"F11";state.teams.push({id:"t"+Date.now(),name:name.trim(),category:"Por definir",modality,competition:"Pendiente de asignar",players:0,coach:"Por asignar"});save();render()}
   if(a.dataset.action==="save-club"){["name","town","province","community","season"].forEach(k=>{const el=$("#club"+k[0].toUpperCase()+k.slice(1));if(el)state.club[k]=el.value.trim()});save();render()}
@@ -139,7 +141,8 @@
   if(a.dataset.action==="print"){window.print()}
  });
  document.addEventListener("submit",e=>{
-  if(e.target.id==="teamEditor"){e.preventDefault();const f=new FormData(e.target),t=state.teams.find(x=>x.id===f.get("id"));if(!t)return;t.name=String(f.get("name")||"").trim();t.category=String(f.get("category")||"").trim();t.modality=String(f.get("modality")||"F7");t.competition=String(f.get("competition")||"").trim();t.players=Math.max(0,Math.min(40,Number(f.get("players")||0)));t.coach=String(f.get("coach")||"").trim();save();UI.view="equipos";render();return}\n  const assignmentId=e.target.dataset.assignId;
+  if(e.target.id==="teamEditor"){e.preventDefault();const f=new FormData(e.target),t=state.teams.find(x=>x.id===f.get("id"));if(!t)return;t.name=String(f.get("name")||"").trim();t.category=String(f.get("category")||"").trim();t.modality=String(f.get("modality")||"F7");t.competition=String(f.get("competition")||"").trim();t.players=Math.max(0,Math.min(40,Number(f.get("players")||0)));t.coach=String(f.get("coach")||"").trim();save();UI.view="equipos";render();return}
+  const assignmentId=e.target.dataset.assignId;
   if(assignmentId){e.preventDefault();const f=new FormData(e.target),m=state.schedule.find(x=>x.id===assignmentId);if(!m)return;const candidate={...m,date:f.get("date"),time:f.get("time"),resource:f.get("resource"),status:"proposed"};if(!candidate.date||!candidate.time||!candidate.resource){alert("Selecciona fecha, hora y campo.");return}if(conflicts(candidate,assignmentId).length){alert("Conflicto de instalación: ese campo o su campo completo ya está reservado en ese horario.");return}Object.assign(m,candidate);state.calendarDate=m.date;save();render();return}
   if(e.target.id!=="matchForm")return;e.preventDefault();
   const f=new FormData(e.target),team=teamOf(f.get("teamId")),home=f.get("home")==="1";
