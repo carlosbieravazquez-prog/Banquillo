@@ -192,7 +192,7 @@ ACT.saveSettings = () => {
   if (d.trainStart && d.trainEnd && d.trainStart > d.trainEnd) { toast("El último entreno no puede ser anterior al primero.", "err"); return; }
   if (!d.trainDays.length) { toast("Elige al menos un día de entrenamiento.", "err"); return; }
   const s = Store.season(); s.club = d.club.trim(); s.category = d.category.trim();
-  s.settings = { ...(s.settings || {}), matchMinutes: mm, format: d.format || "F7", trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
+  s.settings = { ...(s.settings || {}), matchMinutes: mm, format: d.format || "F7", kits: d.kits, trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
   Store.save("season", s); UI.sheet = null; toast("Ajustes guardados.", "ok");
 };
 
@@ -310,7 +310,7 @@ ACT.wCreate = async () => {
   const mlist = w.matches.map((m, i) => ({ id: "j" + String(i + 1).padStart(2, "0"), n: i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
   w.progress = [0, 1 + plist.length + mlist.length + 1]; w.err = null; render(true);
   try {
-    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), format: w.format || "F7", trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
+    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), format: w.format || "F7", kits: w.kits, trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
       (n, t) => { w.progress = [n, t]; render(true); });
     w.newId = id; w.done = true; w.progress = null;
   } catch (e) { console.error(e); w.progress = null; w.err = "No se pudo guardar la temporada completa. Comprueba tu conexión e inténtalo de nuevo: continuará donde se quedó."; }
