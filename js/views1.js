@@ -123,10 +123,17 @@ const curMatch = () => Store.match(UI.route.arg);
 const touch = m => Store.save("match", m);
 const entry = (m, pid) => { m.players = m.players || {}; return m.players[pid] || (m.players[pid] = { role: null, min: null, gk: false }); };
 const tidy = (m, pid) => { const d = (m.players || {})[pid]; if (d && !d.role && d.min == null && !d.gk) delete m.players[pid]; }; const isF11 = () => ((Store.season() || {}).settings || {}).format === "F11";
+const pendingSanctions = m => {
+  const earlier = Store.matches.filter(x => x.n < m.n && x.closed && Calc.matchInfo(x).played);
+  const total = {}, served = {};
+  earlier.forEach(x => (x.sanctions || []).forEach(s => { total[s.p] = (total[s.p] || 0) + Math.max(0, Number(s.matches) || 0); }));
+  earlier.forEach(x => (x.noCall || []).filter(n => n.m === "SA").forEach(n => { served[n.p] = (served[n.p] || 0) + 1; }));
+  return Object.entries(total).map(([p, count]) => ({ p, remaining: Math.max(0, count - (served[p] || 0)) })).filter(x => x.remaining > 0);
+};
 
 /* ----- Convocatoria ----- */
 T.convocatoria = m => {
-  const nc = Calc.noCallMap(m), ps = Store.activePlayers(), nCalled = ps.filter(p => !(p.id in nc)).length;
+  const nc = Calc.noCallMap(m), ps = Store.activePlayers(), nCalled = ps.filter(p => !(p.id in nc)).length, pending = isF11() ? pendingSanctions(m).filter(x => ps.some(p => p.id === x.p)) : [];
   const opts = [["", "Convocado"], ["DT", "D.T"], ["LS", "L.S"], ["MP", "M.P"], ...(isF11() ? [["SA", "Sancionado"]] : [])];
   const rows = ps.map(p => {
     const cur = nc[p.id] || "";
@@ -137,6 +144,7 @@ T.convocatoria = m => {
   return `<section class="card">
     <div class="card-h"><h3>¿Quién no viene?</h3><span class="count ${done ? "ok" : ""}">Convocados <b>${nCalled}</b> de ${ps.length}</span></div>
     <p class="muted small">Todos están convocados por defecto. Marca el motivo solo de quien no va: <b>D.T</b> Decisión técnica · <b>L.S</b> Lesionado · <b>M.P</b> Motivos personales${isF11() ? ` · <b>Sancionado</b> Suspensión deportiva` : ""}.</p>
+    ${pending.length ? `<div class="notice warn"><b>Hay sanciones pendientes</b><p class="small muted">${pending.map(x => `${esc((Store.player(x.p)||{}).name||"Jugador")} · ${x.remaining} partido(s)`).join(" · ")}</p>${btn("Aplicar sanciones pendientes", "applySanctions", {}, "ghost", "lock")}</div>` : ""}
     <ul class="clist">${rows}</ul>
     <div class="row between gap wrap foot">
       <span class="muted small">${done ? "Convocatoria confirmada." : "Aún sin confirmar."}</span>
@@ -154,6 +162,15 @@ ACT.setCall = el => {
     m.subs = (m.subs || []).filter(s => !s.bad);
   }
   m.callDone = true; touch(m);
+};
+ACT.applySanctions = () => {
+  const m = curMatch(), pending = pendingSanctions(m), active = new Set(Store.activePlayers().map(p => p.id));
+  const toApply = pending.filter(x => active.has(x.p) && !Calc.noCallMap(m)[x.p]);
+  if (!toApply.length) { toast("No hay sanciones pendientes que aplicar en esta jornada.", ""); return; }
+  m.noCall = m.noCall || [];
+  toApply.forEach(x => m.noCall.push({ p: x.p, m: "SA" }));
+  touch(m);
+  toast(`Sanciones aplicadas a ${toApply.length} jugador(es). Revisa y confirma la convocatoria.`, "ok");
 };
 ACT.confirmCall = () => { const m = curMatch(); m.callDone = true; touch(m); toast("Convocatoria confirmada.", "ok"); };
 
