@@ -321,3 +321,25 @@ body.in-app #landing{display:none}
 .mrow2{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
 .mrow2 small{display:block;color:var(--ink-3)}.mr-a{display:flex;gap:8px;align-items:center}
 .btn.danger-t,.danger-t{color:var(--loss)}
+
+
+/* ----- modalidades y creador de la página pública ----- */
+.l-section-lead{max-width:680px;color:var(--ink-2);font-size:16px;line-height:1.5;margin:-6px 0 22px}
+.l-mode-grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:700px){.l-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}}
+.l-mode-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:250px;padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.l-mode-card.club{background:var(--surface-2)}
+.l-mode-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.l-mode-card h3{font-family:var(--f-display);font-size:26px}
+.l-mode-card p{color:var(--ink-2);font-size:15px;line-height:1.5;max-width:58ch}
+.l-mode-link{margin-top:auto;display:inline-flex;gap:8px;align-items:center;color:var(--info);font-weight:700;text-decoration:none;padding-top:8px}
+.l-mode-link:hover{text-decoration:underline;text-underline-offset:3px}
+.l-mode-note{margin-top:auto;padding-top:8px;color:var(--ink-3);font-size:13px;font-weight:600}
+.l-creator{display:grid;gap:12px}
+@media(min-width:760px){.l-creator{grid-template-columns:.7fr 1.3fr;gap:48px;align-items:start}}
+.l-creator h2{margin-bottom:0}
+.l-creator-copy{max-width:680px}
+.l-creator-copy h3{font-size:24px;margin:0 0 10px}
+.l-creator-copy p{color:var(--ink-2);font-size:16px;line-height:1.6;margin:0 0 12px}
+.l-creator-copy .l-contact-note{font-size:14px;padding-top:8px;border-top:1px solid var(--line)}
+.creator-kicker{color:var(--accent);margin-bottom:8px}
