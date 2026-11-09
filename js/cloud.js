@@ -40,7 +40,13 @@ const Cloud = { sb: null, cfg: window.BQ_CONFIG || {}, profile: null, db: null, 
 
   /* ---------- Perfil y Silbatos ---------- */
   C.loadProfile = async () => {
-    try { C.profile = await C.rpc("my_profile"); } catch (e) { C.profile = C.profile || null; }
+    const epoch = C.profileEpoch || 0;
+    try {
+      const profile = await C.rpc("my_profile");
+      if (epoch === (C.profileEpoch || 0)) C.profile = profile;
+    } catch (e) {
+      if (epoch === (C.profileEpoch || 0)) C.profile = C.profile || null;
+    }
     return C.profile;
   };
   C.tokens = () => (C.profile ? C.profile.tokens : 0);
