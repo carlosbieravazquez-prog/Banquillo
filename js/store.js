@@ -72,9 +72,9 @@ const Store = {
           if (epoch === S.epoch && !S.pending.has(path)) S.pending.set(path, w);
           if (epoch === S.epoch) S.lastError = e;
           break;
-        } finally { S.inflight.delete(path); }
+        } finally { if (epoch === S.epoch) S.inflight.delete(path); }
       }
-    } finally { S.flushing = false; }
+    } finally { if (epoch === S.epoch) S.flushing = false; }
     if (epoch !== S.epoch) return;
     if (failed) {
       setStatus("error");
