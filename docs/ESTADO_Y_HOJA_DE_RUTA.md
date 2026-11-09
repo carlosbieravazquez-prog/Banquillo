@@ -367,3 +367,22 @@ No se ha modificado `main`, GitHub Pages, Supabase ni los datos reales. El proto
 3. Investigar la oferta municipal específica de Dos Hermanas y otras localidades.
 4. Diseñar actualización anual por temporada y registro de fuentes/fecha de comprobación.
 5. Conectar el catálogo a la creación de equipos con filtros por comunidad, provincia, municipio, categoría, género y modalidad.
+
+
+### 4.14 Ampliación de la página de entrada y modalidades de uso — 9-11-2026
+
+Se ha actualizado la página pública en la rama `feature/fase-1-clubes-equipos` para reflejar que Banquillo tendrá dos modalidades de organización:
+
+- **Equipo independiente:** se mantiene el flujo actual de creación y gestión de una temporada/equipo sin exigir pertenecer a un club. La llamada a la acción lleva al acceso/registro existente.
+- **Club:** se presenta la futura gestión multi-equipo con dirección deportiva y entrenadores. Se identifica expresamente como desarrollo en curso; no se ofrece un flujo de alta de club que todavía no está implementado.
+- Se añade el apartado **«Sobre el creador»** con el nombre facilitado por el usuario: Carlos Biera Vázquez, y una descripción breve del origen y propósito del proyecto.
+- Se deja indicado que el correo oficial de contacto se habilitará más adelante. No se inventa ni publica una dirección de correo provisional.
+- Se amplía la navegación de la landing con accesos a modalidades y creador.
+
+Archivos modificados:
+- `index.html`: navegación, sección de modalidades y apartado del creador.
+- `css/app.css`: estilos responsive para las nuevas secciones.
+
+**Alcance y cautelas:** cambios únicamente en la página pública de la rama de desarrollo. No se ha cambiado el acceso/registro, la gestión de temporadas, Supabase, `main` ni GitHub Pages. La opción de equipo independiente conserva el flujo de entrada actual; la gestión de clubes aparece como próxima modalidad y no se presenta falsamente como funcional.
+
+**Pendiente de validación:** revisar visualmente en navegador móvil y escritorio, comprobar anclas y enlace de entrada, y revisar contraste/legibilidad en modo oscuro.
