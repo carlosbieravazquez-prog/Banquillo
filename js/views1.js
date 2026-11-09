@@ -177,7 +177,7 @@ T.convocatoria = m => {
         <button type="button" class="${mode === "called" ? "on" : ""}" data-act="setCallMessageMode" data-v="called">Solo convocados</button>
         <button type="button" class="${mode === "notCalled" ? "on" : ""}" data-act="setCallMessageMode" data-v="notCalled">Solo no convocados</button>
       </div>
-      <textarea class="inp area" rows="8" readonly aria-label="Mensaje generado">${esc(message)}</textarea>
+      <textarea id="callMessageText" class="inp area" rows="8" readonly aria-label="Mensaje generado">${esc(message)}</textarea>
       <div class="row end gap foot">${btn("Copiar mensaje", "copyCallMessage", {}, "primary", "copy")}</div>
     </section>`;
 };
@@ -198,7 +198,7 @@ ACT.setCallMessageMode = el => { const m = curMatch(); m.callMessageMode = el.da
 ACT.copyCallMessage = async () => {
   const m = curMatch(); if (!m) return;
   try { await navigator.clipboard.writeText(callMessageText(m)); toast("Mensaje de convocatoria copiado.", "ok"); }
-  catch (e) { toast("No se pudo copiar automáticamente. Selecciona el texto del mensaje y cópialo.", "err"); }
+  catch (e) { const area = $("#callMessageText"); if (area) { area.focus(); area.select(); } toast("Selecciona el texto y cópialo.", ""); }
 };
 
 /* ----- Ficha ----- */
