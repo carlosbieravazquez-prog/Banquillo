@@ -108,3 +108,17 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [x] Ocho comprobaciones estructurales ejecutadas en proyecto Supabase conectado: **8/8 true** (RLS, prohibiciones de lectura pública, ejecución de funciones de Silbatos y políticas sobre documentos y perfiles).
 - [x] SQL `supabase/security/check_baseline_SOLO_LECTURA.sql` incorporado para repetir la comprobación sin leer datos personales.
 - [ ] Sin entorno staging separado ni restauración comprobada: no se aplicaron cambios DDL ni pruebas de escritura sobre producción.
+
+## Protección contra fuerza bruta y automatizaciones de inicio de sesión (10 noviembre 2026)
+
+**Requisito solicitado:** reducir intentos automatizados de adivinar contraseñas, abuso de registro y restablecimiento, sin bloquear permanentemente a usuarios legítimos.
+
+- [x] Supabase Auth cuenta con controles propios de límites de peticiones; **no se ha verificado la configuración exacta actual del proyecto**. Revisar en [Auth Rate Limits](https://supabase.com/dashboard/project/dsewztxveqgwhyuyyyoq/auth/rate-limits).
+- [x] Interfaz Beta: se reconocen respuestas de límite de intentos, HTTP 429 y error `captcha_failed` mostrando un aviso claro. **Esto no impide ataques por sí solo**: el límite debe funcionar en el servidor.
+- [ ] **P0 antes del lanzamiento:** configurar y comprobar límites adecuados de Auth, sin hacer pruebas de carga contra cuentas reales. Verificar la resistencia a intentos distribuidos en staging y revisar registros/alertas con criterios de privacidad.
+- [ ] **P0:** habilitar protección CAPTCHA (preferible Cloudflare Turnstile o hCaptcha) para login, registro y restablecimiento mediante [Supabase Bot and Abuse Protection](https://supabase.com/dashboard/project/dsewztxveqgwhyuyyyoq/auth/protection). Configurar la clave **secreta exclusivamente en Supabase**, nunca en GitHub o en JavaScript público, y la clave de sitio pública con su correspondiente widget y `captchaToken` en los tres flujos. NO habilitar CAPTCHA en el servidor sin desplegar antes la integración del cliente: bloquearía el acceso.
+- [ ] Comprobar confirmación del correo, contraseñas robustas desde Auth, MFA para administradores y, cuando corresponda, usuarios, y detección de credenciales filtradas según el plan.
+- [ ] Preparar pruebas de staging de cinco escenarios: intentos repetidos, recuperaciones reiteradas, captcha inválido/expirado, usuario legítimo después de esperar y recuperación de cuenta. No compartir contraseñas ni registrar tokens.
+- [ ] Revisar mensajes para evitar enumeración de cuentas y reducir filtraciones en registros; no bloquear masivamente por IP compartida, especialmente en clubes y colegios.
+
+**Documentación:** https://supabase.com/docs/guides/deployment/going-into-prod y https://supabase.com/docs/guides/auth/auth-captcha .
