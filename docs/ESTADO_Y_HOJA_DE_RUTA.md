@@ -225,6 +225,21 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 Completar la revisión de funciones y políticas, comprobar la web publicada en una sesión de prueba, y preparar una copia de seguridad verificable. Después presentar el diseño de migración de clubes/equipos antes de aplicar cambios.
 
 
+### 4.9 Limpieza inicial del repositorio — 9-11-2026
+
+En la rama aislada `feature/fase-1-clubes-equipos` se ha realizado una limpieza conservadora basada en las referencias del HTML principal:
+
+- Eliminadas copias de raíz de los módulos JavaScript que se cargan desde `js/`: `auth.js`, `boot.js`, `calc.js`, `cloud.js`, `core.js`, `export.js`, `store.js`, `util.js`, `views1.js`, `views2.js` y `views3.js`.
+- Eliminado `app.css` de la raíz; la aplicación carga `css/app.css`.
+- Eliminado `schema.sql` de la raíz; la guía y la estructura del proyecto usan `supabase/schema.sql`.
+- Eliminadas las copias de raíz `handler.ts` e `index.ts`; se conservan las fuentes de la Edge Function en `supabase/functions/ai-report/`.
+- Eliminadas las páginas legales antiguas de la raíz; se conservan las páginas enlazadas desde `index.html` en `legal/`.
+- Eliminado el archivo vacío `download`.
+
+Motivo: evitar ambigüedad sobre qué archivo debe modificarse y mantener una única ubicación canónica para cada componente. Se comprobó que `index.html` carga los módulos desde `js/` y `css/`, y enlaza las páginas legales dentro de `legal/`. Las copias SQL y Edge Function se conservaron dentro de `supabase/`.
+
+**Importante:** esta limpieza solo se ha aplicado a `feature/fase-1-clubes-equipos`; no se ha modificado `main` ni la web publicada. No se ha borrado ningún dato de Supabase. Antes de integrar la rama se hará una revisión de referencias y pruebas de carga.
+
 ### 4.10 Convocatorias automáticas y equipaciones — 9-11-2026
 
 Se ha implementado en la rama de trabajo una mejora de convocatoria, sin modificar la base de datos ni desplegar a producción:
@@ -240,21 +255,6 @@ Se ha implementado en la rama de trabajo una mejora de convocatoria, sin modific
 - Los nuevos datos se guardan en los documentos JSON existentes (ajustes de temporada y documento de partido). Se amplió la lista de campos serializados para conservar equipación, modo de mensaje, hora y lugar de citación. No requiere migración SQL.
 
 **Validación realizada:** revisión de los fragmentos modificados y de los campos de serialización. No se ha ejecutado todavía una prueba real en navegador ni una prueba de copia en móvil; tampoco se ha modificado Supabase. La funcionalidad permanece aislada en `feature/fase-1-clubes-equipos`, sin afectar a `main` ni a GitHub Pages.
-
-### 4.9 Limpieza inicial del repositorio — 9-11-2026
-
-En la rama aislada `feature/fase-1-clubes-equipos` se ha realizado una limpieza conservadora basada en las referencias del HTML principal:
-
-- Eliminadas copias de raíz de los módulos JavaScript que se cargan desde `js/`: `auth.js`, `boot.js`, `calc.js`, `cloud.js`, `core.js`, `export.js`, `store.js`, `util.js`, `views1.js`, `views2.js` y `views3.js`.
-- Eliminado `app.css` de la raíz; la aplicación carga `css/app.css`.
-- Eliminado `schema.sql` de la raíz; la guía y la estructura del proyecto usan `supabase/schema.sql`.
-- Eliminadas las copias de raíz `handler.ts` e `index.ts`; se conservan las fuentes de la Edge Function en `supabase/functions/ai-report/`.
-- Eliminadas las páginas legales antiguas de la raíz; se conservan las páginas enlazadas desde `index.html` en `legal/`.
-- Eliminado el archivo vacío `download`.
-
-Motivo: evitar ambigüedad sobre qué archivo debe modificarse y mantener una única ubicación canónica para cada componente. Se comprobó que `index.html` carga los módulos desde `js/` y `css/`, y enlaza las páginas legales dentro de `legal/`. Las copias SQL y Edge Function se conservaron dentro de `supabase/`.
-
-**Importante:** esta limpieza solo se ha aplicado a `feature/fase-1-clubes-equipos`; no se ha modificado `main` ni la web publicada. No se ha borrado ningún dato de Supabase. Antes de integrar la rama se hará una revisión de referencias y pruebas de carga.
 
 ## 9. Cambios GitHub y commits
 
