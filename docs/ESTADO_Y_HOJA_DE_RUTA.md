@@ -459,3 +459,15 @@ Banquillo no se considerará listo por tener pantallas o datos de demostración.
 | 2026-11-09 | Revisión de Supabase | Solo lectura; 5 tablas, 33 documentos, 0 migraciones; sin cambios de datos o esquema |
 | 2026-11-09 | Nueva consulta de asesores | Hallazgos de seguridad y rendimiento siguen pendientes de revisión específica |
 | 2026-11-09 | Priorización de MVP y mejoras | Definidos P0–P3 y backlog recomendado; no se ha desplegado nada |
+
+
+### 9.6 Detalle de autorización SQL comprobado — 9 de noviembre de 2026
+
+La inspección de solo lectura de pg_policies, ACL de funciones, triggers y definiciones confirma:
+- Las tablas docs, profiles y season_members tienen las políticas esperadas; seasons_meta y join_attempts no tienen políticas RLS.
+- handle_new_user está unido al trigger on_auth_user_created de auth.users. rls_auto_enable está unido al event trigger ensure_rls. Ambas funciones SECURITY DEFINER aparecen además ejecutables por PUBLIC, anon y authenticated, aunque su uso previsto es interno de trigger. Preparar una revocación específica de EXECUTE para esos roles, conservando el funcionamiento de los triggers, y verificar alta de cuenta y creación de tablas después del cambio.
+- Las funciones SECURITY DEFINER restantes con permiso authenticated forman parte de la API de temporadas/perfiles y aplican comprobaciones de auth.uid()/rol en su lógica; no revocar en bloque. Revisar cada cuerpo y sus pruebas antes de tocar permisos.
+- Las funciones spend_tokens, refund_tokens y refill_if_due están limitadas a service_role en los ACL observados.
+- El código de esquema del repositorio y el estado real de la base deben compararse antes de generar una migración, porque el esquema SQL inicial y el estado vivo pueden haber divergido.
+
+No se aplicaron cambios de permisos. El siguiente paso seguro sigue siendo verificar una copia de seguridad recuperable y preparar una corrección estrecha y reversible.
