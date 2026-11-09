@@ -9,9 +9,11 @@ const Calc = (() => {
   function matchInfo(m) {
     if (!m) return { played: false, res: null };
     if (m.rest) return { rest: true, played: false, res: null };
-    const played = isNum(m.ourGoals) && isNum(m.rivalGoals);
+    const today = dk(new Date());
+    const future = !!m.date && m.date > today;
+    const played = !future && isNum(m.ourGoals) && isNum(m.rivalGoals);
     const res = played ? (m.ourGoals > m.rivalGoals ? "V" : m.ourGoals === m.rivalGoals ? "E" : "D") : null;
-    return { played, res, gf: played ? m.ourGoals : null, gc: played ? m.rivalGoals : null };
+    return { played, future, res, gf: played ? m.ourGoals : null, gc: played ? m.rivalGoals : null };
   }
 
   /** Una jornada cuenta como "convocatoria registrada" si se confirmó o hay algún no convocado. */

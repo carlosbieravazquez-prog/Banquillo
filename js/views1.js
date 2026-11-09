@@ -112,7 +112,7 @@ V.partido = n => {
   return `<div class="mhead">
       <button type="button" class="back" data-act="go" data-to="partidos">${icon("back")}Partidos</button>
       <div class="mh-main"><span class="mh-n">J${m.n}</span><div><h1>${esc(matchLabel(m))}</h1><p>${m.date ? esc(fmtLong(m.date)) : "Fecha por definir"}${m.home != null && !m.rest ? ` · ${m.home ? "Local" : "Visitante"}` : ""}</p></div></div>
-      ${i.played ? `<div class="mh-res">${resPill(i.res)}<b>${m.ourGoals}<s>-</s>${m.rivalGoals}</b></div>` : ""}
+      ${i.played ? `<div class="mh-res">${resPill(i.res)}<b>${m.ourGoals}<s>-</s>${m.rivalGoals}</b></div>` : i.future ? `<span class="tag warn">Pendiente · aún no ha llegado la fecha</span>` : ""}
     </div>
     <div class="seg" role="tablist">${seg}</div>
     ${body}`;
@@ -219,8 +219,10 @@ T.ficha = m => {
 
   const crono = i.played ? `<section class="card"><div class="card-h"><h3>Crónica para las familias</h3></div>${UI.ai["cron" + m.n] ? `<textarea class="inp area" id="cronTxt" rows="6" readonly>${esc(UI.ai["cron" + m.n])}</textarea><div class="row gap wrap">${btn("Copiar texto", "copyCron", {}, "ghost", "copy")}${btn("Escribir otra", "genCron", {}, "ghost", "spark")}</div>` : `<p class="muted small">Un resumen corto del partido, listo para pegar en el grupo de familias.</p><div class="row gap">${btn(UI.ai.busyCron ? "Escribiendo…" : "Escribir crónica con IA", "genCron", {}, "ghost", "spark")}</div>`}${UI.ai.cronErr ? `<p class="err small">${esc(UI.ai.cronErr)}</p>` : ""}</section>` : "";
 
-  return scoreBox + scorersCard + players + subCard + crono;
+  return `<div class="row end foot acta-tools"><span class="muted small">Acta del partido · puedes imprimir esta ficha y rellenarla a mano.</span><button type="button" class="btn ghost" data-act="printActa">${icon("printer")}<span>Imprimir acta</span></button></div>` + scoreBox + scorersCard + players + subCard + crono;
 };
+
+ACT.printActa = () => window.print();
 
 const ensureGoals = m => { if (!Calc.isNum(m.ourGoals)) { m.ourGoals = 0; m.scorers = []; } if (!Calc.isNum(m.rivalGoals)) m.rivalGoals = 0; };
 const addGoal = (m, pid) => { ensureGoals(m); m.scorers = (m.scorers || []).slice(0, m.ourGoals); m.scorers.push(pid || null); m.ourGoals = m.scorers.length; };
