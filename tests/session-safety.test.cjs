@@ -9,8 +9,8 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'store.js'), 'ut
 function defer() { let resolve, reject; const promise = new Promise((res, rej) => {resolve=res;reject=rej;});return {promise,resolve,reject}; }
 function harness() {
   const ctx = vm.createContext({
-    setTimeout: (fn) => setTimeout(fn, 1),
-    clearTimeout, console,
+    setTimeout: () => 1,
+    clearTimeout: () => {}, console,
     localStorage: {setItem(){},getItem(){return null}},
     Cloud: {sb: {from: () => ({select: () => ({eq: () => Promise.resolve({data:[],error:null})})})}},
   });
