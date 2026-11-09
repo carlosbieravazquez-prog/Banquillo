@@ -12,7 +12,7 @@ const Store = {
   const S = Store;
   const SEASON_FIELDS = ["name", "club", "category", "status", "settings", "createdAt"];
   const PLAYER_FIELDS = ["name", "dorsal", "order", "active", "notes"];
-  const MATCH_FIELDS = ["n", "date", "rival", "home", "rest", "notes", "ourGoals", "rivalGoals", "scorers", "players", "noCall", "subs", "callDone"];
+  const MATCH_FIELDS = ["n", "date", "rival", "home", "rest", "notes", "ourGoals", "rivalGoals", "scorers", "players", "noCall", "subs", "callDone", "cards", "sanctions", "sanctionsConfirmed", "closed", "ocrSource"];
   const REPORT_FIELDS = ["text", "source", "updatedAt"];
   const pick = (o, f) => { const r = {}; f.forEach(k => { if (o[k] !== undefined) r[k] = o[k]; }); return JSON.parse(JSON.stringify(r)); };
 
