@@ -39,7 +39,7 @@ const FORM = {};
       html = `<div class="auth-card"><div class="loading"><div class="spin"></div><p>Comprobando tu sesión…</p></div></div>`;
     } else if (A.state === "recovery") {
       html = card("Elige una contraseña nueva", `<form data-form="authNewPass" class="form" novalidate>
-        <label class="fld"><span>Contraseña nueva</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+        <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
       html = card("Revisa tu correo", `<p>Te hemos enviado un mensaje a <b>${esc(u.email)}</b>. Pulsa el enlace que contiene para confirmar tu cuenta y vuelve aquí.</p>
@@ -49,7 +49,7 @@ const FORM = {};
       html = card("Crea tu cuenta", `${tabs()}<form data-form="authSignup" class="form" novalidate>
         <label class="fld"><span>Tu nombre</span><input class="inp" type="text" name="name" autocomplete="given-name" maxlength="60" value="${esc(u.name)}" required></label>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
-        <label class="fld"><span>Contraseña (mínimo 8 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+        <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button></form>`);
     } else if (u.mode === "forgot") {
@@ -87,7 +87,7 @@ const FORM = {};
     A.ui.name = name; A.ui.email = email;
     if (!name) { setMsg("err", "Escribe tu nombre."); return rerender(); }
     if (!validEmail(email)) { setMsg("err", "Ese correo no parece válido."); return rerender(); }
-    if (password.length < 8) { setMsg("err", "La contraseña debe tener al menos 8 caracteres."); return rerender(); }
+    if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
     if (!f.elements.accept.checked) { setMsg("err", "Para crear la cuenta tienes que aceptar la política de privacidad."); return rerender(); }
     A.ui.busy = true; setMsg(); rerender();
     const { data, error } = await Cloud.sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: redirectUrl() } });
@@ -108,7 +108,7 @@ const FORM = {};
   };
   FORM.authNewPass = async f => {
     const password = f.elements.password.value;
-    if (password.length < 8) { setMsg("err", "La contraseña debe tener al menos 8 caracteres."); return rerender(); }
+    if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
     A.ui.busy = true; setMsg(); rerender();
     const { error } = await Cloud.sb.auth.updateUser({ password });
     A.ui.busy = false;
@@ -152,7 +152,16 @@ const FORM = {};
     const slot = $("#authSlot"); if (slot) slot.dataset.h = "";
     render(true);
   };
-  ACT.signOut = async () => { UI.sheet = null; await Cloud.sb.auth.signOut(); A.leave(); };
+  ACT.signOut = async () => {
+    UI.sheet = null;
+    try {
+      const { error } = await Cloud.sb.auth.signOut({ scope: "global" });
+      if (error) { toast("No se ha podido cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.", "err"); return; }
+      A.leave();
+    } catch (e) {
+      toast("No se ha podido cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.", "err");
+    }
+  };
 
   /* ---------- Mi cuenta y Silbatos ---------- */
   const fmtD = iso => { try { return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return ""; } };
