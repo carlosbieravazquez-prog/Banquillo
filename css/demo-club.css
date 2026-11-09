@@ -10,3 +10,5 @@
 
 .pending-assignment{display:grid;grid-template-columns:minmax(130px,1.2fr) repeat(3,minmax(110px,1fr)) auto;align-items:end;gap:8px;padding:12px 0;border-bottom:1px solid #edf1f3}.pending-team b,.pending-team small{display:block}.pending-team b{font-size:11px}.pending-team small{font-size:10px;color:var(--muted);margin-top:4px}.pending-assignment label{font-size:9px;font-weight:700;color:var(--muted)}.pending-assignment input,.pending-assignment select{display:block;width:100%;min-width:0;margin-top:5px;padding:8px 7px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:10px 'DM Sans',sans-serif}
 @media(max-width:760px){.pending-assignment{grid-template-columns:1fr 1fr}.pending-team{grid-column:1/-1}.pending-assignment button{grid-column:1/-1}.pending-assignment label{min-width:0}}
+
+.team-config{width:100%;margin-top:13px}.editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
