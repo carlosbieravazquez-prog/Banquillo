@@ -158,6 +158,9 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 - [ ] Confirmar que el enlace publicado carga correctamente en navegador.
 - [x] Identificar rutas activas y retirar duplicados heredados en rama aislada.
 - [ ] Revisar completamente funciones SQL sensibles y reglas RLS.
+- [x] Implementar generación de mensajes de convocatoria con listas alternativas, motivos y datos del partido.
+- [x] Añadir configuración de equipaciones en creación/ajustes de temporada y selección por partido.
+- [ ] Probar convocatoria, copia del mensaje y persistencia en navegador móvil y escritorio.
 - [ ] Obtener/exportar una copia de seguridad verificable antes de cambios.
 - [ ] Definir estrategia de migraciones versionadas y rollback.
 
@@ -215,11 +218,28 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 | 2026-11-09 | Revisión de seguridad inicial | Hallazgos RLS, SECURITY DEFINER, Auth e índices documentados; confirmado que rls_auto_enable es event trigger ensure_rls |
 | 2026-11-09 | Documento maestro | Primera versión creada; Fase 1 pendiente |
 | 2026-11-09 | Revisión de rutas y despliegue | `index.html` confirma uso de `js/` y `css/`; detectadas copias duplicadas y Edge Function IA no desplegada |
+| 2026-11-09 | Convocatorias y equipaciones | Mensajes listos para copiar (convocados o no convocados con motivo), configuración de colores, equipación por partido y datos opcionales de citación; pendiente prueba en navegador |
 
 ## 8. Pendiente inmediato
 
 Completar la revisión de funciones y políticas, comprobar la web publicada en una sesión de prueba, y preparar una copia de seguridad verificable. Después presentar el diseño de migración de clubes/equipos antes de aplicar cambios.
 
+
+### 4.10 Convocatorias automáticas y equipaciones — 9-11-2026
+
+Se ha implementado en la rama de trabajo una mejora de convocatoria, sin modificar la base de datos ni desplegar a producción:
+
+- En la pestaña Convocatoria se genera un texto automático para las familias con dos modos excluyentes: **solo convocados** o **solo no convocados**.
+- El encabezado incluye club, jornada, rival, condición de local/visitante, fecha y equipación elegida.
+- Si se indica, también añade la hora de citación y el lugar de encuentro.
+- En el modo de no convocados, cada jugador aparece con su motivo: **Lesión**, **Motivos personales** o **Decisión técnica**. No se añaden los convocados a ese mensaje.
+- El texto se puede copiar directamente. La copia está permitida también a usuarios con acceso de solo lectura, sin permitirles modificar la convocatoria.
+- El asistente de nueva temporada permite configurar colores/descripción de primera y segunda equipación y, opcionalmente, tercera.
+- Los colores también se pueden editar en Ajustes de una temporada ya existente.
+- En los datos de cada partido se selecciona la equipación que se utilizará. Por defecto, los partidos locales parten de primera y los visitantes de segunda; el entrenador puede cambiarla.
+- Los nuevos datos se guardan en los documentos JSON existentes (ajustes de temporada y documento de partido). Se amplió la lista de campos serializados para conservar equipación, modo de mensaje, hora y lugar de citación. No requiere migración SQL.
+
+**Validación realizada:** revisión de los fragmentos modificados y de los campos de serialización. No se ha ejecutado todavía una prueba real en navegador ni una prueba de copia en móvil; tampoco se ha modificado Supabase. La funcionalidad permanece aislada en `feature/fase-1-clubes-equipos`, sin afectar a `main` ni a GitHub Pages.
 
 ### 4.9 Limpieza inicial del repositorio — 9-11-2026
 
