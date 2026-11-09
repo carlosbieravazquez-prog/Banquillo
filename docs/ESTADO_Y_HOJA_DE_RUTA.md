@@ -136,6 +136,18 @@ Las funcionalidades específicas de clubes/equipos/director deportivo, registro 
 - El archivo `GUIA.md` describe la publicación mediante GitHub Pages y la configuración del proyecto. Debe actualizarse cuando se consolide el nuevo modelo de clubes y equipos.
 - El usuario facilitó la URL publicada y un enlace directo a `/#partido-2`. La herramienta de navegación no pudo recuperar la página en esta sesión; la URL por sí sola no confirma que la ruta cargue correctamente en el navegador del usuario.
 
+
+
+### 4.8 Revisión funcional adicional — 9-11-2026
+
+- Se ha creado la rama de trabajo `feature/fase-1-clubes-equipos` desde `main` para aislar la transformación y evitar cambios directos sobre la rama publicada.
+- `js/cloud.js` confirma que la aplicación usa acceso directo a la tabla `docs` mediante Supabase JS (lecturas, upserts, borrados y Realtime), además de RPC para operaciones de temporada.
+- `js/store.js` confirma que el estado activo se carga por temporada: roles desde `season_members`, raíz de temporada desde `docs` y colecciones de jugadores, partidos, informes y entrenamientos. La creación de temporada llama a `create_season` y después guarda documentos en lotes.
+- `js/auth.js` confirma registro, login, recuperación de contraseña y aceptación de los documentos legales; la aplicación guarda el nombre recibido en metadatos de Auth, que no debe utilizarse para autorizar roles.
+- La inspección de definiciones SQL confirma que las RPC de temporada con acceso a datos usan comprobaciones de pertenencia/propiedad y `search_path = ''. Las funciones de saldo están limitadas a `service_role`.
+- Matiz de seguridad: el catálogo refleja permisos EXECUTE para PUBLIC/anon en las funciones de trigger `handle_new_user()` y `rls_auto_enable()`. Son funciones de tipo trigger/event trigger y no deben tratarse como RPC normales; hay que revisar el mecanismo de disparo y ajustar privilegios sin romper los triggers.
+- No se han ejecutado escrituras SQL, migraciones ni cambios en producción. El trabajo realizado hasta aquí es de lectura y preparación.
+
 ## 5. Plan de trabajo
 
 ### Bloque A — preservar y entender
