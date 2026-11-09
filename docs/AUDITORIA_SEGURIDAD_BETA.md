@@ -84,3 +84,8 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 ## Resultado de prueba manual de cambio de sesión
 
 - **Confirmado por el usuario:** tras actualizar la Beta, iniciar sesión con una cuenta de prueba, salir y entrar con otra cuenta, la aplicación funciona correctamente. Se registra como **prueba manual superada** según su confirmación. Esto no certifica por sí solo la revocación inmediata de JWT ni sustituye pruebas de seguridad vía API.
+
+## Prueba 17 — permiso de solo lectura
+
+- **Resultado informado por usuario: superada.** Cuenta principal invitada a la temporada ficticia SEGURIDAD TEST 2026 con rol Solo lectura: puede consultar jugadores, pero no modificarlos desde la interfaz.
+- **Alcance:** confirma controles visibles de edición. Sigue pendiente verificar rechazo de escritura directamente en API por RLS y que un editor no pueda cambiar roles ni hacerse propietario.
