@@ -146,7 +146,7 @@ const FORM = {};
     render(true);
   };
   A.leave = () => {
-    A.uid = null; A.state = "out"; Cloud.profile = null; Store.reset(); Store.connecting = false;
+    A.uid = null; A.state = "out"; Cloud.profile = null; Cloud.aiPrivacyAccepted = false; Store.reset(); Store.connecting = false;
     UI.sheet = null; UI.wiz = null; UI.ai = {};
     A.ui = { mode: "login", busy: false, msg: null, email: "", name: "" };
     const slot = $("#authSlot"); if (slot) slot.dataset.h = "";
