@@ -18,31 +18,31 @@ async function aiSample(prompt, signal, kind) {
 }
 const AI_STOP = ["insufficient_tokens", "auth", "rate_limited", "ai_not_deployed", "ai_unavailable", "unavailable"];
 function reportPrompt(pid) {
-  const D = playerReportData(pid), { p, s, t } = D, first = p.name.split(/\s+/)[0];
-  const mot = [s.DT && `${s.DT} por decisión técnica`, s.LS && `${s.LS} por lesión`, s.MP && `${s.MP} por motivos personales`].filter(Boolean).join(", ");
+  const D = playerReportData(pid), { s, t } = D;
   const pj = Calc.record(Store.matches).pj;
-  return `Eres el entrenador de un equipo de fútbol base (categoría ${Store.season().category || "Prebenjamín"}, niños y niñas de fútbol base) y vas a escribir el informe de final de temporada para la familia de un jugador.
+  // PRIVACIDAD: el proveedor IA no recibe nombre, dorsal, notas libres ni motivos médicos/personales.
+  return `Redacta en español de España un informe individual de fútbol base para la familia de una persona menor de edad.
+Usa exclusivamente el identificador literal [JUGADOR] para referirte al jugador, sin inventar ningún nombre propio.
 
-DATOS DE LA TEMPORADA ${Store.season().name}
-- Jugador: ${p.name}${p.dorsal != null && p.dorsal !== "" ? ` (dorsal ${p.dorsal})` : ""}
-- Partidos de liga jugados por el equipo: ${pj}
-- Convocatorias: ${s.conv} de ${D.regCount}${s.noconv ? ` (no convocado ${s.noconv}: ${mot || "sin motivo indicado"})` : ""}
-- Partidos jugados: ${s.played} (${s.T} como titular y ${s.S} como suplente)
-- Minutos jugados: ${s.min ? fmtNum(s.min) : 0}
+DATOS ANÓNIMOS:
+- Partidos del equipo: ${pj}
+- Convocatorias: ${s.conv} de ${D.regCount}
+- Partidos disputados: ${s.played}, titular ${s.T}, suplente ${s.S}
+- Minutos disputados: ${s.min ? fmtNum(s.min) : 0}
 - Goles: ${s.goals}
-- Partidos como portero: ${s.gk}${s.gk ? ` (${s.clean} con la portería a cero)` : ""}
-- Asistencia a entrenamientos: ${fmtPct(t.pct)} (${t.falts} faltas en ${t.asist + t.falts} sesiones)
-- Notas del entrenador sobre ${first}: ${p.notes && p.notes.trim() ? "«" + p.notes.trim() + "»" : "ninguna"}
+- Partidos como portero: ${s.gk}
+- Asistencia a entrenamientos: ${fmtPct(t.pct)}
 
-INSTRUCCIONES
-Escribe el informe en español de España, con tono cercano, positivo y educativo, dirigido a la familia y hablando de ${first} en tercera persona.
-- Entre 110 y 170 palabras, en 2 o 3 párrafos cortos.
-- Usa solo los datos y las notas anteriores. No inventes anécdotas, cualidades técnicas ni resultados que no aparezcan.
-- No compares a ${first} con otros niños ni menciones clasificaciones o rankings.
-- Si hay algo que mejorar (por ejemplo la asistencia o la participación), plantéalo como un objetivo ilusionante para la próxima temporada.
-- No expliques los motivos de las ausencias en las convocatorias salvo que las notas lo pidan.
-- Sin títulos, listas, markdown, saludo ni firma. Devuelve únicamente el texto del informe.`;
+REGLAS: informe positivo y constructivo, entre 110 y 160 palabras, dos o tres párrafos.
+Conserva literalmente [JUGADOR] cada vez que menciones al jugador. No menciones ausencias,
+lesiones, datos médicos, notas privadas, domicilios, colegios ni nombres de clubes.
+No inventes jugadas, cualidades ni resultados. Sin títulos ni listas.`;
 }
+// La sustitución por el nombre ocurre únicamente en el dispositivo, DESPUÉS de recibir el texto.
+const nameLocalReport = (pid, text) => {
+  const p = Store.player(pid), first = p?.name?.trim().split(/\s+/)[0];
+  return first ? String(text).replace(/\[JUGADOR\]/g, first) : String(text);
+};
 function setReport(pid, text, source) {
   const cur = Store.reports[pid] || { id: pid };
   Store.reports[pid] = { ...cur, id: pid, text, source: source || cur.source || "manual", updatedAt: new Date().toISOString() };
@@ -50,7 +50,7 @@ function setReport(pid, text, source) {
 }
 async function genReport(pid, signal) {
   UI.ai.busy = UI.ai.busy || {}; UI.ai.busy[pid] = true; UI.ai.err = null; render(true);
-  try { const text = await aiSample(reportPrompt(pid), signal); setReport(pid, text, "ia"); if (UI.sheet && UI.sheet.type === "report" && UI.sheet.pid === pid) UI.sheet.draft = text; return true; }
+  try { const text = nameLocalReport(pid, await aiSample(reportPrompt(pid), signal)); setReport(pid, text, "ia"); if (UI.sheet && UI.sheet.type === "report" && UI.sheet.pid === pid) UI.sheet.draft = text; return true; }
   catch (e) { if (e && e.code === "insufficient_tokens") Cloud.loadProfile(); if (!(e && e.code === "cancelled")) UI.ai.err = { pid, msg: aiErr(e), code: e && e.code }; return false; }
   finally { UI.ai.busy[pid] = false; render(true); }
 }
@@ -75,17 +75,22 @@ ACT.genAll = async () => {
 ACT.stopAll = () => { if (UI.ai.bulk) UI.ai.bulk.ctl.abort(); };
 ACT.genCron = async () => {
   const m = curMatch(); if (!m) return;
-  const i = Calc.matchInfo(m), club = (Store.season().club || "Mi equipo").replace(/ CD$/, "");
-  const sc = {}; (m.scorers || []).slice(0, m.ourGoals).forEach(x => { if (x && x !== "og") { const n = (Store.player(x) || {}).name; if (n) sc[n] = (sc[n] || 0) + 1; } });
-  const og = (m.scorers || []).slice(0, m.ourGoals).filter(x => x === "og").length;
-  const prompt = `Escribe una crónica muy breve (entre 60 y 90 palabras) de un partido de fútbol base para pegarla en el grupo de WhatsApp de las familias. Tono cercano, positivo y respetuoso con el rival. Sin emojis, sin títulos y sin markdown. Usa solo estos datos y no inventes jugadas ni detalles.
-- Equipo: ${club}${m.home != null ? ` (${m.home ? "jugando como local" : "jugando como visitante"})` : ""}
-- Rival: ${m.rival}
-- Jornada ${m.n}${m.date ? `, ${fmtLong(m.date)}` : ""}
-- Resultado: ${club} ${m.ourGoals} - ${m.rivalGoals} ${m.rival} (${resTxt[i.res].toLowerCase()} para ${club})
-- Goleadores: ${Object.entries(sc).map(([n, g]) => `${n} ${g}`).join(", ") || "sin goleadores indicados"}${og ? `; ${og} gol en propia puerta del rival` : ""}
-- Convocados: ${calledPlayers(m).length} jugadores${(m.notes || "").trim() ? `\n- Notas del entrenador: ${m.notes.trim()}` : ""}
-Devuelve únicamente el texto de la crónica.`;
+  const i = Calc.matchInfo(m);
+  // No se transmite al proveedor IA ningún nombre de jugador, club, rival o nota libre.
+  const sc = {}, goals = (m.scorers || []).slice(0, m.ourGoals);
+  goals.forEach(id => { if (id && id !== "og") sc[id] = (sc[id] || 0) + 1; });
+  const og = goals.filter(id => id === "og").length;
+  const prompt = `Escribe una crónica breve de fútbol base de 60 a 90 palabras, en español de España.
+Sin títulos, emojis ni nombres propios. No inventes jugadas ni datos.
+- Jornada: ${m.n}
+- Local o visitante: ${m.home ? "local" : "visitante"}
+- Goles del equipo: ${m.ourGoals}; goles del rival: ${m.rivalGoals}
+- Resultado: ${i.res === "V" ? "victoria" : i.res === "E" ? "empate" : "derrota"}
+- Número de jugadores convocados: ${calledPlayers(m).length}
+- Número de goleadores diferentes: ${Object.keys(sc).length}
+- Distribución anónima de goles por jugador: ${Object.values(sc).join(", ") || "sin asignar"}
+- Goles en propia puerta rival: ${og}
+Usa expresiones genéricas "nuestro equipo" y "el rival". No menciones nombres de menores ni lesiones.`;
   UI.ai.busyCron = true; UI.ai.cronErr = null; render(true);
   try { UI.ai["cron" + m.n] = await aiSample(prompt, undefined, "cron"); } catch (e) { UI.ai.cronErr = aiErr(e); }
   UI.ai.busyCron = false; render(true);
