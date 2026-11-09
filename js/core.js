@@ -5,7 +5,7 @@ const V = {};      // vistas
 const ACT = {};    // acciones (clic)
 const CHG = {};    // cambios (change)
 const INP = {};    // entrada de texto (sin re-render)
-const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode"]);
+const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "copyCallMessage", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode"]);
 const inWizard = a => !!UI.wiz && /^(w[A-Z]|wiz)/.test(a);
 const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"]];
 const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas" };
