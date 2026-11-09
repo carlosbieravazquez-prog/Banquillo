@@ -49,3 +49,7 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Crear y verificar backup restaurable y staging antes de ejecutar borrador SQL.
 
 **Prioridad de privacidad:** evite nombres completos y datos de salud de menores en notas de libre redacción; no enviar plantillas reales a la IA; no anunciar seguridad absoluta.
+
+## Prueba manual adicional: aislamiento de interfaz
+
+- **Prueba 14:** con una segunda cuenta de prueba, sin invitación a temporadas, el usuario confirmó que no aparecen temporadas ni jugadores de su cuenta principal. **Superada a nivel interfaz**. No demuestra por sí sola la imposibilidad de acceso vía API; se mantiene pendiente una prueba real cruzada de RLS y escritura entre dos usuarios y temporadas de prueba.
