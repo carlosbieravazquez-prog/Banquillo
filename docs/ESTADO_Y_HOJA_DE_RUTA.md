@@ -279,3 +279,44 @@ Se ha implementado en la rama de trabajo una mejora de convocatoria, sin modific
 - Commits de implementación: `0034a24`, `e4294a3`, `fbed85a`, `9579c7a`, `260e9f3`, `8c5eca0`, `a6f982e`, `d4f46ec`, `10bf7f9` y `470ad6b`.
 - Documento actualizado y reordenado en `2c6c1fa`; se mantiene pendiente la prueba en navegador antes de integrar en `main`.
 
+
+
+### 4.11 Catálogo inicial de competiciones — Andalucía, Sevilla — 9-11-2026
+
+Se ha investigado la oferta federativa de la temporada 2026/2027 y se ha añadido un catálogo semilla en:
+
+- `data/competition-catalog.es-andalucia-sevilla.2026-2027.json`
+- Commit: `fa344c90cd105220e057ec370b8b28a6130962ee`
+
+Configuración territorial del club de demostración:
+- País: España.
+- Comunidad autónoma: Andalucía.
+- Provincia: Sevilla.
+- Municipio de demostración: Dos Hermanas.
+- Temporada: 2026/2027.
+- Modalidades: Fútbol 7 y Fútbol 11.
+
+El catálogo inicial incluye competiciones masculinas federadas con categoría, modalidad, organizador, ámbito territorial, temporada y fuentes:
+- Prebenjamín: 3.ª y 4.ª Andaluza provincial, Fútbol 7.
+- Benjamín: 2.ª, 3.ª y 4.ª Andaluza provincial, Fútbol 7.
+- Alevín: 1.ª Andaluza autonómica y 2.ª, 3.ª y 4.ª Andaluza provincial, Fútbol 7.
+- Infantil: División de Honor autonómica y 2.ª, 3.ª y 4.ª Andaluza provincial, Fútbol 11.
+- Cadete: 1.ª Andaluza autonómica y 2.ª, 3.ª y 4.ª Andaluza provincial, Fútbol 11.
+- Juvenil: División de Honor Juvenil y Liga Nacional Juvenil (ámbito nacional), más 2.ª, 3.ª y 4.ª Andaluza provincial, Fútbol 11.
+
+Matices importantes:
+- No se inventan grupos: se elegirán solo cuando la ficha oficial de la competición los publique.
+- La 1.ª Andaluza Juvenil y otras posibles categorías autonómicas no se activan hasta confirmar su ficha de la temporada 2026/2027.
+- Las competiciones femeninas se mantienen como catálogo separado pendiente de completar con fichas oficiales de la temporada.
+- Los Juegos Deportivos Municipales del IMD consultados son del municipio de Sevilla capital; no se asignan automáticamente a un club ubicado en Dos Hermanas.
+- Liga Educa se registra como competición educativa/no federativa de alta manual, nunca como RFAF/RFEF.
+- La ficha de cada competición conserva URL de fuente y el catálogo tiene estado de verificación para permitir revisiones futuras.
+
+Este JSON es por ahora un catálogo semilla versionado en la rama de desarrollo. **Todavía no está conectado a la interfaz de creación de clubes/equipos ni se ha escrito en Supabase.** No se ha modificado producción, la rama `main` ni los datos reales.
+
+## 5.1 Próxima ampliación del catálogo
+1. Verificar una por una las fichas 2026/2027 de todas las divisiones por categoría.
+2. Completar las competiciones femeninas y sus modalidades.
+3. Investigar la oferta municipal específica de Dos Hermanas y otras localidades.
+4. Diseñar actualización anual por temporada y registro de fuentes/fecha de comprobación.
+5. Conectar el catálogo a la creación de equipos con filtros por comunidad, provincia, municipio, categoría, género y modalidad.
