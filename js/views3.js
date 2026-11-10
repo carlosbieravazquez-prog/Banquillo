@@ -171,7 +171,7 @@ ACT.reopenSeason = () => { const s = Store.season(); s.status = "active"; Store.
 /* ---------- AJUSTES de la temporada ---------- */
 ACT.openSettings = () => {
   const s = Store.season(), st = s.settings || {};
-  UI.sheet = { type: "settings", wide: true, d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, format: st.format || "F7", crest: ClubCrest.current(s), kits: ClubTheme.normalizeKits(st.kits), palette: ClubTheme.cleanPalette(st.palette), trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
+  UI.sheet = { type: "settings", wide: true, page:"data", d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, format: st.format || "F7", crest: ClubCrest.current(s), kits: ClubTheme.normalizeKits(st.kits), palette: ClubTheme.cleanPalette(st.palette), trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
 };
 const crestControl = (data, change, remove) => `
     <div class="card flat"><div class="card-h"><h3>Escudo del equipo</h3><span class="tag">Opcional</span></div>
@@ -184,16 +184,24 @@ const crestControl = (data, change, remove) => `
     </div>`;
 const DAYSEL = [[1, "Lun"], [2, "Mar"], [3, "Mié"], [4, "Jue"], [5, "Vie"], [6, "Sáb"], [0, "Dom"]];
 V.sheet.settings = sh => {
-  const d = sh.d;
-  return `<h2>Ajustes de la temporada ${esc(Store.season().name)}</h2>
-    <div class="form"><label class="fld"><span>Club</span><input type="text" class="inp" data-inp="setClub" value="${esc(d.club)}"></label>
-    <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="setCat" value="${esc(d.category)}"></label>
-    ${crestControl(d.crest, "setCrest", "removeCrest")}
-    <label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="setFormat"><option value="F7" ${d.format === "F7" ? "selected" : ""}>Fútbol 7</option><option value="F11" ${d.format === "F11" ? "selected" : ""}>Fútbol 11</option></select></label>${ClubKitsEditor.render(d,"set")}<label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="${esc(d.matchMinutes)}"></label>
-    <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${d.trainDays.includes(v) ? "on" : ""}" data-act="setDay" data-v="${v}">${l}</button>`).join("")}</div></div>
-    <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="setStart" value="${esc(d.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="setEnd" value="${esc(d.trainEnd)}"></label></div>
-    <p class="muted small">Si cambias las fechas, las faltas ya marcadas se conservan. Las sesiones nuevas aparecen en Entrenos.</p></div>
-    <div class="row end gap foot">${btn("Cancelar", "closeSheet", {}, "ghost")}${btn("Guardar ajustes", "saveSettings", {}, "primary")}</div>`;
+  const d=sh.d,pg=sh.page||"data",tabs=[["data","Datos"],["kits","Equipaciones"],["palette","Identidad visual"]];
+  const nav='<div class="settings-visual-tabs" role="navigation" aria-label="Apartados de configuración">'+tabs.map(([id,title])=>
+    '<button type="button" data-act="settingsPage" data-page="'+id+'" class="'+(pg===id?"on":"")+'" aria-current="'+(pg===id?"page":"false")+'">'+title+'</button>').join("")+'</div>';
+  const general='<div class="form"><label class="fld"><span>Club</span><input type="text" class="inp" data-inp="setClub" value="'+esc(d.club)+'"></label>'+
+    '<label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="setCat" value="'+esc(d.category)+'"></label>'+
+    crestControl(d.crest,"setCrest","removeCrest")+
+    '<label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="setFormat"><option value="F7"'+(d.format==="F7"?" selected":"")+'>Fútbol 7</option><option value="F11"'+(d.format==="F11"?" selected":"")+'>Fútbol 11</option></select></label>'+
+    '<label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="'+esc(d.matchMinutes)+'"></label>'+
+    '<div class="fld"><span>Días de entrenamiento</span><div class="chips">'+DAYSEL.map(([v,l])=>'<button type="button" class="chip '+(d.trainDays.includes(v)?"on":"")+'" data-act="setDay" data-v="'+v+'">'+l+'</button>').join("")+'</div></div>'+
+    '<div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="setStart" value="'+esc(d.trainStart)+'"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="setEnd" value="'+esc(d.trainEnd)+'"></label></div>'+
+    '<p class="muted small">Los cambios se aplicarán al pulsar Guardar ajustes.</p></div>';
+  const body=pg==="kits"?ClubKitsEditor.renderKits(d,"set"):pg==="palette"?ClubKitsEditor.renderPalette(d,"set"):general;
+  return '<h2>Ajustes de la temporada '+esc(Store.season().name)+'</h2>'+nav+body+
+    '<div class="row end gap foot">'+btn("Cancelar","closeSheet",{},"ghost")+btn("Guardar ajustes","saveSettings",{},"primary")+'</div>';
+};
+ACT.settingsPage = el => {
+  if(UI.sheet?.type==="settings" && ["data","kits","palette"].includes(el.dataset.page))
+    UI.sheet.page=el.dataset.page;
 };
 CHG.setCrest = async el => {
   const d = UI.sheet && UI.sheet.d;
