@@ -411,3 +411,11 @@ body.in-app #landing{display:none}
 .auth-wait{border:1px solid var(--line);border-left:4px solid #b7791f;border-radius:10px;padding:11px 13px;margin:8px 0 12px;background:var(--surface-2);color:var(--ink);line-height:1.55}
 .auth-wait[hidden],[data-auth-inline][hidden]{display:none!important}
 [data-auth-inline]:not([hidden]){margin:8px 0 12px}
+
+/* Entrada inmediata a demostración aislada, sin autenticación. */
+.l-demo-access{display:grid;gap:7px;padding:15px 16px;margin:0 0 15px;border:1px solid rgba(61,160,130,.32);border-radius:14px;background:rgba(36,136,105,.09);color:var(--ink,#e7f1f6)}
+.l-demo-access strong{font-size:15px}
+.l-demo-access span{font-size:13px;line-height:1.5}
+.l-demo-access small{font-size:11px;opacity:.8}
+.l-demo-access-link{display:block;text-align:center;padding:12px 15px;border-radius:10px;background:#237c58;color:#fff!important;text-decoration:none;font-weight:750;margin-top:5px}
+.l-demo-access-link:hover,.l-demo-access-link:focus-visible{background:#176044;color:#fff!important}
