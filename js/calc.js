@@ -100,7 +100,7 @@ const Calc = (() => {
   /** Minutos de cada jugador a partir de titulares y cambios. */
   function calcMinutes(m, dur) {
     const nc = noCallMap(m);
-    const ev = (m.subs || []).filter(e => isNum(e.min)).slice().sort((a, b) => a.min - b.min);
+    const ev = (m.subs || []).filter(e => isNum(e.min) && e.min >= 0 && e.min <= dur).slice().sort((a, b) => a.min - b.min);
     const res = {};
     Object.entries(m.players || {}).forEach(([pid, d]) => {
       if (pid in nc || !d.role) return;
