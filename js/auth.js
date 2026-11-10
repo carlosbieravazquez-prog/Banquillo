@@ -47,7 +47,7 @@ const FORM = {};
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
       html = card("Revisa tu correo", `<p>Te hemos enviado un mensaje a <b>${esc(u.email)}</b>. Pulsa el enlace que contiene para confirmar tu cuenta y vuelve aquí.</p>
-        <p class="muted small">Si no aparece, revisa spam. Si has indicado un código de equipo, mantén esta pestaña abierta y vuelve a iniciar sesión después de confirmar el correo. También puedes introducir el código cuando ya estés dentro.</p>
+        <p class="muted small">Si no aparece, revisa spam. Si has indicado un código de equipo, el acceso se intentará completar al confirmar el correo en este mismo navegador. En otro dispositivo, podrás añadirlo después desde «Unirme con un código».</p>
         <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Ya lo he confirmado: entrar</button>`);
     } else if (u.mode === "welcome") {
       html = card("Empieza con Banquillo", `<p class="muted small">Gestiona un equipo, crea una cuenta o entra con el código que te ha dado tu director deportivo.</p><div class="auth-choices">
@@ -92,15 +92,16 @@ const FORM = {};
 
   ACT.authMode = el => { A.ui.mode = el.dataset.v; A.ui.msg = null; };
   INP.authJoinCode = el => { A.ui.joinCode = el.value; };
+  // Código temporal (máximo 1 h) en este navegador: permite completar la confirmación en otra pestaña.
   const PENDING_KEY = "bq.pending-team-code.v1";
   const validCode = value => /^[A-Z0-9]{8}$/.test(String(value || "").toUpperCase().replace(/[^A-Z0-9]/g,""));
   const setPendingJoin = (code,email) => {
-    try { sessionStorage.setItem(PENDING_KEY,JSON.stringify({code:code.toUpperCase().replace(/[^A-Z0-9]/g,""),email:email.toLowerCase(),expires:Date.now()+3600000})); } catch (_) { /* sesión sin almacenamiento */ }
+    try { localStorage.setItem(PENDING_KEY,JSON.stringify({code:code.toUpperCase().replace(/[^A-Z0-9]/g,""),email:email.toLowerCase(),expires:Date.now()+3600000})); } catch (_) { /* sesión sin almacenamiento */ }
   };
-  const clearPendingJoin = () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (_) {} };
+  const clearPendingJoin = () => { try { localStorage.removeItem(PENDING_KEY); } catch (_) {} };
   const consumePendingJoin = async (sessionUser) => {
     let pending;
-    try {pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||"null");}catch(_){clearPendingJoin();return;}
+    try {pending=JSON.parse(localStorage.getItem(PENDING_KEY)||"null");}catch(_){clearPendingJoin();return;}
     if(!pending)return;
     if(pending.expires<Date.now()){clearPendingJoin();return;}
     if(String(sessionUser.email||"").toLowerCase()!==pending.email)return;
