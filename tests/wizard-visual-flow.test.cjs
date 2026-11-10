@@ -15,7 +15,7 @@ test("Silueta SVG limpia y sin fotografías, patrocinadores o logos",()=>{
  assert.match(svg,/fill="#101010"/);
  assert.match(svg,/fill="#FFFFFF"/);
  assert.match(svg,/role="img"/);
- assert.doesNotMatch(svg,/<(?:image|foreignObject|script)\b|https?:\/\//);
+ assert.doesNotMatch(svg,/<(?:image|foreignObject|script)\b|(?:xlink:)?href=/);
  assert.ok((svg.match(/<path /g)||[]).length>=7);
 });
 
