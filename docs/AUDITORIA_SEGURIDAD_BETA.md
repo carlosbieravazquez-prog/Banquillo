@@ -142,3 +142,14 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [x] Cinco comprobaciones funcionales equivalentes ejecutadas sobre `js/auth-captcha.js`: modo desactivado, creación única, token entregado, rechazo si desconectado y recuperación del error de red.
 - [ ] Próximo paso: acordar la organización del proyecto staging y revisar cualquier coste antes de crearlo. No incorporar datos reales ni habilitar CAPTCHA en el Supabase principal durante estas pruebas.
 - [ ] Se necesita una **sitekey pública** de Cloudflare Turnstile para ese entorno. La clave secreta se configura en el panel de Supabase; nunca pedirla por chat ni subirla al repositorio.
+
+## Staging independiente creado (10 noviembre 2026)
+
+- [x] Supabase creado en organización Banquillo, nombre `Banquillo-Staging`, proyecto `opfujvhgqrweyaaqquif`, región `eu-central-1`. Coste informado y aprobado: **0 USD/mes**, sujeto a los límites del plan y posibles cambios futuros.
+- [x] Se aplicó el esquema original `schema.sql` del repositorio **solo al proyecto staging**, mediante migración `banquillo_staging_initial_schema`. Producción no recibió ninguna migración.
+- [x] Consultas de verificación del staging: 5 tablas principales presentes, RLS activada en todas, privilegio SELECT de `anon` sobre `docs` no concedido.
+- [x] Staging inicialmente sin usuarios de Auth ni documentos; se ha comprobado que permanecen en 0 tras la migración. No se han copiado datos de menores ni usuarios reales.
+- [ ] Preparar un frontend Beta que apunte **exclusivamente a staging** y no a producción, con una clave pública de staging. Verificar la URL y mostrar distintivo de pruebas antes de cualquier alta de cuenta.
+- [ ] Crear las cuentas y temporadas ficticias para probar RLS, escritura, recuperación y CAPTCHA.
+- [ ] Configurar sitekey pública de Turnstile para staging, comprobar los tres formularios y solo entonces activar validación CAPTCHA en Supabase staging.
+- [ ] Verificar procedimientos de copia restaurable y recuperación antes de aplicar ajustes a la base oficial.
