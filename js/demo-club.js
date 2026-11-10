@@ -151,7 +151,7 @@
     tabs+body+'<div class="notice">Demo local: los datos son ficticios. Para crear equipos y códigos válidos abre la Beta autenticada, apartado «Clubes».</div></div>';
  }
  const render=()=>{const colors=ClubTheme.derive(state.uniforms,state.palette).light;document.documentElement.style.setProperty("--navy",colors["--brand"]);document.documentElement.style.setProperty("--green",colors["--accent"]);document.documentElement.style.setProperty("--green-soft",colors["--accent-soft"]);shell();const v=UI.view||"resumen";$("#pageTitle").textContent=viewTitles[v];$("#viewRoot").innerHTML=({resumen,equipos,equipo:editorEquipo,directores,instalaciones,calendario:calendar,comunicaciones,avisos,ajustes}[v]||resumen)();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));};
- const UI={view:"resumen",teamId:null,settingsTab:"data"};
+ const UI={view:["equipos","instalaciones","calendario","ajustes","directores"].includes(location.hash.slice(1))?location.hash.slice(1):"resumen",teamId:null,settingsTab:"data"};
  document.addEventListener("click",e=>{
   const kitAct=e.target.closest("[data-act]");
   if(kitAct){
