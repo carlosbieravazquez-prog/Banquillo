@@ -246,6 +246,8 @@ CHG.setPalettePreset = el => updateClubPalette("set",el,"preset");
 CHG.wPalettePreset = el => updateClubPalette("w",el,"preset");
 CHG.setPaletteCustom = el => updateClubPalette("set",el,"custom");
 CHG.wPaletteCustom = el => updateClubPalette("w",el,"custom");
+ACT.wPaletteChoice = el => { if(UI.wiz && ["auto","preset"].includes(el.dataset.mode)) UI.wiz.palette={...ClubTheme.cleanPalette(UI.wiz.palette),mode:el.dataset.mode}; };
+ACT.setPaletteChoice = el => { if(UI.sheet?.d && ["auto","preset"].includes(el.dataset.mode)) UI.sheet.d.palette={...ClubTheme.cleanPalette(UI.sheet.d.palette),mode:el.dataset.mode}; };
 ACT.setToggleThird = () => toggleClubThird("set");
 ACT.wToggleThird = () => toggleClubThird("w");
 ACT.saveSettings = () => {
@@ -275,7 +277,7 @@ ACT.wizStart = el => {
     players, matches, copyNote: !first, progress: null, done: false, newId: null };
   UI.sheet = { type: "wizard", wide: true };
 };
-const WSTEPS = ["Datos", "Plantilla", "Jornadas", "Crear"];
+const WSTEPS = ["Datos", "Equipaciones", "Identidad visual", "Plantilla", "Jornadas", "Crear"];
 V.sheet.wizard = () => {
   const w = UI.wiz;
   const stepper = `<ol class="wsteps">${WSTEPS.map((l, i) => `<li class="${w.step === i + 1 ? "on" : w.step > i + 1 ? "done" : ""}"><i>${i + 1}</i>${l}</li>`).join("")}</ol>`;
@@ -286,15 +288,19 @@ V.sheet.wizard = () => {
       <label class="fld"><span>Club</span><input type="text" class="inp" data-inp="wClub" value="${esc(w.club)}" placeholder="Nombre de tu club"></label>
       <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="wCat" value="${esc(w.category)}" placeholder="Benjamín · Liga Educa"></label>
        ${crestControl(w.crest, "wCrest", "wRemoveCrest")}<label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="wFormat"><option value="F7" ${w.format === "F7" ? "selected" : ""}>Fútbol 7</option><option value="F11" ${w.format === "F11" ? "selected" : ""}>Fútbol 11</option></select></label>
-      ${ClubKitsEditor.render(w,"w")}<div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${w.trainDays.includes(v) ? "on" : ""}" data-act="wDay" data-v="${v}">${l}</button>`).join("")}</div></div>
+      <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${w.trainDays.includes(v) ? "on" : ""}" data-act="wDay" data-v="${v}">${l}</button>`).join("")}</div></div>
       <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="wStart" value="${esc(w.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="wEnd" value="${esc(w.trainEnd)}"></label></div>
       ${w.copyNote ? `<p class="muted small">La plantilla y el número de jornadas se copian de la temporada ${esc(Store.season().name)}. Los dorsales quedan en blanco por si cambian.</p>` : ""}</div>`;
   } else if (w.step === 2) {
+    body = ClubKitsEditor.renderKits(w,"w");
+  } else if (w.step === 3) {
+    body = ClubKitsEditor.renderPalette(w,"w");
+  } else if (w.step === 4) {
     body = `<p class="muted small">Quita a quien se va, corrige nombres y añade los jugadores nuevos. Los dorsales se pueden poner ahora o más tarde.</p>
       <ul class="wlist">${w.players.map((p, i) => `<li class="${p.keep ? "" : "off"}"><input type="checkbox" data-chg="wKeep" data-i="${i}" ${p.keep ? "checked" : ""} aria-label="Seguir en la plantilla"><input type="text" class="inp" data-inp="wPName" data-i="${i}" value="${esc(p.name)}" placeholder="Nombre" aria-label="Nombre"><input type="text" inputmode="numeric" class="inp mini" data-inp="wPDors" data-i="${i}" value="${esc(p.dorsal)}" placeholder="Nº" maxlength="2" aria-label="Dorsal"><button type="button" class="ix" data-act="wDelP" data-i="${i}" aria-label="Quitar">${icon("x")}</button></li>`).join("")}</ul>
       <div class="row gap wrap tool">${btn("Añadir jugador", "wAddP", {}, "ghost", "plus")}<button type="button" class="link" data-act="wPaste">Pegar una lista de nombres</button></div>
       ${UI.pasteOpen === "p" ? `<textarea class="inp area" rows="7" data-inp="wPasteP" placeholder="- Oliver Atom – **10**&#10;- Santiago Muñez – **26**&#10;- Benji Price – **1**"></textarea><p class="muted small">Pega un jugador por línea. Reconocemos «Nombre – 10», «- Nombre – **10**», «10 – Nombre» y «10. Nombre». Nombre y dorsal quedan en columnas distintas; revisa los dorsales repetidos antes de terminar.</p><div class="row end">${btn("Añadir jugadores", "wPasteP", {}, "primary")}</div>` : ""}`;
-  } else if (w.step === 3) {
+  } else if (w.step === 5) {
     body = `<p class="muted small">Fecha, rival y campo de cada jornada. Si aún no los tienes, déjalos en blanco y complétalos después en Partidos.</p>
       <ul class="wm">${w.matches.map((m, i) => `<li class="${m.rest ? "off" : ""}"><b>J${m.n || i + 1}</b><input type="date" class="inp" data-inp="wMDate" data-i="${i}" value="${esc(m.date)}" aria-label="Fecha">${m.rest ? `<span class="muted grow">Descansa</span>` : `<input type="text" class="inp grow" data-inp="wMRival" data-i="${i}" value="${esc(m.rival)}" placeholder="Rival" aria-label="Rival"><select class="sel" data-chg="wMHome" data-i="${i}" aria-label="Local o visitante"><option value="" ${m.home == null ? "selected" : ""}>Por definir</option><option value="1" ${m.home === true ? "selected" : ""}>Local</option><option value="0" ${m.home === false ? "selected" : ""}>Visitante</option></select>`}<label class="chk" title="Jornada de descanso"><input type="checkbox" data-chg="wMRest" data-i="${i}" ${m.rest ? "checked" : ""}>Desc.</label><button type="button" class="ix" data-act="wDelM" data-i="${i}" aria-label="Quitar jornada">${icon("x")}</button></li>`).join("")}</ul>
       <div class="row gap wrap tool">${btn("Añadir jornada", "wAddM", {}, "ghost", "plus")}<button type="button" class="link" data-act="wPasteM">Pegar el calendario</button></div>
@@ -307,7 +313,7 @@ V.sheet.wizard = () => {
         <p class="muted small">La temporada actual no se toca. Todo lo nuevo empieza vacío.</p>
         ${w.progress ? `<div class="prog"><i style="width:${Math.round(w.progress[0] / w.progress[1] * 100)}%"></i></div><p class="muted small">Creando… ${w.progress[0]} de ${w.progress[1]}</p>` : ""}${w.err ? `<p class="err small">${esc(w.err)}</p>` : ""}</div>`;
   }
-  const nav = w.step === 4 && w.done ? "" : `<div class="row between gap foot">${w.step > 1 && !w.progress ? btn("Atrás", "wBack", {}, "ghost", "back") : btn("Cancelar", "closeSheet", {}, "ghost")}${w.step < 4 ? btn("Siguiente", "wNext", {}, "primary") : btn(w.progress ? "Creando…" : "Crear temporada", "wCreate", {}, "primary", "check")}</div>`;
+  const nav = w.step === 6 && w.done ? "" : `<div class="row between gap foot">${w.step > 1 && !w.progress ? btn("Atrás", "wBack", {}, "ghost", "back") : btn("Cancelar", "closeSheet", {}, "ghost")}${w.step < 6 ? btn("Siguiente", "wNext", {}, "primary") : btn(w.progress ? "Creando…" : "Crear temporada", "wCreate", {}, "primary", "check")}</div>`;
   return `<h2>Nueva temporada</h2>${stepper}<div class="wbody">${body}</div>${nav}`;
 };
 CHG.wCrest = async el => {
@@ -390,7 +396,7 @@ ACT.wNext = () => {
     if (w.trainStart && w.trainEnd && w.trainStart > w.trainEnd) { toast("El último entreno no puede ser anterior al primero.", "err"); return; }
     w.name = name;
   }
-  if (w.step === 2 && !w.players.some(p => p.keep && p.name.trim())) { toast("Añade al menos un jugador.", "err"); return; }
+  if (w.step === 4 && !w.players.some(p => p.keep && p.name.trim())) { toast("Añade al menos un jugador.", "err"); return; }
   w.step++; UI.pasteOpen = false;
 };
 ACT.wCreate = async () => {
