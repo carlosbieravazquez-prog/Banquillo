@@ -153,3 +153,16 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Crear las cuentas y temporadas ficticias para probar RLS, escritura, recuperación y CAPTCHA.
 - [ ] Configurar sitekey pública de Turnstile para staging, comprobar los tres formularios y solo entonces activar validación CAPTCHA en Supabase staging.
 - [ ] Verificar procedimientos de copia restaurable y recuperación antes de aplicar ajustes a la base oficial.
+
+## Staging frontend aislado y pruebas de funciones internas (10 noviembre 2026)
+
+- [x] Nuevo `staging.html` en la rama Beta: marcador visual «PRUEBAS · DATOS FICTICIOS», metadatos `noindex`, y carga exclusiva de `config.staging.js`.
+- [x] `config.staging.js` usa la URL y **clave pública** del proyecto `opfujvhgqrweyaaqquif`, nunca la clave de producción. `TURNSTILE_SITE_KEY` permanece vacía, por lo que CAPTCHA aún no está activo.
+- [x] `js/staging-guard.js`: invalida la configuración si el frontend staging apunta a otro proyecto; la clave `service_role` no se usa ni se almacena en el navegador.
+- [x] CSP de Beta y staging incluye `script-src` y `frame-src` para `https://challenges.cloudflare.com`, exigidos por Turnstile; se mantiene la restricción de scripts inline.
+- [x] `tests/staging-isolation.test.cjs`: pruebas reproducibles de aislamiento, CSP, noindex, guard y orden de carga. Nueve comprobaciones de estructura y comportamiento equivalentes ejecutadas con éxito. No sustituyen una prueba de navegador.
+- [x] En **staging únicamente**, migración `staging_restrict_internal_trigger_functions`: revocado permiso EXECUTE directo de las funciones `handle_new_user()` y `docs_guard()` para `PUBLIC`, `anon` y `authenticated`. Verificado `false` para ambos roles en ambas funciones; sus dos triggers continúan registrados. Queda verificar registro y guardado efectivos con cuentas ficticias antes de promover a producción.
+- [ ] Configurar URL de redirección en Supabase staging para `http://127.0.0.1:5500/staging.html` durante pruebas locales, sin afectar el proyecto oficial.
+- [ ] Probar inicio de sesión/registro con cuentas ficticias, Turnstile con sitekey y validación de Supabase staging, y escenarios negativos de escritura.
+- [ ] GitHub ↔ Supabase: la conexión automática es **opcional**; no activar despliegues de migraciones desde `main` sin revisión del esquema y aprobación explícita.
+- [ ] AWS: no necesario por ahora para el frontend estático; revisar solo cuando exista demanda de servicios concretos y presupuesto.
