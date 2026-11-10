@@ -8,7 +8,7 @@ const INP = {};    // entrada de texto (sin re-render)
 const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "downloadActaXlsx", "downloadActaPdf", "printActa", "jumpActaExcel", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode", "openConvocationMessage", "setMessageMode", "setMessageKit", "copyConvocationMessage"]);
 const inWizard = a => !!UI.wiz && /^(w[A-Z]|wiz)/.test(a);
 const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"]];
-const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas" };
+const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas", clubes: "Dirección deportiva" };
 
 /* ---------- router ---------- */
 function parseHash() {
@@ -55,6 +55,7 @@ const matchScore = m => { const i = Calc.matchInfo(m); return i.played ? `${m.ou
 function bodyView() {
   if (Store.connecting && !Store.db) return `<div class="loading"><div class="spin"></div><p>Conectando con tus datos…</p></div>`;
   if (!Store.db) return empty("Sin conexión con los datos", "No se ha podido abrir la base de datos. Recarga la página e inténtalo de nuevo.");
+  if (UI.route.name === "clubes") return V.clubes();
   if (!Store.isLoaded()) {
     return `<div class="loading"><div class="spin"></div><p>${Store.offline ? "No se puede conectar con los datos. Se reintentará automáticamente." : Store.slow ? "Tarda más de lo normal en responder. Comprueba tu conexión." : "Cargando tus datos…"}</p></div>`;
   }
@@ -84,7 +85,7 @@ function shell() {
   return `<div class="shell ${Store.readOnly() ? "ro" : ""}">
     <aside class="side">
       <div class="brand">${crest || `<span class="mark">${icon("ball")}</span>`}<div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
-      <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button></nav>
+      <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button><button type="button" class="sitem ${activeKey === "clubes" ? "on" : ""}" data-act="clubGo">${icon("users")}<span>Dirección deportiva</span></button></nav>
       <div class="side-foot">${seasonChip}${syncBadge()}${accountBtn()}</div>
     </aside>
     <div class="col">
@@ -161,7 +162,7 @@ document.addEventListener("click", e => {
   const lockedMatch = UI.route.name === "partido" && !!(Store.match(UI.route.arg) || {}).closed;
   const lockedAllowed = new Set(["go", "setTab", "printActa", "downloadActaXlsx", "downloadActaPdf", "jumpActaExcel", "reopenActa", "setRedSanction", "copyCron", "genCron", "closeSheet"]);
   if (lockedMatch && !lockedAllowed.has(el.dataset.act)) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
-  if (Store.readOnly() && !READ_OK.has(el.dataset.act) && !inWizard(el.dataset.act)) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
+  if (Store.readOnly() && !READ_OK.has(el.dataset.act) && !inWizard(el.dataset.act) && !el.dataset.act.startsWith("club")) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
   render(true);
 });
@@ -171,7 +172,7 @@ document.addEventListener("change", e => {
   const fn = CHG[el.dataset.chg];
   if (!fn) return;
   if (UI.route.name === "partido" && (Store.match(UI.route.arg) || {}).closed) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
-  if (Store.readOnly() && !UI.wiz) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
+  if (Store.readOnly() && !UI.wiz && !el.dataset.chg.startsWith("club") && UI.sheet?.type!=="clubSettings") { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
   UI.dirty = true; lateRender();
 });
@@ -180,7 +181,7 @@ document.addEventListener("input", e => {
   if (!el) return;
   const fn = INP[el.dataset.inp];
   if (UI.route.name === "partido" && (Store.match(UI.route.arg) || {}).closed) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
-  if (fn && (!Store.readOnly() || UI.wiz || UI.sheet && UI.sheet.type === "join")) fn(el, e);
+  if (fn && (!Store.readOnly() || UI.wiz || UI.sheet && UI.sheet.type === "join" || el.dataset.inp.startsWith("club"))) fn(el, e);
 });
 document.addEventListener("focusout", () => { if (UI.dirty) lateRender(); });
 document.addEventListener("keydown", e => {
