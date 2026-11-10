@@ -93,7 +93,7 @@ const FORM = {};
   ACT.authMode = el => { A.ui.mode = el.dataset.v; A.ui.msg = null; };
   INP.authJoinCode = el => { A.ui.joinCode = el.value; };
   // Código temporal (máximo 1 h) en este navegador: permite completar la confirmación en otra pestaña.
-  const PENDING_KEY = "bq.pending-team-code.v1";
+  const PENDING_KEY = "bq.pending-team-code.v1." + String(Cloud.cfg?.SUPABASE_URL || "not-configured").replace(/[^a-z0-9]/gi,"_").slice(0,100);
   const validCode = value => /^[A-Z0-9]{8}$/.test(String(value || "").toUpperCase().replace(/[^A-Z0-9]/g,""));
   const setPendingJoin = (code,email) => {
     try { localStorage.setItem(PENDING_KEY,JSON.stringify({code:code.toUpperCase().replace(/[^A-Z0-9]/g,""),email:email.toLowerCase(),expires:Date.now()+3600000})); } catch (_) { /* sesión sin almacenamiento */ }
