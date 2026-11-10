@@ -30,6 +30,7 @@ function makeAuth(signUpResponse){
     name:{value:"Usuario Simulación"},
     email:{value:"prueba@example.test"},
     password:{value:"ClaveLargaFicticia2026"},
+    confirm_password:{value:"ClaveLargaFicticia2026",removeAttribute(){}},
     accept:{checked:true}
   }};
   return {h,form,slot};
