@@ -45,7 +45,7 @@ test('el widget se crea una vez y entrega token solo mientras sigue montado', ()
   };
   const document = {querySelector() {return element;}};
   const context = vm.createContext({window:{BQ_CONFIG:{TURNSTILE_SITE_KEY:'test-public-key'},turnstile},document});
-  const guard = vm.runInContext(component + '\\nTurnstileGuard;', context);
+  const guard = vm.runInContext(component + '\nTurnstileGuard;', context);
   guard.mount(); guard.mount();
   assert.equal(renders, 1);
   assert.equal(guard.token(), 'token-ficticio');
@@ -64,7 +64,7 @@ test('tras un error al cargar el script se permite reintentarlo', () => {
     createElement() {return {remove(){this.removed=true;}};}
   };
   const context = vm.createContext({window:{BQ_CONFIG:{TURNSTILE_SITE_KEY:'test-key'}},document});
-  const guard = vm.runInContext(component + '\\nTurnstileGuard;',context);
+  const guard = vm.runInContext(component + '\nTurnstileGuard;',context);
   guard.mount();
   assert.equal(scripts.length,1);
   scripts[0].onerror();
