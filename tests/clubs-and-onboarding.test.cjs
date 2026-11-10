@@ -9,7 +9,7 @@ test("Acceso ofrece iniciar sesión, registrarse y unirse al club",()=>{
  for(const x of ['data-v="login"','data-v="signup"','data-v="join"'])assert.ok(src.includes(x));
  assert.match(src,/u\.mode === "welcome"/);
  assert.match(src,/Unirme a mi club/);
- assert.match(src,/A\.ui\.mode === "join" \? val\(f,"join_code"\)/);
+ assert.match(src,/A\.ui\.mode==="join"\?val\(f,"join_code"\)/);
  assert.match(src,/validCode\(code\)/);
 });
 test("El código del equipo no se pone en metadata JWT ni en enlaces de confirmación",()=>{
@@ -21,8 +21,8 @@ test("El código del equipo no se pone en metadata JWT ni en enlaces de confirma
  assert.match(auth,/sessionUser\.email\|\|""/);
  assert.match(auth,/clearPendingJoin\(\);\s*try/);
  assert.match(auth,/Cloud\.rpc\("join_season",\{p_code:pending\.code\}\)/);
- assert.match(auth,/emailRedirectTo: redirectUrl\(\)/);
- assert.match(auth,/options: \{ data: \{ name \}/);
+ assert.match(auth,/emailRedirectTo:redirectUrl\(\)/);
+ assert.match(auth,/options:\{data:\{name\}/);
  assert.doesNotMatch(auth,/data: \{ name, (?:code|join_code)/);
 });
 test("Dirección deportiva forma parte de la navegación móvil y funciona sin temporadas",()=>{
