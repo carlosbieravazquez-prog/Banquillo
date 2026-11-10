@@ -15,7 +15,7 @@ test('la subida Excel conserva formato validado y evita importaciones ajenas',()
   const source=read('js/acta-excel.js');
   assert.match(source,/BANQUILLO_ACTA_V1/);
   assert.match(source,/String\(Store\.sid\)/);
-  assert.match(source,/Number\(value\(ws,2,4\)\) !== m\.n/);
+  assert.match(source,/Number\(value\(ws,2,4\)\) !== Number\(m\.n\)/);
   assert.match(source,/file\.size > 5\*1024\*1024/);
   assert.match(source,/!ids\.has\(id\) \|\| seen\.has\(id\)/);
   assert.match(source,/¿Aplicar el Excel\?/);
