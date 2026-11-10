@@ -198,3 +198,14 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [x] CSP actualizada en `index.html` y `staging.html` para conexiones a recursos Cloudflare Turnstile; añadida una aserción correspondiente en pruebas de staging.
 - [ ] **Sigue pendiente:** prueba real de alta y confirmación de correo, conexión remota al frontend de staging, roles positivos con usuarios ficticios y Turnstile funcionando con clave pública + validación del servidor. No afirmar que estas partes están comprobadas.
 - [ ] Antes de habilitar Turnstile en staging, obtener sitekey pública correspondiente y configurar secret directamente en Supabase, sin subirla al repositorio.
+
+## Nuevas comprobaciones automatizadas y mantenimiento de staging (10 noviembre 2026)
+
+- [x] `supabase/security/auditoria_staging_lectura.sql`: nueve comprobaciones de seguridad; consulta independiente realizada en staging: **9/9 verdaderas**, incluida RLS en cinco tablas, ausencia de lectura anónima y de ejecución directa de funciones internas; triggers de alta y documentos siguen instalados.
+- [x] `supabase/migrations/STAGING_20261110_performance.sql`: migración aplicada **exclusivamente a staging** para añadir índice de `seasons_meta(owner_id)` y optimizar evaluación de `auth.uid()` en la política de lectura de perfiles. Tras el cambio, Performance Advisors ya no muestra `unindexed_foreign_keys` ni `auth_rls_initplan`. Index y política confirmados y RLS sigue activo.
+- [ ] Performance Advisors todavía informa de `join_attempts` sin PK y varios índices no utilizados. Staging tiene cero registros; **no eliminar índices solo por no haberse usado en un proyecto vacío**. Decidir si el registro de intentos necesita clave técnica cuando haya carga real.
+- [x] `docs/REVISION_PRIVACIDAD_PRELANZAMIENTO.md`: revisión de contenido legal, placeholders y requisitos de transparencia, datos de menores y responsables. **La documentación legal actual aún no está lista para un lanzamiento público con terceros.**
+- [x] `docs/PLAN_RESPALDOS_RECUPERACION.md`: procedimiento de copia y restauración en entorno independiente; todavía no hay una restauración real comprobada.
+- [x] `tests/security-config.test.cjs`: aislamiento de claves públicas, regiones/configuración y prueba de no activar Turnstile por accidente; incorporada al conjunto automatizado del workflow.
+- [x] `js/calc.js`: filtradas sustituciones fuera de la duración de un partido para prevenir minutos negativos o superiores a duración. `tests/sports-calculations.test.cjs`: cinco pruebas de clasificación, no convocatorias, minutos y asistencia. Comprobaciones directas de cálculos de resultado y minutos correctas; ejecutar la batería completa CI para validar regresiones.
+- [ ] No alterar el proyecto oficial ni declarar restauración, cumplimiento RGPD o pruebas end-to-end completas hasta tener evidencia real.
