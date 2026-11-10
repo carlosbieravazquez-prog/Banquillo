@@ -43,7 +43,7 @@ const FORM = {};
       html = `<div class="auth-card"><div class="loading"><div class="spin"></div><p>Comprobando tu sesión…</p></div></div>`;
     } else if (A.state === "recovery") {
       html = card("Elige una contraseña nueva", `<form data-form="authNewPass" class="form" novalidate>
-        <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
+        <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span>${passwordInput("new-password", 12)}<small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
       html = card("Comprueba tu correo o inicia sesión", `<p>Si acabas de crear la cuenta, revisa el correo de <b>${esc(u.email)}</b> para confirmar el registro.</p>
@@ -61,7 +61,7 @@ const FORM = {};
       html = card(u.mode === "join" ? "Únete a tu equipo" : "Crea tu cuenta", `${tabs()}${u.mode === "join" ? `<p class="auth-join-guide">Introduce el código específico de tu equipo. Primero confirmaremos tu correo; después se solicitará el acceso automáticamente desde este navegador.</p>` : ""}<form data-form="authSignup" class="form" novalidate>
         <label class="fld"><span>Tu nombre</span><input class="inp" type="text" name="name" autocomplete="given-name" maxlength="60" value="${esc(u.name)}" required></label>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
-        <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
+        <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span>${passwordInput("new-password", 12)}<small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
         ${u.mode === "join" ? `<label class="fld"><span>Código de mi equipo</span><input class="inp code-inp" name="join_code" type="text" required maxlength="12" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX" value="${esc(u.joinCode || "")}" data-inp="authJoinCode"><small class="muted">Si prefieres registrarte sin código, puedes añadirlo después en «Unirme con un código».</small></label>` : ""}
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
         ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button>${loginHelp()}</form>`);
@@ -72,9 +72,9 @@ const FORM = {};
         ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Enviando…" : "Enviar enlace"}</button>
         <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Volver</button></form>`);
     } else {
-      html = card("Entrar", `${tabs()}<form data-form="authLogin" class="form" novalidate>
+      html = card("Entrar", `${tabs()}${Cloud.cfg.STAGING ? `<div class="auth-staging-help" role="note"><strong>Banquillo Beta · Datos de prueba</strong><span>Inicia sesión con una cuenta creada en esta Beta. Las cuentas de la versión oficial no se comparten.</span></div>` : ""}<form data-form="authLogin" class="form" novalidate>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
-        <label class="fld"><span>Contraseña</span><input class="inp" type="password" name="password" autocomplete="current-password" required></label>
+        <label class="fld"><span>Contraseña</span>${passwordInput("current-password")}</label>
         ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Entrando…" : "Entrar"}</button>
         <button class="link center-t" type="button" data-act="authMode" data-v="forgot">¿Has olvidado la contraseña?</button></form>`);
     }
@@ -89,6 +89,37 @@ const FORM = {};
     <span>Si el correo ya estaba registrado, no recibirás otro mensaje de confirmación.</span>
     <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Iniciar sesión</button>
     <button class="link center-t" type="button" data-act="authMode" data-v="forgot">Recuperar contraseña</button></div>`;
+  const passwordInput = (autocomplete, minimum = 0) => `<div class="auth-password-wrap">
+      <input class="inp" type="password" name="password" autocomplete="${autocomplete}"${minimum ? ` minlength="${minimum}"` : ""} required>
+      <button class="auth-password-toggle" type="button" data-password-toggle aria-label="Mostrar contraseña" title="Mostrar contraseña" aria-pressed="false">
+        <svg class="auth-eye-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3.2"/>
+        </svg>
+        <svg class="auth-eye-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M3 3 21 21"/><path d="M9.9 5.3A11.1 11.1 0 0 1 12 5c6.5 0 10 7 10 7a15.7 15.7 0 0 1-3 3.8M6.3 6.3A17.7 17.7 0 0 0 2 12s3.5 7 10 7a10.4 10.4 0 0 0 4.9-1.2"/><path d="M10 10a3.2 3.2 0 0 0 4 4"/>
+        </svg>
+      </button>
+    </div>`;
+  const loginFeedback = err => {
+    const generic = friendly(err);
+    if (err?.code === "invalid_credentials" || /invalid login credentials/i.test(String(err?.message || ""))) {
+      return Cloud.cfg.STAGING
+        ? "El correo o la contraseña no coinciden con una cuenta de Banquillo Beta. Las cuentas de la versión oficial son independientes. Revisa los datos o utiliza «¿Has olvidado la contraseña?»."
+        : "El correo o la contraseña no son correctos. Revisa los datos o utiliza «¿Has olvidado la contraseña?».";
+    }
+    return generic;
+  };
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.("[data-password-toggle]");
+    if (!button) return;
+    const field = button.parentElement?.querySelector('input[name="password"]');
+    if (!field || field.disabled) return;
+    const visible = field.type === "password";
+    field.type = visible ? "text" : "password";
+    button.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+    button.setAttribute("title", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+    button.setAttribute("aria-pressed", String(visible));
+  });
   const val = (f, n) => (f.elements[n] ? String(f.elements[n].value || "").trim() : "");
   const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
   const captchaForSubmit = () => {
@@ -126,9 +157,15 @@ const FORM = {};
     if (!validEmail(email) || !password) { setMsg("err", "Escribe tu correo y tu contraseña."); return rerender(); }
     const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
     A.ui.busy = true; setMsg(); rerender();
-    const { error } = await Cloud.sb.auth.signInWithPassword({ email, password, ...(captchaToken ? { options: { captchaToken } } : {}) });
-    A.ui.busy = false;
-    if (error) { setMsg("err", friendly(error)); rerender(); }
+    try {
+      const { error } = await Cloud.sb.auth.signInWithPassword({ email, password, ...(captchaToken ? { options: { captchaToken } } : {}) });
+      if (error) { setMsg("err", loginFeedback(error)); }
+    } catch (_) {
+      setMsg("err", "No se ha podido contactar con el servicio de acceso. Revisa la conexión y vuelve a intentarlo.");
+    } finally {
+      A.ui.busy = false;
+      if (A.state === "out") rerender();
+    }
   };
   FORM.authSignup = async f => {
     const name = val(f, "name"), email = val(f, "email"), password = f.elements.password.value;
