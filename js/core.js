@@ -5,7 +5,7 @@ const V = {};      // vistas
 const ACT = {};    // acciones (clic)
 const CHG = {};    // cambios (change)
 const INP = {};    // entrada de texto (sin re-render)
-const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode"]);
+const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "downloadActaXlsx", "downloadActaPdf", "printActa", "jumpActaExcel", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode"]);
 const inWizard = a => !!UI.wiz && /^(w[A-Z]|wiz)/.test(a);
 const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"]];
 const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas" };
@@ -157,7 +157,7 @@ document.addEventListener("click", e => {
   const fn = ACT[el.dataset.act];
   if (!fn) return;
   const lockedMatch = UI.route.name === "partido" && !!(Store.match(UI.route.arg) || {}).closed;
-  const lockedAllowed = new Set(["go", "setTab", "printActa", "reopenActa", "setRedSanction", "copyCron", "genCron", "closeSheet"]);
+  const lockedAllowed = new Set(["go", "setTab", "printActa", "downloadActaXlsx", "downloadActaPdf", "jumpActaExcel", "reopenActa", "setRedSanction", "copyCron", "genCron", "closeSheet"]);
   if (lockedMatch && !lockedAllowed.has(el.dataset.act)) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (Store.readOnly() && !READ_OK.has(el.dataset.act) && !inWizard(el.dataset.act)) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
