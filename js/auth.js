@@ -242,17 +242,34 @@ const FORM = {};
   A.start = () => {
     if (!Cloud.init()) { A.state = "out"; render(true); return; }
     Cloud.sb.auth.onAuthStateChange((event, session) => {
-      // no se hace nada pesado dentro del propio aviso (evita bloqueos de la librería)
+      // El callback de Supabase nunca realiza trabajo asíncrono. Descartamos
+      // eventos antiguos (p. ej. SIGNED_OUT de la sesión anterior).
+      const eventSeq=++A.eventSeq;
       setTimeout(() => {
-        if (event === "PASSWORD_RECOVERY") { A.state = "recovery"; render(true); return; }
-        if (event === "SIGNED_OUT") { A.leave(); return; }
-        if (session && session.user && A.state !== "recovery") { if (A.uid !== session.user.id) A.enter(session); }
-        else if (!session && event === "INITIAL_SESSION") { A.state = "out"; render(true); }
+        if(eventSeq!==A.eventSeq)return;
+        if (event === "PASSWORD_RECOVERY") {
+          if (!session?.user?.id) { A.leave(); A.ui.mode="forgot"; setMsg("err","Solicita un enlace de recuperación nuevo."); render(true); return; }
+          A.sessionEpoch++;
+          A.recovery={uid:session.user.id};
+          A.uid=null; Cloud.profile=null; Store.reset();
+          A.state="recovery"; A.ui.busy=false; setMsg(); render(true);
+          return;
+        }
+        if (event === "SIGNED_OUT") {
+          if (A.state!=="out") A.leave();
+          return;
+        }
+        if(session?.user && A.state!=="recovery") {
+          if(A.uid!==session.user.id || A.state!=="in") A.enter(session);
+        } else if(event==="INITIAL_SESSION" && !session && A.state==="loading"){
+          A.state="out"; render(true);
+        }
       }, 0);
     });
   };
   A.enter = async session => {
-    const sessionUser = session.user.id;
+    const sessionUser = session.user.id, epoch=++A.sessionEpoch;
+    A.recovery=null;
     if(typeof ClubSpace!=="undefined")ClubSpace.reset();
     A.uid = sessionUser; A.state = "in";
     Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
@@ -262,16 +279,17 @@ const FORM = {};
     Store.reset(); Store.user = { uid: sessionUser, email: session.user.email };
     try {
       await Store.init(Cloud.db, { uid: sessionUser, email: session.user.email });
-      if (A.uid !== sessionUser || A.state !== "in") return;
+      if (A.uid !== sessionUser || A.state !== "in" || epoch!==A.sessionEpoch) return;
       Store.connecting = false;
       await Cloud.loadProfile();
-      if (A.uid === sessionUser && A.state === "in") await consumePendingJoin(session.user);
-      if (A.uid === sessionUser && A.state === "in") render(true);
+      if (A.uid === sessionUser && A.state === "in" && epoch===A.sessionEpoch) await consumePendingJoin(session.user);
+      if (A.uid === sessionUser && A.state === "in" && epoch===A.sessionEpoch) render(true);
     } catch (e) {
-      if (A.uid === sessionUser && A.state === "in") { Store.connecting = false; render(true); }
+      if (A.uid === sessionUser && A.state === "in" && epoch===A.sessionEpoch) { Store.connecting = false; render(true); }
     }
   };
   A.leave = () => {
+    A.sessionEpoch++; A.recovery=null;
     Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
     if(typeof ClubSpace!=="undefined")ClubSpace.reset();
     A.uid = null; A.state = "out"; Cloud.profile = null; Cloud.aiPrivacyAccepted = false; Store.reset(); Store.connecting = false;
@@ -281,14 +299,15 @@ const FORM = {};
     render(true);
   };
   ACT.signOut = async () => {
-    UI.sheet = null;
+    if(A.signingOut)return;
+    A.signingOut=true; UI.sheet=null;
     try {
-      const { error } = await Cloud.sb.auth.signOut({ scope: "global" });
-      if (error) { toast("No se ha podido cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.", "err"); return; }
-      A.leave();
-    } catch (e) {
-      toast("No se ha podido cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.", "err");
-    }
+      const { error } = await Cloud.sb.auth.signOut({ scope: "local" });
+      if(error){toast("No se ha podido cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.","err");return;}
+      if(A.state!=="out")A.leave();
+    } catch (_) {
+      toast("No se ha podido cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.","err");
+    } finally {A.signingOut=false;}
   };
 
   /* ---------- Mi cuenta y Silbatos ---------- */
