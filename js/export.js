@@ -64,12 +64,15 @@ async function buildPlayerPdf(pid) {
   font("normal", 10, [210, 225, 242]); T(season.category || "", M, 30);
   // jugador: dorsal destacado y legible a tamaño de impresión
   y = 52;
-  const dorsalX = M + 12.5;
-  doc.setFillColor(...NAVY); doc.circle(dorsalX, y - 2, 12.5, "F");
-  font("bold", 24, [255, 255, 255]); T(p.dorsal != null && p.dorsal !== "" ? String(p.dorsal) : "-", dorsalX, y + 5, { align: "center" });
-  font("bold", 21, INK); T(p.name, M + 32, y - 1);
-  font("normal", 10, GREY); T("Resumen de la temporada", M + 32, y + 6);
-  y += 18;
+  const dorsalRadius = 14.5, dorsalX = M + dorsalRadius, dorsalY = y - 2;
+  doc.setFillColor(...NAVY); doc.circle(dorsalX, dorsalY, dorsalRadius, "F");
+  // El texto se alinea por su punto medio, no por la línea base de la fuente.
+  // También con dos cifras queda centrado geométricamente dentro del círculo.
+  font("bold", 30, [255, 255, 255]);
+  T(p.dorsal != null && p.dorsal !== "" ? String(p.dorsal) : "-", dorsalX, dorsalY, { align: "center", baseline: "middle" });
+  font("bold", 21, INK); T(p.name, M + 36, y - 1);
+  font("normal", 10, GREY); T("Resumen de la temporada", M + 36, y + 6);
+  y += 21;
   // tarjetas
   const tiles = [[`${s.conv}/${D.regCount}`, "Convocatorias"], [s.played, "Partidos jugados"], [`${s.T} / ${s.S}`, "Titular / suplente"], [s.min ? fmtNum(s.min) : "0", "Minutos"], [s.goals, "Goles"], [fmtPct(t.pct), "Asistencia"]];
   const gap = 3, tw = (CW - gap * 5) / 6;
