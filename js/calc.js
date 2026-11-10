@@ -44,6 +44,9 @@ const Calc = (() => {
         if (pid in nc) { s.noconv++; if (nc[pid] in s) s[nc[pid]]++; } else s.conv++;
       }
       if (pid in nc) return;
+      // Solo sumar participación, minutos y goles de partidos con resultado registrado.
+      // Preparar titulares para una jornada futura no equivale a haber jugado.
+      if (!matchInfo(m).played) return;
       const d = (m.players || {})[pid];
       if (d) {
         const mins = isNum(d.min) ? d.min : 0;
@@ -122,7 +125,7 @@ const Calc = (() => {
   }
 
   function ownGoals(matches) {
-    return matches.reduce((t, m) => t + (isNum(m.ourGoals) ? (m.scorers || []).slice(0, m.ourGoals).filter(x => x === "og").length : 0), 0);
+    return matches.reduce((t, m) => t + (matchInfo(m).played ? (m.scorers || []).slice(0, m.ourGoals).filter(x => x === "og").length : 0), 0);
   }
 
   return { isNum, matchInfo, isRegistered, noCallMap, record, playerStats, sessionList, trainingStats, calcMinutes, scorersTable, ownGoals, pd, dk };
