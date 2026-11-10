@@ -14,7 +14,9 @@ test("Acceso ofrece iniciar sesión, registrarse y unirse al club",()=>{
 });
 test("El código del equipo no se pone en metadata JWT ni en enlaces de confirmación",()=>{
  const auth=r("js/auth.js");
- assert.match(auth,/sessionStorage\.setItem\(PENDING_KEY/);
+ assert.match(auth,/localStorage\.setItem\(PENDING_KEY/);
+ assert.match(auth,/localStorage\.getItem\(PENDING_KEY/);
+ assert.match(auth,/Date\.now\(\)\+3600000/);
  assert.match(auth,/pending\.expires<Date\.now\(\)/);
  assert.match(auth,/sessionUser\.email\|\|""/);
  assert.match(auth,/clearPendingJoin\(\);\s*try/);
