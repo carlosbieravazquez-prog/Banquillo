@@ -275,7 +275,7 @@ T.ficha = m => {
 
   const ocrCard = `<section id="acta-excel" class="card"><div class="card-h"><h3>Descargar o subir acta Excel</h3><span class="tag info">Plantilla .xlsx</span></div><p class="muted small">Solo se admite la plantilla Excel de esta temporada y jornada. Descárgala, complétala en Excel y vuelve a subirla. Se validan jugadores y columnas. No se admiten fotografías ni otros modelos de acta.</p>
   <div class="row gap wrap">${btn("Descargar plantilla Excel", "downloadActaXlsx", {}, "ghost", "down")}</div>
-  <label class="fld"><span>Subir plantilla Excel cumplimentada</span><input type="file" class="inp" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-chg="importActaXlsx"></label>
+  ${FilePicker.render({title:"Importar acta Excel cumplimentada",formats:"XLSX · MÁX. 5 MB",help:"Elige el Excel descargado desde Banquillo para esta jornada",icon:"📊",label:"Elegir Excel",accept:".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",change:"importActaXlsx"})}
   ${UI.actaImport?.busy ? `<p class="muted small">Leyendo plantilla…</p>` : ""}
   ${UI.actaImport?.error ? `<p class="err small">${esc(UI.actaImport.error)}</p>` : ""}
   ${UI.actaImport?.rows ? `<p class="muted small">Plantilla comprobada: ${UI.actaImport.rows.length} convocados. Se actualizarán roles, minutos y goles; no las tarjetas.</p><div class="row end">${btn("Revisar y aplicar", "applyActaXlsx", {}, "primary", "check")}</div>` : ""}
