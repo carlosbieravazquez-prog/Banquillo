@@ -46,9 +46,10 @@ const FORM = {};
         <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
-      html = card("Revisa tu correo", `<p>Te hemos enviado un mensaje a <b>${esc(u.email)}</b>. Pulsa el enlace que contiene para confirmar tu cuenta y vuelve aquí.</p>
+      html = card("Comprueba tu cuenta", `<p>Si es una cuenta nueva, revisa el correo de <b>${esc(u.email)}</b> para confirmar el registro. Si este correo ya tenía una cuenta confirmada, no recibirás otra confirmación: pulsa «Iniciar sesión».</p>
         <p class="muted small">Si no aparece, revisa spam. Si has indicado un código de equipo, el acceso se intentará completar al confirmar el correo en este mismo navegador. En otro dispositivo, podrás añadirlo después desde «Unirme con un código».</p>
-        <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Ya lo he confirmado: entrar</button>`);
+        <button class="btn primary block" type="button" data-act="authMode" data-v="login">Iniciar sesión</button>
+         <button class="btn ghost block" type="button" data-act="authMode" data-v="forgot">No recuerdo mi contraseña</button>`);
     } else if (u.mode === "welcome") {
       html = card("Empieza con Banquillo", `<p class="muted small">Gestiona un equipo, crea una cuenta o entra con el código que te ha dado tu director deportivo.</p><div class="auth-choices">
         <button type="button" class="auth-choice" data-act="authMode" data-v="login"><b>Iniciar sesión</b><small>Ya tengo una cuenta</small></button>
