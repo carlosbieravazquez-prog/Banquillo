@@ -7,6 +7,7 @@ const authSource=fs.readFileSync(path.join(__dirname,"../js/auth.js"),"utf8");
 function setup(mode="signup"){
  const signups=[],elements={"#authSlot":{dataset:{},innerHTML:""},"#app":{innerHTML:""},"#sheetRoot":{innerHTML:""}};
  const ctx=vm.createContext({
+  PhoneCountry:require("../js/phone-country.js"),
   Cloud:{cfg:{STAGING:true,SUPABASE_URL:"https://staging.example.test"},configured:()=>true,
    sb:{auth:{signUp:async args=>{signups.push(args);return {data:{session:null,user:{id:"test-id"}},error:null}}}}},
   document:{body:{classList:{remove(){}}},addEventListener(){}},location:{origin:"http://127.0.0.1:5500",pathname:"/staging.html"},
