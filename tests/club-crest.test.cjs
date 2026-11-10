@@ -32,7 +32,8 @@ test('se integra en configuración inicial y ajustes con quitafondos opcional',(
 test('informe individual destaca dorsal y muestra escudo sin impedir PDF sin imagen',()=>{
   const src=read('js/export.js');
   assert.match(src,/ClubCrest\.addToPdf\(doc, season/);
-  assert.match(src,/font\("bold", 24, \[255, 255, 255\]\)/);
+  assert.match(src,/font\("bold", 30, \[255, 255, 255\]\)/);
+  assert.match(src,/baseline: "middle"/);
 });
 test('escudo se integra en la web y actas PDF e impresión',()=>{
   assert.match(read('js/core.js'),/ClubCrest\.preview\(ClubCrest\.current\(s\)\)/);
