@@ -11,7 +11,8 @@
 - Enlace de recuperación de Supabase y evento `PASSWORD_RECOVERY` obligatorios antes de mostrar el formulario de cambio.
 - Comprobar el usuario autenticado ante Supabase antes de `updateUser({password})`, pedir contraseña nueva y confirmación, y cerrar sesión después.
 - Mostrar contraseña mediante icono del ojo tanto al entrar como al registrar y recuperar contraseña.
-- Selector de teléfono **opcional y en pruebas**, con búsqueda de países y prefijos; **NO se guarda, NO se envía y NO permite SMS de recuperación** mientras no exista proveedor de SMS y verificación real.
+- Selector de teléfono **obligatorio al registrarse en la Beta**, con búsqueda de países y validación de prefijo y dígitos. **NO se guarda, NO se envía ni se verifica por SMS**: todavía no sirve como autenticación ni recuperación; este requisito es provisional hasta configurar un proveedor y revisar privacidad.
+- Si Supabase devuelve un error 429, Banquillo identifica el tipo y muestra una espera orientativa con contador, sin borrar el formulario. El error `over_email_send_rate_limit` se aplica tanto al registro como a la recuperación porque la cuota de correos es global al proyecto. No significa que el usuario sea un bot.
 
 ## Cómo actualizar
 
@@ -48,3 +49,9 @@
 - El teléfono no es prueba de identidad. Para añadir recuperación por SMS son necesarios proveedor externo, configuración de Auth, verificación OTP, costes y controles antiabuso. No activarlo sin revisar privacidad, consentimiento y tratamiento de datos de menores.
 - Los tests automáticos simulan llamadas de autenticación pero no sustituyen la prueba real de navegador con correos confirmados.
 - Mantener la versión oficial sin cambios hasta aprobar la validación completa.
+
+## Cuota de correo y protección contra bots
+
+El correo de pruebas integrado de Supabase tiene actualmente una cuota de **2 mensajes por hora en total para el proyecto**. La espera de interfaz es orientativa: no debe interpretarse como una promesa de desbloqueo y no puede eludir las reglas de Supabase. Para pruebas frecuentes y despliegue público hay que configurar **SMTP propio o Send Email hook** y verificar remitente y entregabilidad.
+
+El CAPTCHA de Cloudflare Turnstile está implementado como componente **opcional**, pero no está activo mientras falte configurar la clave pública en la Beta y la clave secreta en Supabase. La expulsión o mitigación de bots reales se debe decidir en el proveedor/servidor; errores humanos o un 429 de cuota de correo no identifican un ataque.
