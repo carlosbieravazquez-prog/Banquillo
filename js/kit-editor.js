@@ -1,9 +1,10 @@
 /* Editor visible de equipaciones y de las paletas elegantes por club. */
 const ClubKitsEditor=(()=>{
+  const Theme=typeof ClubTheme!=="undefined"?ClubTheme:require("./club-theme.js");
   const escape=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const parts=[["shirt","Camiseta"],["shorts","Pantalón"],["socks","Medias"]];
   const render=(data,prefix)=>{
-    const kits=ClubTheme.normalizeKits(data.kits),palette=ClubTheme.cleanPalette(data.palette);
+    const kits=Theme.normalizeKits(data.kits),palette=Theme.cleanPalette(data.palette);
     const changeKit=prefix==="w"?"wKit":"setKit";
     const changeMode=prefix==="w"?"wPaletteMode":"setPaletteMode";
     const changePreset=prefix==="w"?"wPalettePreset":"setPalettePreset";
@@ -19,13 +20,13 @@ const ClubKitsEditor=(()=>{
           '" value="'+escape(k[part])+'" aria-label="'+label+' · '+escape(title)+'"><small>'+escape(k[part])+'</small></label>').join("")+
         '</div></div>';
     };
-    const sample=ClubTheme.derive(kits,palette).light;
+    const sample=Theme.derive(kits,palette).light;
     const options=[["auto","Automática · Según la primera equipación"],
       ["preset","Elegir una paleta profesional"],["custom","Personalizar los colores de referencia"]];
     let extra="";
     if(palette.mode==="preset"){
       extra='<label class="fld"><span>Paleta</span><select class="sel" data-chg="'+changePreset+'">'+
-        Object.entries(ClubTheme.presets).map(([id,item])=>'<option value="'+escape(id)+'"'+
+        Object.entries(Theme.presets).map(([id,item])=>'<option value="'+escape(id)+'"'+
           (palette.preset===id?' selected':'')+'>'+escape(item.name)+'</option>').join("")+
         '</select></label>';
     }
