@@ -165,6 +165,15 @@
   if(e.target.name==="teamId"){const form=e.target.form,team=teamOf(e.target.value),resource=form&&form.elements.resource;if(resource){const choices=resourceList(team.modality);resource.innerHTML='<option value="">Pendiente de asignar</option>'+choices.map(r=>'<option value="'+r.id+'">'+esc(r.label)+'</option>').join("")}}
  });
  document.addEventListener("click",e=>{const c=e.target.closest("[data-count]");if(!c)return;const k=c.dataset.count;state.facilities[k]=Math.max(0,Math.min(12,state.facilities[k]+Number(c.dataset.delta)));if(k==="f11")state.facilities.divisible.length=state.facilities.f11;save();render()});
+ $("#exportDemo").addEventListener("click",()=>{
+  // Exporta únicamente datos de esta demo: nunca tokens, cuentas o datos de Supabase.
+  const payload={format:"banquillo-club-demo",version:1,exportedAt:new Date().toISOString(),club:state};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="banquillo-configuracion-club-demo.json";
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
  $("#resetDemo").addEventListener("click",()=>{if(!confirm("¿Restablecer todos los datos ficticios del club?"))return;localStorage.removeItem(KEY);state=JSON.parse(JSON.stringify(seed));save();render()});
  save();render();
 })();
