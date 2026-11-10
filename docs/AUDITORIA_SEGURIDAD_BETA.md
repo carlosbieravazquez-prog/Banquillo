@@ -166,3 +166,15 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Probar inicio de sesión/registro con cuentas ficticias, Turnstile con sitekey y validación de Supabase staging, y escenarios negativos de escritura.
 - [ ] GitHub ↔ Supabase: la conexión automática es **opcional**; no activar despliegues de migraciones desde `main` sin revisión del esquema y aprobación explícita.
 - [ ] AWS: no necesario por ahora para el frontend estático; revisar solo cuando exista demanda de servicios concretos y presupuesto.
+
+## Ejecución inicial de pruebas en staging (10 noviembre 2026)
+
+- [x] Prueba SQL negativa `anon`: `SELECT public.docs` rechazado expresamente con error SQLSTATE `42501` de privilegios. **Superada**.
+- [x] Prueba SQL negativa `authenticated` con UID ficticio sin membresías: recuentos visibles `docs=0`, `season_members=0` y funciones `is_member=false`, `can_edit=false`, `is_owner=false`. **Superada para este caso**, sin acceder a datos.
+- [x] Intento SQL de `INSERT` con UID ficticio no autorizado en `public.docs`: rechazado por política RLS, SQLSTATE `42501`; la transacción no guardó el documento. **Superada para inserción no autorizada sin membresía**.
+- [x] Procedimiento ordenado con comandos PowerShell, redirecciones de Auth, datos ficticios, roles, CAPTCHA y criterios de publicación en `docs/EJECUCION_STAGING_PASO_A_PASO.md`.
+- [ ] Comprobación visual del frontend local: desde conector remoto no se puede acceder a `127.0.0.1` del ordenador del usuario; se requiere prueba manual.
+- [ ] Configurar `Site URL` y `Redirect URLs` de **staging** desde el dashboard. El conector disponible no proporciona una operación específica para cambiar esos ajustes.
+- [ ] Crear usuarios ficticios por el flujo normal de Auth y verificar `handle_new_user()` tras revocar su EXECUTE directo. **No escribir manualmente cuentas en `auth.users`** para sustituir una prueba real.
+- [ ] Pruebas positivas de lector, editor, propietario y negativas de actualización/eliminación sobre documentos ficticios de staging con sesiones reales.
+- [ ] Configurar Turnstile en Cloudflare y Supabase-Staging; no se ha habilitado la verificación del servidor aún.
