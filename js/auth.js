@@ -46,7 +46,8 @@ const FORM = {};
         <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
-      html = card("Comprueba tu cuenta", `<p>Si es una cuenta nueva, revisa el correo de <b>${esc(u.email)}</b> para confirmar el registro. Si este correo ya tenía una cuenta confirmada, no recibirás otra confirmación: pulsa «Iniciar sesión».</p>
+      html = card("Comprueba tu correo o inicia sesión", `<p>Si acabas de crear la cuenta, revisa el correo de <b>${esc(u.email)}</b> para confirmar el registro.</p>
+        <div class="auth-check-notice" role="status"><strong>¿El correo ya estaba registrado?</strong><p>Entonces no se enviará otra confirmación. Utiliza «Iniciar sesión» con tu contraseña anterior.</p></div>
         <p class="muted small">Si no aparece, revisa spam. Si has indicado un código de equipo, el acceso se intentará completar al confirmar el correo en este mismo navegador. En otro dispositivo, podrás añadirlo después desde «Unirme con un código».</p>
         <button class="btn primary block" type="button" data-act="authMode" data-v="login">Iniciar sesión</button>
          <button class="btn ghost block" type="button" data-act="authMode" data-v="forgot">No recuerdo mi contraseña</button>`);
@@ -63,7 +64,7 @@ const FORM = {};
         <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
         ${u.mode === "join" ? `<label class="fld"><span>Código de mi equipo</span><input class="inp code-inp" name="join_code" type="text" required maxlength="12" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX" value="${esc(u.joinCode || "")}" data-inp="authJoinCode"><small class="muted">Si prefieres registrarte sin código, puedes añadirlo después en «Unirme con un código».</small></label>` : ""}
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
-        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button></form>`);
+        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button>${loginHelp()}</form>`);
     } else if (u.mode === "forgot") {
       html = card("Recuperar contraseña", `<form data-form="authForgot" class="form" novalidate>
         <p class="muted small">Escribe tu correo y te enviaremos un enlace para elegir una contraseña nueva.</p>
@@ -83,6 +84,11 @@ const FORM = {};
   const card = (t, inner) => `<div class="auth-card"><h2>${t}</h2>${inner}</div>`;
   const tabs = () => `<div class="seg auth-tabs" role="group" aria-label="Acceso a Banquillo"><button type="button" class="${A.ui.mode === "login" ? "on" : ""}" data-act="authMode" data-v="login">Entrar</button><button type="button" class="${A.ui.mode === "signup" ? "on" : ""}" data-act="authMode" data-v="signup">Crear cuenta</button><button type="button" class="${A.ui.mode === "join" ? "on" : ""}" data-act="authMode" data-v="join">Unirme a un club</button></div>`;
   const msgHtml = () => A.ui.msg ? `<p class="${A.ui.msg.type === "ok" ? "okm" : "err"} small" role="alert">${esc(A.ui.msg.text)}</p>` : "";
+  const existingSignupError = error => !!error && (error.code === "user_already_exists" || /user already registered|already exists|already registered/i.test(String(error.message || "")));
+  const loginHelp = () => `<div class="auth-login-help"><strong>¿Ya tienes una cuenta?</strong>
+    <span>Si el correo ya estaba registrado, no recibirás otro mensaje de confirmación.</span>
+    <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Iniciar sesión</button>
+    <button class="link center-t" type="button" data-act="authMode" data-v="forgot">Recuperar contraseña</button></div>`;
   const val = (f, n) => (f.elements[n] ? String(f.elements[n].value || "").trim() : "");
   const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
   const captchaForSubmit = () => {
@@ -139,7 +145,7 @@ const FORM = {};
     A.ui.busy = true; setMsg(); rerender();
     const { data, error } = await Cloud.sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: redirectUrl(), ...(captchaToken ? { captchaToken } : {}) } });
     A.ui.busy = false;
-    if (error) { if(code)clearPendingJoin(); setMsg("err", friendly(error)); return rerender(); }
+    if (error) { if(code)clearPendingJoin(); setMsg("err", existingSignupError(error) ? "Esta cuenta ya existe. Debes iniciar sesión o recuperar tu contraseña." : friendly(error)); return rerender(); }
     if (data && data.session) return;                       // entra solo (si el proyecto no exige confirmar el correo)
     A.ui.mode = "check"; rerender();
   };
