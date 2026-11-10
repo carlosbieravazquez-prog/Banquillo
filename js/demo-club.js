@@ -120,7 +120,7 @@
   }
   if(!events.length)lines.push("No hay partidos registrados para este mes.");
   lines.push("— Dirección deportiva · "+state.club.name);
-  return lines.join("\\n");
+  return lines.join("\n");
  }
  function comunicaciones(){
   const start=monday(parseDate(state.calendarDate)),end=addDays(start,6),events=state.schedule.filter(m=>m.date>=dateKey(start)&&m.date<=dateKey(end));
