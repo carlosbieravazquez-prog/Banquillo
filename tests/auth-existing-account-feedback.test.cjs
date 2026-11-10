@@ -17,7 +17,7 @@ function makeAuth(signUpResponse){
     Cloud:{cfg:{SUPABASE_URL:"https://staging.example.test"},configured:()=>true,sb:{auth}},
     localStorage:{setItem(){},getItem(){return null},removeItem(){}},
     location:{origin:"http://127.0.0.1:5500",pathname:"/staging.html"},
-    $:x=>els[x],document:{body:{classList:{remove(){}}}},
+    $:x=>els[x],document:{body:{classList:{remove(){}}},addEventListener(){}},
     TurnstileGuard:{token:()=>null,placeholder:()=>"",mount(){}},
     UI:{sheet:null},ACT:{},CHG:{},INP:{},V:{sheet:{}},
     Store:{},window:{},render(){},esc:x=>String(x),setTimeout,clearTimeout,console,
