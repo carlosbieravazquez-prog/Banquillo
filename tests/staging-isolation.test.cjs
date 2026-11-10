@@ -30,6 +30,7 @@ test('staging y producción apuntan a diferentes proyectos Supabase', () => {
 test('CSP permite cargar Turnstile sin habilitar scripts arbitrarios', () => {
   assert.match(stage,/script-src[^;]+https:\/\/challenges\.cloudflare\.com;/);
   assert.match(stage,/frame-src https:\/\/challenges\.cloudflare\.com;/);
+  assert.match(stage,/connect-src[^;]+https:\/\/challenges\.cloudflare\.com;/);
   assert.doesNotMatch(stage,/script-src[^;]*unsafe-inline/);
 });
 test('guard bloquea accidentalmente configuración del servidor de producción', () => {
