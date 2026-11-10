@@ -56,3 +56,25 @@ test('asistencia y faltas distinguen entrenamiento cancelado', () => {
   assert.equal(result.per.b.falts,1);
   assert.equal(result.teamPct,0.75);
 });
+
+test('las alineaciones preparadas en jornadas pendientes no cuentan como partidos disputados', () => {
+  const matches=[
+    {date:'2099-02-10',callDone:true,ourGoals:3,rivalGoals:0,players:{a:{role:'T',min:50,gk:true}},scorers:['a','a']},
+    {date:'2020-01-01',callDone:true,ourGoals:2,rivalGoals:1,players:{a:{role:'S',min:20,gk:false}},scorers:['a','og']}
+  ];
+  const st=Calc.playerStats('a',matches);
+  assert.equal(st.conv,2);
+  assert.equal(st.played,1);
+  assert.equal(st.min,20);
+  assert.equal(st.goals,1);
+  assert.equal(st.gk,0);
+  assert.equal(Calc.ownGoals(matches),1);
+});
+test('un marcador parcial no convierte minutos y goles en estadísticas oficiales',()=>{
+  const m={date:'2020-01-01',callDone:true,ourGoals:3,rivalGoals:null,players:{a:{role:'T',min:50}},scorers:['a']};
+  const st=Calc.playerStats('a',[m]);
+  assert.equal(st.conv,1);
+  assert.equal(st.played,0);
+  assert.equal(st.goals,0);
+  assert.equal(st.min,0);
+});
