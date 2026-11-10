@@ -122,3 +122,14 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Revisar mensajes para evitar enumeración de cuentas y reducir filtraciones en registros; no bloquear masivamente por IP compartida, especialmente en clubes y colegios.
 
 **Documentación:** https://supabase.com/docs/guides/deployment/going-into-prod y https://supabase.com/docs/guides/auth/auth-captcha .
+
+## Integración opcional de Cloudflare Turnstile (10 noviembre 2026)
+
+- [x] Componente `js/auth-captcha.js` cargado antes de `js/auth.js`; solo descarga script externo al configurar una **clave pública de sitio**.
+- [x] `config.js`: `TURNSTILE_SITE_KEY` vacía por defecto; la Beta y la web oficial continúan sin CAPTCHA activo hasta configuración explícita.
+- [x] `js/auth.js`: campos de login, registro y recuperación muestran el desafío al habilitar la clave; obligan a obtener token y lo envían a Supabase Auth como `captchaToken`. Sin clave configurada, mantienen el flujo anterior.
+- [x] Nueva guía `docs/ACTIVACION_TURNSTILE_BETA.md` explica configuración por etapas, staging, pruebas y reversión sin bloquear usuarios.
+- [x] Prueba automatizable `tests/auth-captcha.test.cjs` para regresiones del modo desactivado y del modo con sitekey. Comprobada sintaxis JS y tres puntos de integración; **no se ha probado el widget real de Cloudflare en un navegador**.
+- [ ] **Pendiente P0:** clave pública de prueba, widget en staging, configuración secreta de Supabase en staging y prueba de acceso de los tres formularios, incluido móvil.
+- [ ] **Pendiente P0:** límites de tasa de Auth del proyecto y protección real del servidor. El control visual por sí solo no bloquea intentos fuera del navegador.
+- [ ] No activar el CAPTCHA en producción hasta haber desplegado una versión compatible y validado su funcionamiento.
