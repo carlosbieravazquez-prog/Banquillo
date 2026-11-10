@@ -27,3 +27,36 @@
 .club-kit-sample-inner small{font-size:12px;color:var(--ink-2)}
 @media(min-width:750px){.club-kit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.club-kit-grid .club-kit-set:nth-child(3){grid-column:1/-1}}
 @media(max-width:440px){.club-kit-fields{gap:5px}.club-kit-part span{font-size:11px}.club-kit-part input[type=color]{height:48px}}
+
+/* Maqueta deportiva vectorial, sin fondo ni marcas. */
+.club-kit-grid{grid-template-columns:1fr}
+.club-kit-set{padding:17px}
+.club-kit-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.club-kit-hint{font-size:11px;color:var(--ink-2);font-weight:650}
+.club-kit-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,1fr);gap:14px;align-items:center}
+.club-kit-model{display:grid;place-items:center;min-height:240px;background:transparent}
+.kit-mockup{display:block;width:min(100%,225px);height:auto;max-height:330px;filter:drop-shadow(0 12px 14px rgba(16,36,60,.12))}
+.club-kit-controls{display:grid;gap:14px}
+.club-kit-controls p{margin:0}
+.club-theme-options{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.club-theme-option{text-align:left;border:2px solid var(--line);background:var(--surface-2);border-radius:13px;padding:14px;display:flex;gap:10px;align-items:flex-start;color:var(--ink);min-width:0}
+.club-theme-option.selected{border-color:var(--accent);background:var(--accent-soft)}
+.club-theme-option-check{flex:none;font-weight:900;font-size:19px;color:var(--accent)}
+.club-theme-option span:last-child{display:grid;gap:5px}
+.club-theme-option strong{font-size:14px}
+.club-theme-option small{font-size:12px;color:var(--ink-2);line-height:1.5}
+.club-theme-preview{border:1px solid var(--line);overflow:hidden;border-radius:15px;max-width:540px;background:var(--surface);box-shadow:var(--shadow)}
+.club-theme-preview-nav{display:flex;align-items:center;gap:10px;color:#fff;padding:14px}
+.club-theme-preview-logo{background:rgba(255,255,255,.17);border-radius:9px;width:30px;height:30px;display:grid;place-items:center;font-weight:900}
+.club-theme-preview-small{font-size:11px;margin-left:auto;opacity:.8}
+.club-theme-preview-body{padding:18px;display:grid;gap:12px;color:var(--ink)}
+.club-theme-preview-body p{font-size:12px;color:var(--ink-2);margin:2px 0 0}
+.club-theme-preview-tile{border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:12px;display:grid;gap:5px}
+.club-theme-preview-tile span{color:var(--ink-2);font-size:12px}
+.club-theme-preview-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.club-theme-preview-actions span{font-size:12px;font-weight:750;border-radius:9px;padding:10px 12px}
+.club-theme-preview-secondary{border:1px solid var(--line)}
+.settings-visual-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:6px 0 12px}
+.settings-visual-tabs button{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px}
+.settings-visual-tabs button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+@media(max-width:550px){.club-kit-layout{grid-template-columns:1fr}.club-kit-model{min-height:180px}.kit-mockup{width:min(72%,180px)}.club-theme-options{grid-template-columns:1fr}}
