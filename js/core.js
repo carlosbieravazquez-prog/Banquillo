@@ -7,7 +7,7 @@ const CHG = {};    // cambios (change)
 const INP = {};    // entrada de texto (sin re-render)
 const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "downloadActaXlsx", "downloadActaPdf", "printActa", "jumpActaExcel", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode", "openConvocationMessage", "setMessageMode", "setMessageKit", "copyConvocationMessage"]);
 const inWizard = a => !!UI.wiz && /^(w[A-Z]|wiz)/.test(a);
-const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"]];
+const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"], ["clubes", "Clubes", "layers"]];
 const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas", clubes: "Dirección deportiva" };
 
 /* ---------- router ---------- */
@@ -61,7 +61,7 @@ function bodyView() {
   }
   if (!Store.seasons.length) {
     return empty("Aún no tienes ninguna temporada", "Crea tu primera temporada con los jugadores y el calendario de jornadas, o únete a la de otro entrenador con su código.",
-      `<div class="row gap wrap center">${btn("Crear temporada", "wizStart", { first: 1 }, "primary", "plus")}${btn("Unirme con un código", "openJoin", {}, "ghost", "users")}</div>`);
+      `<div class="row gap wrap center">${btn("Crear temporada", "wizStart", { first: 1 }, "primary", "plus")}${btn("Crear o gestionar un club", "clubGo", {}, "ghost", "layers")}${btn("Unirme con un código", "openJoin", {}, "ghost", "users")}</div>`);
   }
   const fn = V[UI.route.name] || V.inicio;
   return fn(UI.route.arg);
@@ -85,7 +85,7 @@ function shell() {
   return `<div class="shell ${Store.readOnly() ? "ro" : ""}">
     <aside class="side">
       <div class="brand">${crest || `<span class="mark">${icon("ball")}</span>`}<div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
-      <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button><button type="button" class="sitem ${activeKey === "clubes" ? "on" : ""}" data-act="clubGo">${icon("users")}<span>Dirección deportiva</span></button></nav>
+      <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button></nav>
       <div class="side-foot">${seasonChip}${syncBadge()}${accountBtn()}</div>
     </aside>
     <div class="col">
