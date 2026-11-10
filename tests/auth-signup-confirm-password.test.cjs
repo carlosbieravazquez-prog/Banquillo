@@ -25,6 +25,7 @@ function setup(mode="signup"){
   email:{value:"ejemplo@example.test"},
   password:{value:"ClaveSeguraDePrueba2027"},
   confirm_password:confirm,
+  phone_optional:{value:"612345678"},
   accept:{checked:true},
   join_code:{value:"ABCD1234"}
  },querySelector:q=>q==="[data-signup-password-mismatch]"?notice:null};
