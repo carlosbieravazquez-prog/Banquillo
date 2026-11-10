@@ -209,6 +209,37 @@ INP.setMin = el => { UI.sheet.d.matchMinutes = el.value; }; CHG.setFormat = el =
 INP.setStart = el => { UI.sheet.d.trainStart = el.value; };
 INP.setEnd = el => { UI.sheet.d.trainEnd = el.value; };
 ACT.setDay = el => { const v = +el.dataset.v, a = UI.sheet.d.trainDays; UI.sheet.d.trainDays = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; };
+/* Controles comunes de equipaciones y paletas para ajustes y asistente. */
+const clubKitDraft = which => which === "w" ? UI.wiz : (UI.sheet && UI.sheet.d);
+const updateClubKit = (which, el) => {
+  const d=clubKitDraft(which),k=el.dataset.kit,p=el.dataset.part;
+  if(!d || !d.kits || !d.kits[k] || !["shirt","shorts","socks"].includes(p) || !ClubTheme.validHex(el.value))return;
+  d.kits[k][p]=el.value.toUpperCase();
+};
+const updateClubPalette = (which, el, kind) => {
+  const d=clubKitDraft(which);if(!d)return;
+  d.palette=ClubTheme.cleanPalette(d.palette);
+  if(kind==="mode" && ["auto","preset","custom"].includes(el.value))d.palette.mode=el.value;
+  if(kind==="preset" && ClubTheme.presets[el.value])d.palette.preset=el.value;
+  if(kind==="custom" && ["customPrimary","customAccent"].includes(el.dataset.part) && ClubTheme.validHex(el.value))
+    d.palette[el.dataset.part]=el.value.toUpperCase();
+};
+const toggleClubThird = which => {
+  const d=clubKitDraft(which);if(!d)return;
+  d.kits=ClubTheme.normalizeKits(d.kits);
+  if(d.kits.third)delete d.kits.third;
+  else d.kits.third={shirt:"#EFEFEF",shorts:"#17365D",socks:"#EFEFEF"};
+};
+CHG.setKit = el => updateClubKit("set",el);
+CHG.wKit = el => updateClubKit("w",el);
+CHG.setPaletteMode = el => updateClubPalette("set",el,"mode");
+CHG.wPaletteMode = el => updateClubPalette("w",el,"mode");
+CHG.setPalettePreset = el => updateClubPalette("set",el,"preset");
+CHG.wPalettePreset = el => updateClubPalette("w",el,"preset");
+CHG.setPaletteCustom = el => updateClubPalette("set",el,"custom");
+CHG.wPaletteCustom = el => updateClubPalette("w",el,"custom");
+ACT.setToggleThird = () => toggleClubThird("set");
+ACT.wToggleThird = () => toggleClubThird("w");
 ACT.saveSettings = () => {
   const d = UI.sheet.d, mm = parseNum(d.matchMinutes);
   if (!mm || mm < 10 || mm > 120) { toast("La duración del partido debe estar entre 10 y 120 minutos.", "err"); return; }
