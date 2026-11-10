@@ -57,14 +57,18 @@ async function buildPlayerPdf(pid) {
   doc.setFillColor(...NAVY); doc.rect(0, 0, W, 36, "F");
   doc.setFillColor(...GREEN); doc.rect(0, 36, W, 1.6, "F");
   font("bold", 9, [180, 205, 235]); T("INFORME INDIVIDUAL  ·  TEMPORADA " + season.name, M, 12);
-  font("bold", 20, [255, 255, 255]); T(season.club || "Club", M, 23);
+  const crestAdded = ClubCrest.addToPdf(doc, season, W - M - 29, 4, 29, 29);
+  font("bold", 20, [255, 255, 255]);
+  const clubTitle = pdfTxt(season.club || "Club");
+  T(clubTitle.length > (crestAdded ? 29 : 39) ? clubTitle.slice(0, crestAdded ? 28 : 38) + "…" : clubTitle, M, 23);
   font("normal", 10, [210, 225, 242]); T(season.category || "", M, 30);
-  // jugador
+  // jugador: dorsal destacado y legible a tamaño de impresión
   y = 52;
-  doc.setFillColor(...NAVY); doc.circle(M + 9, y - 3, 9, "F");
-  font("bold", 17, [255, 255, 255]); T(p.dorsal != null && p.dorsal !== "" ? String(p.dorsal) : "-", M + 9, y + 2.6, { align: "center" });
-  font("bold", 22, INK); T(p.name, M + 24, y - 1);
-  font("normal", 10, GREY); T("Resumen de la temporada", M + 24, y + 6);
+  const dorsalX = M + 12.5;
+  doc.setFillColor(...NAVY); doc.circle(dorsalX, y - 2, 12.5, "F");
+  font("bold", 24, [255, 255, 255]); T(p.dorsal != null && p.dorsal !== "" ? String(p.dorsal) : "-", dorsalX, y + 5, { align: "center" });
+  font("bold", 21, INK); T(p.name, M + 32, y - 1);
+  font("normal", 10, GREY); T("Resumen de la temporada", M + 32, y + 6);
   y += 18;
   // tarjetas
   const tiles = [[`${s.conv}/${D.regCount}`, "Convocatorias"], [s.played, "Partidos jugados"], [`${s.T} / ${s.S}`, "Titular / suplente"], [s.min ? fmtNum(s.min) : "0", "Minutos"], [s.goals, "Goles"], [fmtPct(t.pct), "Asistencia"]];
