@@ -257,9 +257,9 @@ V.sheet.wizard = () => {
       ${UI.pasteOpen === "p" ? `<textarea class="inp area" rows="7" data-inp="wPasteP" placeholder="- Oliver Atom – **10**&#10;- Santiago Muñez – **26**&#10;- Benji Price – **1**"></textarea><p class="muted small">Pega un jugador por línea. Reconocemos «Nombre – 10», «- Nombre – **10**», «10 – Nombre» y «10. Nombre». Nombre y dorsal quedan en columnas distintas; revisa los dorsales repetidos antes de terminar.</p><div class="row end">${btn("Añadir jugadores", "wPasteP", {}, "primary")}</div>` : ""}`;
   } else if (w.step === 3) {
     body = `<p class="muted small">Fecha, rival y campo de cada jornada. Si aún no los tienes, déjalos en blanco y complétalos después en Partidos.</p>
-      <ul class="wm">${w.matches.map((m, i) => `<li class="${m.rest ? "off" : ""}"><b>J${i + 1}</b><input type="date" class="inp" data-inp="wMDate" data-i="${i}" value="${esc(m.date)}" aria-label="Fecha">${m.rest ? `<span class="muted grow">Descansa</span>` : `<input type="text" class="inp grow" data-inp="wMRival" data-i="${i}" value="${esc(m.rival)}" placeholder="Rival" aria-label="Rival"><select class="sel" data-chg="wMHome" data-i="${i}" aria-label="Campo"><option value="1" ${m.home ? "selected" : ""}>Local</option><option value="0" ${!m.home ? "selected" : ""}>Visitante</option></select>`}<label class="chk" title="Jornada de descanso"><input type="checkbox" data-chg="wMRest" data-i="${i}" ${m.rest ? "checked" : ""}>Desc.</label><button type="button" class="ix" data-act="wDelM" data-i="${i}" aria-label="Quitar jornada">${icon("x")}</button></li>`).join("")}</ul>
+      <ul class="wm">${w.matches.map((m, i) => `<li class="${m.rest ? "off" : ""}"><b>J${m.n || i + 1}</b><input type="date" class="inp" data-inp="wMDate" data-i="${i}" value="${esc(m.date)}" aria-label="Fecha">${m.rest ? `<span class="muted grow">Descansa</span>` : `<input type="text" class="inp grow" data-inp="wMRival" data-i="${i}" value="${esc(m.rival)}" placeholder="Rival" aria-label="Rival"><select class="sel" data-chg="wMHome" data-i="${i}" aria-label="Local o visitante"><option value="" ${m.home == null ? "selected" : ""}>Por definir</option><option value="1" ${m.home === true ? "selected" : ""}>Local</option><option value="0" ${m.home === false ? "selected" : ""}>Visitante</option></select>`}<label class="chk" title="Jornada de descanso"><input type="checkbox" data-chg="wMRest" data-i="${i}" ${m.rest ? "checked" : ""}>Desc.</label><button type="button" class="ix" data-act="wDelM" data-i="${i}" aria-label="Quitar jornada">${icon("x")}</button></li>`).join("")}</ul>
       <div class="row gap wrap tool">${btn("Añadir jornada", "wAddM", {}, "ghost", "plus")}<button type="button" class="link" data-act="wPasteM">Pegar el calendario</button></div>
-      ${UI.pasteOpen === "m" ? `<textarea class="inp area" rows="6" data-inp="wPasteM" placeholder="Una jornada por línea:\n17/10/2027; Lora del Río CF; V\n24/10/2027; CMD San Juan; L\n08/01/2028; DESCANSA"></textarea><p class="muted small">Formato: fecha; rival; L (local) o V (visitante).</p><div class="row end">${btn("Añadir jornadas", "wPasteM", {}, "primary")}</div>` : ""}`;
+      ${UI.pasteOpen === "m" ? `<textarea class="inp area" rows="9" data-inp="wPasteM" placeholder="Por ejemplo: - Jornada 1; Fecha: Sábado, 14 de noviembre de 2026; Rival: Rayo Ficticio\n17/10/2027; Lora del Río CF; V\n24/10/2027; CMD San Juan; L\n08/01/2028; DESCANSA">${esc(UI.wizPasteM || "")}</textarea><p class="muted small">Puedes pegar «Jornada 1», «Fecha: Sábado, 14 de noviembre de 2026» y «Rival: Rayo Ficticio», incluso con viñetas Markdown. También se admite fecha; rival; L/V. Si no indicas casa o fuera se quedará «Por definir», sin suponer que eres local.</p><div class="row end">${btn("Analizar y añadir jornadas", "wApplyPasteM", {}, "primary")}</div>` : ""}`;
   } else {
     const keep = w.players.filter(p => p.keep && p.name.trim()).length;
     body = w.done ? `<div class="okbox"><div class="okmark">${icon("check")}</div><h3>Temporada ${esc(w.name)} creada</h3><p class="muted">${keep} jugadores y ${w.matches.length} jornadas listos. Ya puedes empezar a usarla.</p>
@@ -309,24 +309,34 @@ ACT.wPasteP = () => {
 };
 INP.wMDate = el => { UI.wiz.matches[+el.dataset.i].date = el.value; };
 INP.wMRival = el => { UI.wiz.matches[+el.dataset.i].rival = el.value; };
-CHG.wMHome = el => { UI.wiz.matches[+el.dataset.i].home = el.value === "1"; };
+CHG.wMHome = el => { UI.wiz.matches[+el.dataset.i].home = el.value === "" ? null : el.value === "1"; };
 CHG.wMRest = el => { UI.wiz.matches[+el.dataset.i].rest = el.checked; };
 ACT.wDelM = el => { UI.wiz.matches.splice(+el.dataset.i, 1); };
-ACT.wAddM = () => { UI.wiz.matches.push({ date: "", rival: "", home: true, rest: false }); };
-ACT.wPasteM = el => {
-  if (!el || !el.dataset || UI.pasteOpen !== "m" || el.tagName === "BUTTON" && el.textContent.trim() === "Pegar el calendario") { UI.pasteOpen = UI.pasteOpen === "m" ? false : "m"; return; }
-  const lines = (UI.wizPasteM || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
-  let bad = 0;
-  lines.forEach(l => {
-    const parts = l.split(/\s*[;\t]\s*/);
-    const date = parseEsDate(parts[0]);
-    if (!date) { bad++; return; }
-    const rest = /^descansa$/i.test(parts[1] || "");
-    const campo = (parts[2] || "").trim().toLowerCase();
-    UI.wiz.matches.push({ date, rival: rest ? "" : (parts[1] || ""), home: !(campo.startsWith("v")), rest });
-  });
-  UI.wizPasteM = ""; UI.pasteOpen = false;
-  toast(bad ? `${lines.length - bad} jornadas añadidas. ${bad} líneas no tenían una fecha válida.` : `${lines.length} jornadas añadidas.`, bad ? "err" : "ok");
+ACT.wAddM = () => { UI.wiz.matches.push({ date: "", rival: "", home: null, rest: false }); };
+ACT.wPasteM = () => { UI.pasteOpen = UI.pasteOpen === "m" ? false : "m"; };
+ACT.wApplyPasteM = () => {
+  const w = UI.wiz, result = MatchListImport.parse(UI.wizPasteM || "");
+  if (result.errors.length) {
+    toast("Revisa el calendario: " + result.errors[0] + (result.errors.length > 1 ? " (" + result.errors.length + " avisos)" : ""), "err");
+    return;
+  }
+  const occupied = new Set(w.matches.map((m,i) => m.n || i + 1));
+  let added=0,duplicates=0,unknown=0;
+  for (const row of result.matches) {
+    let n=row.n;
+    if(n != null && occupied.has(n)){duplicates++;continue;}
+    if(n == null){
+      n=1;while(occupied.has(n))n++;
+    }
+    occupied.add(n);
+    if(!row.rest && row.home===null)unknown++;
+    w.matches.push({n,date:row.date,rival:row.rival,home:row.home,rest:row.rest});
+    added++;
+  }
+  if(!added){toast(duplicates?"Las jornadas ya estaban añadidas.":"No se encontraron jornadas válidas.","err");return;}
+  UI.wizPasteM = "";UI.pasteOpen = false;
+  toast(added+" jornadas añadidas."+(duplicates?" "+duplicates+" jornadas repetidas omitidas.":"")+
+    (unknown?" "+unknown+" pendientes de local o visitante.":""),unknown||duplicates?"err":"ok");
 };
 INP.wPasteM = el => { UI.wizPasteM = el.value; };
 ACT.wBack = () => { UI.wiz.step = Math.max(1, UI.wiz.step - 1); UI.pasteOpen = false; };
@@ -349,7 +359,7 @@ ACT.wCreate = async () => {
   if (!w.sid) w.sid = w.name.replace(/\s*[\/-]\s*/, "-") + "-" + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
   const id = w.sid;
   const plist = w.players.filter(p => p.keep && p.name.trim()).map((p, i) => ({ id: "p" + String(i + 1).padStart(2, "0"), name: p.name.trim(), dorsal: parseNum(p.dorsal), order: i + 1, active: true, notes: "" }));
-  const mlist = w.matches.map((m, i) => ({ id: "j" + String(i + 1).padStart(2, "0"), n: i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
+  const mlist = w.matches.map((m, i) => ({ id: "j" + String(m.n || i + 1).padStart(2, "0"), n: m.n || i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
   w.progress = [0, 1 + plist.length + mlist.length + 1]; w.err = null; render(true);
   try {
     await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), format: w.format || "F7", crest: ClubCrest.clean(w.crest), kits: w.kits, trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
