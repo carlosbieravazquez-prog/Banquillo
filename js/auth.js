@@ -35,8 +35,9 @@ const FORM = {};
     ? `<p class="auth-wait small" role="status" data-auth-cooldown="${kind}"${throttle.remaining(kind) ? "" : " hidden"}>${esc(throttle.message(kind))}</p>`
     : "";
   const updateFeedback = (f,kind,text,type="err") => {
-    setMsg(type,text);
     const output=f?.querySelector?.("[data-auth-inline]");
+    // Un único aviso: mensaje integrado o fallback, nunca los dos.
+    setMsg(output ? null : type,text && !output ? text : null);
     if(output){
       output.textContent=text;
       output.hidden=!text;
@@ -56,7 +57,8 @@ const FORM = {};
   const allowed = (f,kind) => {
     if(A.ui.busy)return false;
     if(throttle?.remaining(kind)){
-      updateFeedback(f,kind,throttle.message(kind));
+      updateFeedback(f,kind,"");
+      throttle.sync();
       return false;
     }
     return true;
@@ -64,7 +66,9 @@ const FORM = {};
   const authFailure = (f,kind,error) => {
     const verdict=throttle?.observe(error,kind);
     if(verdict && verdict.seconds){
-      updateFeedback(f,kind,throttle.message(kind));
+      // El contador ya explica el límite; ocultar avisos anteriores duplicados.
+      updateFeedback(f,kind,"");
+      throttle.sync();
       return;
     }
     if(verdict?.kind==="captcha"){
