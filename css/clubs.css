@@ -1,0 +1,34 @@
+/* Dirección deportiva conectada; adaptable a móvil y modo oscuro. */
+.club-onboarding{display:grid;gap:12px;max-width:670px;padding:22px}
+.club-onboarding h2,.club-section h2{margin:0;font:700 25px var(--f-display)}
+.club-onboarding p{margin:0;color:var(--ink-2)}
+.club-onboarding .btn{width:max-content}
+.club-overview{padding:17px 20px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin:18px 0}
+.club-overview>b{font-weight:750}
+.club-overview>div>b{font-size:17px}
+.club-overview p{margin:3px 0 0}
+.club-section{display:grid;gap:14px;margin-top:18px}
+.club-section-head{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.club-section-head p{margin:5px 0 0;max-width:590px}
+.club-team-grid,.club-directors-grid{display:grid;gap:13px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.club-team-card,.club-director-card{display:grid;gap:14px;padding:17px;border:1px solid var(--line)}
+.club-team-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.club-team-top b{font-size:18px;font-weight:800}
+.club-team-top p{margin:4px 0 0}
+.club-code-row{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:14px}
+.club-code-row>div{display:grid;gap:4px}
+.club-team-code{font:800 25px/1.2 var(--f-display);letter-spacing:.14em;color:var(--ink)}
+.club-director-card>b{font-size:19px}
+.club-facility-readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:17px 0}
+.club-facility-readout span{display:grid;gap:6px;text-align:center;padding:15px 9px;background:var(--surface-2);border:1px solid var(--line);border-radius:13px}
+.club-facility-readout strong{font:700 28px/1 var(--f-display)}
+.club-facility-readout small{font-size:11px;color:var(--ink-2)}
+.auth-choices{display:grid;gap:10px;margin-top:18px}
+.auth-choice{display:grid;gap:5px;text-align:left;background:var(--surface-2);border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;color:var(--ink)}
+.auth-choice:hover,.auth-choice:focus-visible{border-color:var(--accent)}
+.auth-choice b{font-size:16px}
+.auth-choice small{font-size:12px;color:var(--ink-2)}
+.auth-choice.emphasized{border-color:var(--accent);background:var(--accent-soft)}
+.auth-join-guide{border-left:3px solid var(--accent);background:var(--surface-2);color:var(--ink-2);padding:10px 12px;font-size:13px;border-radius:0 9px 9px 0;margin:5px 0 14px}
+.auth-card .auth-tabs{flex-wrap:wrap;gap:3px}
+@media(max-width:620px){.club-overview{align-items:flex-start}.club-code-row{align-items:flex-start}.club-team-code{font-size:22px}.club-section-head .btn{width:100%}.club-facility-readout{gap:5px}.club-facility-readout span{padding:11px 4px}.club-facility-readout strong{font-size:23px}}

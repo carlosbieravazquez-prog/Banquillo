@@ -1,0 +1,42 @@
+name: Banquillo Beta — pruebas y aislamiento
+
+on:
+  push:
+    branches:
+      - feature/actas-sanciones-f11-ocr
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-regression:
+    name: Pruebas de sesión, CAPTCHA y staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Descargar la rama
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar sintaxis JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          find js tests -type f \( -name '*.js' -o -name '*.cjs' \) -print0 | xargs -0 -n1 node --check
+          node --check config.js
+          node --check config.staging.js
+      - name: Ejecutar pruebas automatizadas
+        run: node --test tests/*.test.cjs
+      - name: Verificar que no se publica staging en robots
+        shell: bash
+        run: |
+          test -f staging.html
+          grep -q 'noindex,nofollow,noarchive' staging.html
+          grep -q 'src="config.staging.js"' staging.html
+          ! grep -q 'src="config.js"' staging.html

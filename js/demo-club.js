@@ -30,7 +30,8 @@
  state.facilities.divisible=state.facilities.divisible||[];
  state.schedule=Array.isArray(state.schedule)?state.schedule:JSON.parse(JSON.stringify(seed.schedule));
  state.calendarDate=state.calendarDate||seed.calendarDate;
- state.uniforms=state.uniforms||JSON.parse(JSON.stringify(seed.uniforms));
+ state.uniforms=ClubTheme.normalizeKits(state.uniforms||JSON.parse(JSON.stringify(seed.uniforms)));
+ state.palette=ClubTheme.cleanPalette(state.palette);
  state.notifications=Array.isArray(state.notifications)?state.notifications:JSON.parse(JSON.stringify(seed.notifications));
  const $=s=>document.querySelector(s);
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -48,6 +49,8 @@
  const teamOf=id=>state.teams.find(t=>t.id===id)||{name:"Equipo sin asignar",modality:""};
  const shell=()=>{
   $("#sideClubName").textContent=state.club.name;$("#activeDirectorName").textContent=active().name;$("#teamCount").textContent=state.teams.length;
+  const logoSlot=document.querySelector(".club-switch .club-crest");
+  if(logoSlot){const image=ClubCrest.current({settings:{crest:state.club.crest}});logoSlot.innerHTML=image?'<img src="'+image+'" alt="Escudo del club" style="width:100%;height:100%;object-fit:contain">':'AM';}
   document.querySelectorAll("[data-modality]").forEach(b=>b.classList.toggle("selected",b.dataset.modality===state.modality));
   $("#modalityNote").textContent=state.modality==="todos"?"Vista de todo el club":"Vista de equipos de "+(state.modality==="F7"?"Fútbol 7":"Fútbol 11");
  };
@@ -71,23 +74,9 @@
  function instalaciones(){
   return '<div class="page-head"><div><h2>Instalaciones</h2><p>Configura los campos físicos y si pueden dividirse para fútbol 7.</p></div><span class="tag amber">Configuración de demostración</span></div><section class="panel"><div class="panel-head"><div><h3>Campos disponibles</h3><span class="muted">Los cambios se guardan en este navegador.</span></div></div><div class="facility-row"><span><b>Campos de Fútbol 11</b><small>Instalaciones de dimensiones completas</small></span><div class="counter"><button data-count="f11" data-delta="-1">−</button><strong>'+state.facilities.f11+'</strong><button data-count="f11" data-delta="1">＋</button></div></div><div class="facility-row"><span><b>Campos de Fútbol 7 independientes</b><small>Campos que no proceden de dividir un F11</small></span><div class="counter"><button data-count="f7" data-delta="-1">−</button><strong>'+state.facilities.f7+'</strong><button data-count="f7" data-delta="1">＋</button></div></div><div class="notice"><b>Capacidad equivalente:</b> '+(state.facilities.f11*2+state.facilities.f7)+' campos F7 teóricos. Solo se podrán reservar dos partidos F7 en un mismo F11 si esa instalación es físicamente divisible y permite uso simultáneo.</div></section><section class="panel"><h3>Divisibilidad de campos F11</h3><p class="muted" style="margin:5px 0 12px">Evita reservar simultáneamente el campo completo y sus dos mitades.</p>'+Array.from({length:state.facilities.f11},(_,i)=>'<div class="facility-row"><span><b>Campo F11 · '+(i+1)+'</b><small>¿Se puede dividir en dos campos F7?</small></span><label><input type="checkbox" data-divisible="'+i+'" '+(state.facilities.divisible[i]?"checked":"")+'> Sí, es divisible</label></div>').join("")+'</section>';
  }
- function resourceList(modality){
-  const out=[];
-  for(let i=0;i<state.facilities.f11;i++){
-   const id="f11-"+(i+1),div=!!state.facilities.divisible[i];
-   if(modality==="F11")out.push({id:id,label:"Campo F11 · "+(i+1)});
-   if(modality==="F7"&&div){out.push({id:id+"-a",label:"Campo F7 · F11 "+(i+1)+" (A)"});out.push({id:id+"-b",label:"Campo F7 · F11 "+(i+1)+" (B)"});}
-  }
-  if(modality==="F7")for(let i=0;i<state.facilities.f7;i++)out.push({id:"f7-"+(i+1),label:"Campo F7 independiente · "+(i+1)});
-  return out;
- }
- const parentResource=id=>String(id||"").replace(/-[ab]$/,"");
- const resourcesConflict=(a,b)=>{if(a===b)return true;const pa=parentResource(a),pb=parentResource(b);if(pa!==pb)return false;return a===pa||b===pb;};
- const overlap=(a,b)=>{const a0=Number(a.time.slice(0,2))*60+Number(a.time.slice(3,5)),b0=Number(b.time.slice(0,2))*60+Number(b.time.slice(3,5));return a0<b0+Number(b.duration||90)&&b0<a0+Number(a.duration||90)};
- function conflicts(candidate,ignoreId){
-  if(!candidate.home||!candidate.resource||!candidate.time)return [];
-  return state.schedule.filter(m=>m.id!==ignoreId&&m.home&&m.date===candidate.date&&m.resource&&m.time&&resourcesConflict(m.resource,candidate.resource)&&overlap(candidate,m));
- }
+ const resourceList = modality => ClubPlanner.resourceList(state.facilities,modality);
+ const conflicts = (candidate,ignoreId) => ClubPlanner.conflicts(candidate,state.schedule,ignoreId);
+ const validate = (candidate,ignoreId) => ClubPlanner.validate(candidate,state.schedule,state.facilities,ignoreId);
  function matchLabel(m){
   const t=teamOf(m.teamId),side=m.home?"🏠 Local":"✈️ Visitante",res=resourceList(m.modality).find(x=>x.id===m.resource);
   return '<article class="fixture-card '+(m.status==="pending"?"is-pending":"")+'"><div class="fixture-time">'+(m.time||"Por asignar")+'</div><div class="fixture-main"><b>'+esc(t.name)+' <span>vs</span> '+esc(m.opponent)+'</b><small>'+side+' · '+m.modality+(m.home&&res?" · "+esc(res.label):"")+'</small></div><div class="fixture-actions"><span class="tag '+(m.status==="published"?"green":m.status==="pending"?"amber":"")+'">'+(m.status==="published"?"Publicado":m.status==="pending"?"Pendiente":"Propuesto")+'</span>'+(m.home&&m.status!=="published"&&m.time&&m.resource?'<button class="btn tiny" data-action="publish" data-id="'+m.id+'">Publicar</button>':'')+(m.status!=="published"?'<button class="btn tiny ghost" data-action="delete-match" data-id="'+m.id+'">×</button>':'')+'</div></article>';
@@ -106,7 +95,7 @@
   '<section class="panel"><div class="calendar-head"><div><h3>'+esc(fmtRange(start,end))+'</h3><span class="muted">Semana · '+weekEvents.length+' partidos</span></div><button class="btn ghost" data-action="print">Imprimir / guardar PDF</button></div><div class="week-grid">'+days.map(d=>{const key=dateKey(d),list=weekEvents.filter(m=>m.date===key);return '<div class="week-day '+(key===dateKey(new Date())?"today":"")+'"><b>'+esc(new Intl.DateTimeFormat("es-ES",{weekday:"short"}).format(d))+'</b><strong>'+d.getDate()+'</strong><small>'+list.length+' partidos</small></div>';}).join("")+'</div>'+
   '<div class="fixture-list">'+days.map(d=>{const list=weekEvents.filter(m=>m.date===dateKey(d));return '<div class="day-group"><h4>'+esc(fmt(d))+'</h4>'+(list.length?list.map(matchLabel).join(""):'<p class="muted">Sin partidos programados</p>')+'</div>';}).join("")+'</div></section>'+
   '<div class="two-col calendar-bottom"><section class="panel"><div class="panel-head"><div><h3>Partidos locales pendientes</h3><span class="muted">Asigna fecha, hora y campo</span></div><span class="tag amber">'+pending.length+' pendientes</span></div>'+(pending.length?pending.map(pendingRow).join(''):'<div class="notice">No hay partidos pendientes de asignación.</div>')+'</section>'+
-  '<section class="panel"><h3>Añadir partido al calendario</h3><p class="muted" style="margin:5px 0 14px">Los partidos visitantes son informativos y no reservan instalaciones.</p><form id="matchForm" class="form-grid"><div class="field full"><label>Equipo</label><select name="teamId" required>'+teamOpts+'</select></div><div class="field"><label>Rival</label><input name="opponent" required maxlength="70" placeholder="Nombre del rival"></div><div class="field"><label>Fecha</label><input name="date" type="date" value="'+esc(state.calendarDate)+'" required></div><div class="field"><label>Hora</label><input name="time" type="time"></div><div class="field"><label>Local / visitante</label><select name="home"><option value="1">Local</option><option value="0">Visitante</option></select></div><div class="field"><label>Campo (solo local)</label><select name="resource"><option value="">Pendiente de asignar</option>'+resourceList(teamOf(state.teams[0].id).modality).map(r=>'<option value="'+r.id+'">'+esc(r.label)+'</option>').join("")+'</select></div><div class="field"><label>Duración</label><select name="duration"><option value="70">70 minutos</option><option value="80">80 minutos</option><option value="90" selected>90 minutos</option></select></div><div class="field full"><button class="btn primary" type="submit">＋ Añadir al calendario</button></div></form></section></div>';
+  '<section class="panel"><h3>Añadir partido al calendario</h3><p class="muted" style="margin:5px 0 14px">Los partidos visitantes son informativos y no reservan instalaciones.</p><form id="matchForm" class="form-grid"><div class="field full"><label>Equipo</label><select name="teamId" required>'+teamOpts+'</select></div><div class="field"><label>Rival</label><input name="opponent" required maxlength="70" placeholder="Nombre del rival"></div><div class="field"><label>Fecha</label><input name="date" type="date" value="'+esc(state.calendarDate)+'" required></div><div class="field"><label>Hora</label><input name="time" type="time"></div><div class="field"><label>Local / visitante</label><select name="home"><option value="1">Local</option><option value="0">Visitante</option></select></div><div class="field"><label>Campo (solo local)</label><select name="resource"><option value="">Pendiente de asignar</option>'+resourceList(state.teams[0] ? state.teams[0].modality : "F7").map(r=>'<option value="'+r.id+'">'+esc(r.label)+'</option>').join("")+'</select></div><div class="field"><label>Duración</label><select name="duration"><option value="70">70 minutos</option><option value="80">80 minutos</option><option value="90" selected>90 minutos</option></select></div><div class="field full"><button class="btn primary" type="submit">＋ Añadir al calendario</button></div></form></section></div>';
  }
  function weekMessage(){
   const start=monday(parseDate(state.calendarDate)),end=addDays(start,6);
@@ -117,54 +106,132 @@
   lines.push("— Dirección deportiva · "+state.club.name);
   return lines.join("\n");
  }
+ function monthMessage(){
+  const day=parseDate(state.calendarDate),year=day.getFullYear(),month=day.getMonth();
+  const from=dateKey(new Date(year,month,1)),to=dateKey(new Date(year,month+1,0));
+  const events=state.schedule.filter(m=>m.date>=from&&m.date<=to).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const header=new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(day);
+  const lines=["📅 "+state.club.name+" · Plan mensual",header.toUpperCase(),""];
+  for(const m of events){
+    const t=teamOf(m.teamId),res=resourceList(m.modality).find(x=>x.id===m.resource);
+    lines.push((m.home?"🏠 LOCAL":"✈️ VISITANTE")+" · "+t.name+" vs "+m.opponent);
+    lines.push("📆 "+fmt(parseDate(m.date))+(m.time?" · 🕒 "+m.time:" · Hora pendiente"));
+    if(m.home)lines.push(res?"📍 "+res.label:"📍 Campo pendiente");
+    lines.push(m.status==="published"?"✅ Horario publicado":"🟡 Pendiente de confirmar","");
+  }
+  if(!events.length)lines.push("No hay partidos registrados para este mes.");
+  lines.push("— Dirección deportiva · "+state.club.name);
+  return lines.join("\n");
+ }
  function comunicaciones(){
   const start=monday(parseDate(state.calendarDate)),end=addDays(start,6),events=state.schedule.filter(m=>m.date>=dateKey(start)&&m.date<=dateKey(end));
-  return '<div class="page-head"><div><h2>Comunicaciones</h2><p>Prepara un aviso semanal para compartir con los entrenadores.</p></div><span class="tag green">Listo para WhatsApp</span></div><section class="panel"><div class="panel-head"><div><h3>Resumen semanal</h3><span class="muted">'+esc(fmtRange(start,end))+' · '+events.length+' partidos</span></div><button class="btn primary" data-action="copy-week">Copiar mensaje</button></div><pre class="message-preview">'+esc(weekMessage())+'</pre><div class="notice">El mensaje distingue partidos locales y visitantes, e indica claramente los horarios o campos pendientes. Solo contiene información deportiva del calendario.</div><div class="communication-actions"><button class="btn ghost" data-action="print">Imprimir / guardar PDF</button><button class="btn ghost" data-action="go" data-view="calendario">Editar calendario</button></div></section>';
+  return '<div class="page-head"><div><h2>Comunicaciones</h2><p>Prepara un aviso semanal para compartir con los entrenadores.</p></div><span class="tag green">Listo para WhatsApp</span></div><section class="panel"><div class="panel-head"><div><h3>Resumen semanal</h3><span class="muted">'+esc(fmtRange(start,end))+' · '+events.length+' partidos</span></div><button class="btn primary" data-action="copy-week">Copiar mensaje</button><button class="btn ghost" data-action="copy-month">Copiar mes completo</button></div><pre class="message-preview">'+esc(weekMessage())+'</pre><div class="notice">El mensaje distingue partidos locales y visitantes, e indica claramente los horarios o campos pendientes. Solo contiene información deportiva del calendario.</div><div class="communication-actions"><button class="btn ghost" data-action="print">Imprimir / guardar PDF</button><button class="btn ghost" data-action="go" data-view="calendario">Editar calendario</button></div></section>';
  }
  function uniformCard(key,label){const u=state.uniforms[key];return '<section class="panel uniform-card"><h3>'+label+'</h3><p class="muted">Elige por separado el color de cada prenda. Ejemplo: camiseta roja, pantalón negro y medias rojas.</p><div class="form-grid"><div class="field"><label>Camiseta</label><input type="color" id="uniform-'+key+'-shirt" value="'+esc(u.shirt)+'"><small>Color de la parte superior.</small></div><div class="field"><label>Pantalón</label><input type="color" id="uniform-'+key+'-shorts" value="'+esc(u.shorts)+'"><small>Color del pantalón.</small></div><div class="field"><label>Medias</label><input type="color" id="uniform-'+key+'-socks" value="'+esc(u.socks)+'"><small>Color de las medias.</small></div></div><div class="kit-preview"><span style="background:'+esc(u.shirt)+'">Camiseta</span><span style="background:'+esc(u.shorts)+'">Pantalón</span><span style="background:'+esc(u.socks)+';color:#222">Medias</span></div></section>'}
  function avisos(){return '<div class="page-head"><div><h2>Avisos de actividad</h2><p>Tareas pendientes de los entrenadores.</p></div><span class="tag amber">'+state.notifications.filter(n=>n.status==="Pendiente").length+' pendientes</span></div><section class="panel"><div class="notice">Ejemplos ficticios de esta demostración. En la versión conectada, estos avisos se generarían a partir de la actividad real de los equipos.</div>'+state.notifications.map(n=>'<article class="notice-card"><div class="notice-head"><b>'+esc(n.title)+'</b><span class="tag amber">'+esc(n.status)+'</span></div><p><b>'+esc(n.team)+'</b> · Entrenador/a: '+esc(n.coach)+'</p><p>'+esc(n.detail)+'</p><small>'+esc(n.date)+'</small></article>').join('')+'</section>'}
- function ajustes(){return '<div class="page-head"><div><h2>Configuración inicial del club</h2><p>Identidad, datos territoriales y colores de las equipaciones.</p></div></div><section class="panel"><div class="form-grid"><div class="field"><label>Nombre del club</label><input id="clubName" value="'+esc(state.club.name)+'"></div><div class="field"><label>Municipio</label><input id="clubTown" value="'+esc(state.club.town)+'"></div><div class="field"><label>Provincia</label><input id="clubProvince" value="'+esc(state.club.province)+'"></div><div class="field"><label>Comunidad autónoma</label><input id="clubCommunity" value="'+esc(state.club.community)+'"></div><div class="field"><label>Temporada</label><input id="clubSeason" value="'+esc(state.club.season)+'"></div></div><div class="notice"><b>Ayuda:</b> selecciona el color de camiseta, pantalón y medias. Por ejemplo, una primera equipación puede ser camiseta azul, pantalón blanco y medias azules.</div><div style="display:flex;justify-content:flex-end;margin-top:15px"><button class="btn primary" data-action="save-club">Guardar cambios</button></div></section>'+uniformCard("first","Primera equipación") + uniformCard("second","Segunda equipación") + '<div class="notice">Los datos son ficticios y se guardan solo en este navegador.</div>'}
- const render=()=>{shell();const v=UI.view||"resumen";$("#pageTitle").textContent=viewTitles[v];$("#viewRoot").innerHTML=({resumen,equipos,equipo:editorEquipo,directores,instalaciones,calendario:calendar,comunicaciones,avisos,ajustes}[v]||resumen)();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));};
- const UI={view:"resumen",teamId:null};
+ function ajustes(){
+  const tab=UI.settingsTab||"data";
+  const tabs='<div class="demo-settings-tabs" role="navigation" aria-label="Configuración del club">'+
+    [["data","Datos y escudo"],["kits","Equipaciones"],["palette","Identidad visual"]].map(([id,label])=>
+      '<button type="button" data-action="demo-settings-tab" data-tab="'+id+'" class="'+(id===tab?"on":"")+'">'+label+'</button>').join("")+'</div>';
+  const general='<section class="panel"><div class="form-grid"><div class="field full">'+
+    FilePicker.render({title:"Escudo del club",formats:"PNG · JPG · WEBP",help:"Hasta 3 MB · imagen sin fondo recomendada",
+      icon:"🛡️",label:"Elegir escudo",accept:"image/png,image/jpeg,image/webp",inputId:"clubCrestUpload"})+
+    '<p class="muted">Prepara la imagen con <a href="https://www.canva.com/es_es/funciones/quitar-fondo-imagen/" target="_blank" rel="noopener noreferrer">Canva</a> si lo necesitas (herramienta externa; ciertas funciones requieren pago).</p>'+
+    (ClubCrest.current({settings:{crest:state.club.crest}})?
+      '<img src="'+ClubCrest.current({settings:{crest:state.club.crest}})+'" alt="Escudo del club" width="90" height="90" style="object-fit:contain"><button type="button" class="btn ghost" data-action="remove-club-crest">Quitar escudo</button>':'')+
+    '</div>'+[["name","Nombre del club"],["town","Municipio"],["province","Provincia"],["community","Comunidad autónoma"],["season","Temporada"]].map(([key,label])=>
+       '<div class="field"><label>'+label+'</label><input id="club'+key[0].toUpperCase()+key.slice(1)+'" value="'+esc(state.club[key]||"")+'"></div>').join("")+
+    '</div><div style="display:flex;justify-content:flex-end;margin-top:15px"><button class="btn primary" data-action="save-club">Guardar datos</button></div></section>';
+  const values={club:state.club.name,kits:state.uniforms,palette:state.palette};
+  const body=tab==="kits"?ClubKitsEditor.renderKits(values,"set"):
+    tab==="palette"?ClubKitsEditor.renderPalette(values,"set"):general;
+  return '<div class="demo-settings-screen"><div class="page-head"><div><h2>Configuración del club</h2>'+
+    '<p>El mismo editor de equipaciones e identidad visual de Banquillo, adaptado al club.</p></div></div>'+
+    tabs+body+'<div class="notice">Demo local: los datos son ficticios. Para crear equipos y códigos válidos abre la Beta autenticada, apartado «Clubes».</div></div>';
+ }
+ const render=()=>{const colors=ClubTheme.derive(state.uniforms,state.palette).light;document.documentElement.style.setProperty("--navy",colors["--brand"]);document.documentElement.style.setProperty("--green",colors["--accent"]);document.documentElement.style.setProperty("--green-soft",colors["--accent-soft"]);shell();const v=UI.view||"resumen";$("#pageTitle").textContent=viewTitles[v];$("#viewRoot").innerHTML=({resumen,equipos,equipo:editorEquipo,directores,instalaciones,calendario:calendar,comunicaciones,avisos,ajustes}[v]||resumen)();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));};
+ const UI={view:"resumen",teamId:null,settingsTab:"data"};
  document.addEventListener("click",e=>{
+  const kitAct=e.target.closest("[data-act]");
+  if(kitAct){
+    if(kitAct.dataset.act==="setToggleThird"){
+      state.uniforms=ClubTheme.normalizeKits(state.uniforms);
+      if(state.uniforms.third)delete state.uniforms.third;
+      else state.uniforms.third={shirt:"#FFFFFF",shorts:"#17365D",socks:"#FFFFFF"};
+      save();render();return;
+    }
+    if(kitAct.dataset.act==="setPaletteChoice"&&["auto","preset"].includes(kitAct.dataset.mode)){
+      state.palette={...ClubTheme.cleanPalette(state.palette),mode:kitAct.dataset.mode};
+      save();render();return;
+    }
+  }
   const nav=e.target.closest("[data-view]");if(nav){UI.view=nav.dataset.view;render();return}
   const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;save();render();return}
   const a=e.target.closest("[data-action]");if(!a)return;
   const id=a.dataset.id;
+  if(a.dataset.action==="demo-settings-tab"&&["data","kits","palette"].includes(a.dataset.tab)){UI.settingsTab=a.dataset.tab;render();return}
   if(a.dataset.action==="go"){UI.view=a.dataset.view;render()}
   if(a.dataset.action==="edit-team"){UI.teamId=id;UI.view="equipo";render();return}
   if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}
   if(a.dataset.action==="switch-director"){state.activeDirector=id;state.modality=active().preferred;save();render()}
   if(a.dataset.action==="add-director"&&state.directors.length<2){state.directors.push({id:"d2",name:"Marta León",initials:"ML",preferred:"F11"});save();render()}
   if(a.dataset.action==="new-team"){const name=prompt("Nombre del nuevo equipo (demo):");if(!name||!name.trim())return;const modality=confirm("Aceptar = Fútbol 7 · Cancelar = Fútbol 11")?"F7":"F11";state.teams.push({id:"t"+Date.now(),name:name.trim(),category:"Por definir",modality,competition:"Pendiente de asignar",players:0,coach:"Por asignar"});save();render()}
+  if(a.dataset.action==="remove-club-crest"){state.club.crest="";save();render();return}
   if(a.dataset.action==="save-club"){["name","town","province","community","season"].forEach(k=>{const el=$("#club"+k[0].toUpperCase()+k.slice(1));if(el)state.club[k]=el.value.trim()});["first","second"].forEach(k=>["shirt","shorts","socks"].forEach(part=>{const el=$("#uniform-"+k+"-"+part);if(el)state.uniforms[k][part]=el.value}));save();render()}
   if(a.dataset.action==="week-prev"){state.calendarDate=dateKey(addDays(monday(parseDate(state.calendarDate)),-7));save();render()}
   if(a.dataset.action==="week-next"){state.calendarDate=dateKey(addDays(monday(parseDate(state.calendarDate)),7));save();render()}
   if(a.dataset.action==="week-today"){state.calendarDate=dateKey(new Date());save();render()}
-  if(a.dataset.action==="publish"){const m=state.schedule.find(x=>x.id===id);if(m){const conflictsFound=conflicts(m,id);if(conflictsFound.length){alert("No se puede publicar: hay un solapamiento en la misma instalación.");return}m.status="published";save();render()}}
+  if(a.dataset.action==="publish"){const m=state.schedule.find(x=>x.id===id);if(m){const problem=validate(m,id);if(problem){alert("No se puede publicar: "+problem);return}m.status="published";save();render()}}
   if(a.dataset.action==="delete-match"){if(!confirm("¿Eliminar este partido de la demostración?"))return;state.schedule=state.schedule.filter(x=>x.id!==id);save();render()}
   if(a.dataset.action==="copy-week"){const msg=weekMessage();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Mensaje copiado. Ya puedes pegarlo en WhatsApp."),()=>prompt("Copia el mensaje:",msg))}else prompt("Copia el mensaje:",msg)}
+  if(a.dataset.action==="copy-month"){const msg=monthMessage();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Resumen mensual copiado."),()=>prompt("Copia el resumen mensual:",msg))}else prompt("Copia el resumen mensual:",msg)}
   if(a.dataset.action==="print"){window.print()}
  });
  document.addEventListener("submit",e=>{
   if(e.target.id==="teamEditor"){e.preventDefault();const f=new FormData(e.target),t=state.teams.find(x=>x.id===f.get("id"));if(!t)return;t.name=String(f.get("name")||"").trim();t.category=String(f.get("category")||"").trim();t.modality=String(f.get("modality")||"F7");t.competition=String(f.get("competition")||"").trim();t.players=Math.max(0,Math.min(40,Number(f.get("players")||0)));t.coach=String(f.get("coach")||"").trim();save();UI.view="equipos";render();return}
   const assignmentId=e.target.dataset.assignId;
-  if(assignmentId){e.preventDefault();const f=new FormData(e.target),m=state.schedule.find(x=>x.id===assignmentId);if(!m)return;const candidate={...m,date:f.get("date"),time:f.get("time"),resource:f.get("resource"),status:"proposed"};if(!candidate.date||!candidate.time||!candidate.resource){alert("Selecciona fecha, hora y campo.");return}if(conflicts(candidate,assignmentId).length){alert("Conflicto de instalación: ese campo o su campo completo ya está reservado en ese horario.");return}Object.assign(m,candidate);state.calendarDate=m.date;save();render();return}
+  if(assignmentId){e.preventDefault();const f=new FormData(e.target),m=state.schedule.find(x=>x.id===assignmentId);if(!m)return;const candidate={...m,date:f.get("date"),time:f.get("time"),resource:f.get("resource"),status:"proposed"};if(!candidate.date||!candidate.time||!candidate.resource){alert("Selecciona fecha, hora y campo.");return}const problem=validate(candidate,assignmentId);if(problem){alert(problem);return}Object.assign(m,candidate);state.calendarDate=m.date;save();render();return}
   if(e.target.id!=="matchForm")return;e.preventDefault();
   const f=new FormData(e.target),team=teamOf(f.get("teamId")),home=f.get("home")==="1";
   const m={id:"m"+Date.now(),teamId:f.get("teamId"),opponent:String(f.get("opponent")||"").trim(),date:f.get("date"),time:f.get("time"),duration:Number(f.get("duration")||90),home,modality:team.modality,resource:home?String(f.get("resource")||""):"",status:"pending"};
   if(!m.opponent||!m.date){alert("Completa el rival y la fecha.");return}
-  if(home&&m.resource&&m.time){const c=conflicts(m);if(c.length){alert("Conflicto de instalación: ese campo (o una de sus mitades) ya está reservado en ese horario. Elige otro campo u hora.");return}}
+  if(!ClubPlanner.validDate(m.date)){alert("Escribe una fecha válida.");return}
+   if(m.time&&!ClubPlanner.validTime(m.time)){alert("La hora indicada no es válida.");return}
+   if(m.time && (home ? !!m.resource : true)){const problem=validate(m);if(problem){alert(problem);return}}
   if(home&&(!m.resource||!m.time))m.status="pending";else m.status="proposed";
   state.schedule.push(m);state.calendarDate=m.date;save();render();
  });
- document.addEventListener("change",e=>{
+ document.addEventListener("change",async e=>{
+  if(e.target.dataset.chg==="setKit"){
+    const key=e.target.dataset.kit,part=e.target.dataset.part;
+    if(state.uniforms[key]&&["shirt","shorts","socks"].includes(part)&&ClubTheme.validHex(e.target.value)){
+      state.uniforms[key][part]=e.target.value;save();render();
+    }return;
+  }
+  if(e.target.dataset.chg==="setPalettePreset"){
+    if(ClubTheme.presets[e.target.value]){state.palette={...ClubTheme.cleanPalette(state.palette),mode:"preset",preset:e.target.value};save();render();}return;
+  }
+  if(e.target.id==="clubCrestUpload"&&e.target.files?.[0]){
+    try{state.club.crest=await ClubCrest.upload(e.target.files[0]);save();render();}
+    catch(err){alert(err.message||"No se pudo cargar el escudo.");}
+    return;
+  }
   const p=e.target.dataset.preferred;if(p){const d=state.directors.find(x=>x.id===p);if(d){d.preferred=e.target.value;save();render()}}
   if(e.target.dataset.divisible!==undefined){state.facilities.divisible[+e.target.dataset.divisible]=e.target.checked;save();render()}
   if(e.target.name==="home"){const form=e.target.form,resource=form&&form.elements.resource;if(resource){resource.disabled=e.target.value!=="1";if(e.target.value!=="1")resource.value=""}}
   if(e.target.name==="teamId"){const form=e.target.form,team=teamOf(e.target.value),resource=form&&form.elements.resource;if(resource){const choices=resourceList(team.modality);resource.innerHTML='<option value="">Pendiente de asignar</option>'+choices.map(r=>'<option value="'+r.id+'">'+esc(r.label)+'</option>').join("")}}
  });
  document.addEventListener("click",e=>{const c=e.target.closest("[data-count]");if(!c)return;const k=c.dataset.count;state.facilities[k]=Math.max(0,Math.min(12,state.facilities[k]+Number(c.dataset.delta)));if(k==="f11")state.facilities.divisible.length=state.facilities.f11;save();render()});
+ $("#exportDemo").addEventListener("click",()=>{
+  // Exporta únicamente datos de esta demo: nunca tokens, cuentas o datos de Supabase.
+  const payload={format:"banquillo-club-demo",version:1,exportedAt:new Date().toISOString(),club:state};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="banquillo-configuracion-club-demo.json";
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
  $("#resetDemo").addEventListener("click",()=>{if(!confirm("¿Restablecer todos los datos ficticios del club?"))return;localStorage.removeItem(KEY);state=JSON.parse(JSON.stringify(seed));save();render()});
  save();render();
 })();

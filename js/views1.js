@@ -122,12 +122,20 @@ const T = {};
 const curMatch = () => Store.match(UI.route.arg);
 const touch = m => Store.save("match", m);
 const entry = (m, pid) => { m.players = m.players || {}; return m.players[pid] || (m.players[pid] = { role: null, min: null, gk: false }); };
-const tidy = (m, pid) => { const d = (m.players || {})[pid]; if (d && !d.role && d.min == null && !d.gk) delete m.players[pid]; };
+const tidy = (m, pid) => { const d = (m.players || {})[pid]; if (d && !d.role && d.min == null && !d.gk) delete m.players[pid]; }; const isF11 = () => ((Store.season() || {}).settings || {}).format === "F11";
+const pendingSanctions = m => {
+  const earlier = Store.matches.filter(x => x.n < m.n && x.closed && Calc.matchInfo(x).played);
+  const total = {}, served = {};
+  earlier.forEach(x => (x.sanctions || []).forEach(s => { total[s.p] = (total[s.p] || 0) + Math.max(0, Number(s.matches) || 0); }));
+  earlier.forEach(x => (x.noCall || []).filter(n => n.m === "SA").forEach(n => { served[n.p] = (served[n.p] || 0) + 1; }));
+  return Object.entries(total).map(([p, count]) => ({ p, remaining: Math.max(0, count - (served[p] || 0)) })).filter(x => x.remaining > 0);
+};
 
 /* ----- Convocatoria ----- */
 T.convocatoria = m => {
-  const nc = Calc.noCallMap(m), ps = Store.activePlayers(), nCalled = ps.filter(p => !(p.id in nc)).length;
-  const opts = [["", "Convocado"], ["DT", "D.T"], ["LS", "L.S"], ["MP", "M.P"]];
+  const nc = Calc.noCallMap(m), ps = Store.activePlayers(), nCalled = ps.filter(p => !(p.id in nc)).length, pending = isF11() ? pendingSanctions(m).filter(x => ps.some(p => p.id === x.p)) : [];
+  const unresolved = isF11() ? Store.matches.filter(x=>x.n<m.n&&x.closed).flatMap(x=>(x.cards||[]).filter(c=>c.type==="R"&&!Number.isInteger(c.matches)).map(c=>({p:c.p,n:x.n}))) : [];
+  const opts = [["", "Convocado"], ["DT", "D.T"], ["LS", "L.S"], ["MP", "M.P"], ...(isF11() ? [["SA", "Sancionado"]] : [])];
   const rows = ps.map(p => {
     const cur = nc[p.id] || "";
     return `<li class="crow ${cur ? "out" : ""}"><span class="cn">${dorsalBadge(p)}<b>${esc(p.name)}</b></span>
@@ -136,11 +144,13 @@ T.convocatoria = m => {
   const done = Calc.isRegistered(m);
   return `<section class="card">
     <div class="card-h"><h3>¿Quién no viene?</h3><span class="count ${done ? "ok" : ""}">Convocados <b>${nCalled}</b> de ${ps.length}</span></div>
-    <p class="muted small">Todos están convocados por defecto. Marca el motivo solo de quien no va: <b>D.T</b> Decisión técnica · <b>L.S</b> Lesionado · <b>M.P</b> Motivos personales.</p>
+    <p class="muted small">Todos están convocados por defecto. Marca el motivo solo de quien no va: <b>D.T</b> Decisión técnica · <b>L.S</b> Lesionado · <b>M.P</b> Motivos personales${isF11() ? ` · <b>Sancionado</b> Suspensión deportiva` : ""}.</p>
+    ${unresolved.length ? `<div class="card flat"><b>Expulsiones pendientes de resolución</b><p class="small muted">${unresolved.map(x=>`${esc((Store.player(x.p)||{}).name||"Jugador")} · Jornada ${x.n}`).join(" · ")}. Comprueba con el club o la federación si pueden participar antes de confirmar la convocatoria. El sistema todavía no conoce la duración de la suspensión.</p></div>` : ""}
+     ${pending.length ? `<div class="card flat"><b>Hay sanciones pendientes</b><p class="small muted">${pending.map(x => `${esc((Store.player(x.p)||{}).name||"Jugador")} · ${x.remaining} partido(s)`).join(" · ")}</p>${btn("Aplicar sanciones pendientes", "applySanctions", {}, "ghost", "lock")}</div>` : ""}
     <ul class="clist">${rows}</ul>
     <div class="row between gap wrap foot">
       <span class="muted small">${done ? "Convocatoria confirmada." : "Aún sin confirmar."}</span>
-      ${done ? btn("Ir a la ficha", "setTab", { v: "ficha" }, "primary", "ball") : btn("Confirmar convocatoria", "confirmCall", {}, "primary", "check")}
+      ${done ? btn("Ir a la ficha", "setTab", { v: "ficha" }, "primary", "ball") : btn("Confirmar convocatoria", "confirmCall", {}, "primary", "check")}${btn("Preparar mensaje", "openConvocationMessage", {}, "ghost", "copy")}
     </div></section>`;
 };
 ACT.setCall = el => {
@@ -154,6 +164,50 @@ ACT.setCall = el => {
     m.subs = (m.subs || []).filter(s => !s.bad);
   }
   m.callDone = true; touch(m);
+};
+ACT.applySanctions = () => {
+  const m = curMatch(), pending = pendingSanctions(m), active = new Set(Store.activePlayers().map(p => p.id));
+  const toApply = pending.filter(x => active.has(x.p) && !Calc.noCallMap(m)[x.p]);
+  if (!toApply.length) { toast("No hay sanciones pendientes que aplicar en esta jornada.", ""); return; }
+  m.noCall = m.noCall || [];
+  toApply.forEach(x => m.noCall.push({ p: x.p, m: "SA" }));
+  touch(m);
+  toast(`Sanciones aplicadas a ${toApply.length} jugador(es). Revisa y confirma la convocatoria.`, "ok");
+};
+/* Compartir convocatoria: el texto se construye en el dispositivo y requiere copiarlo explícitamente. */
+ACT.openConvocationMessage = () => {
+  const m = curMatch();
+  if (!m || m.rest) { toast("Esta jornada no tiene convocatoria.", "err"); return; }
+  UI.sheet = {type:"convocationMessage",matchId:m.id,mode:"called",kit:"first",wide:true};
+};
+V.sheet.convocationMessage = sh => {
+  const m = Store.matches.find(x => x.id === sh.matchId);
+  if (!m || m.rest) return "<h2>Convocatoria no disponible</h2>";
+  const s = Store.season(),msg = ConvocatoriaMessage.build(s,m,Store.activePlayers(),{mode:sh.mode,kit:sh.kit});
+  return `<h2>Mensaje de la jornada ${esc(m.n)}</h2>
+    <p class="muted small">Elige qué jugadores mostrar y qué equipación llevar. Se genera en este navegador; revisa el mensaje antes de compartirlo con las familias o entrenadores.</p>
+    ${!m.callDone ? '<p class="tag warn">Convocatoria todavía sin confirmar</p>' : ""}
+    <div class="row gap wrap"><button type="button" class="btn ${sh.mode==="called"?"primary":"ghost"}" data-act="setMessageMode" data-v="called">Convocados</button>
+    <button type="button" class="btn ${sh.mode==="absent"?"primary":"ghost"}" data-act="setMessageMode" data-v="absent">No convocados y motivo</button></div>
+    <div class="row gap wrap"><span>Equipación:</span>
+    <button type="button" class="btn ${sh.kit==="first"?"primary":"ghost"}" data-act="setMessageKit" data-v="first">Primera</button>
+    <button type="button" class="btn ${sh.kit==="second"?"primary":"ghost"}" data-act="setMessageKit" data-v="second">Segunda</button></div>
+    <pre class="message-preview" style="white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border:1px solid var(--line,#dbe2e8);border-radius:10px">${esc(msg)}</pre>
+    <div class="row end gap foot">${btn("Cerrar", "closeSheet", {}, "ghost")}${btn("Copiar mensaje", "copyConvocationMessage", {}, "primary", "copy")}</div>`;
+};
+ACT.setMessageMode = el => { if(UI.sheet?.type==="convocationMessage")UI.sheet.mode=el.dataset.v==="absent"?"absent":"called"; };
+ACT.setMessageKit = el => { if(UI.sheet?.type==="convocationMessage")UI.sheet.kit=el.dataset.v==="second"?"second":"first"; };
+ACT.copyConvocationMessage = async () => {
+  const sh=UI.sheet,m=Store.matches.find(x=>x.id===sh?.matchId);
+  if(!m||!sh||sh.type!=="convocationMessage")return;
+  const msg=ConvocatoriaMessage.build(Store.season(),m,Store.activePlayers(),sh);
+  try{
+    if(!navigator.clipboard?.writeText)throw new Error("clipboard-not-supported");
+    await navigator.clipboard.writeText(msg);
+    toast("Mensaje copiado. Revísalo antes de enviarlo.", "ok");
+  }catch(e){
+    window.prompt("Copia este mensaje:",msg);
+  }
 };
 ACT.confirmCall = () => { const m = curMatch(); m.callDone = true; touch(m); toast("Convocatoria confirmada.", "ok"); };
 
@@ -217,12 +271,154 @@ T.ficha = m => {
       ${subs.length ? `<ul class="slist">${subs.map(s => `<li><b class="sm">${fmtNum(s.min)}'</b><span><span class="so">Sale</span> ${esc((Store.player(s.out) || {}).name || "?")}<span class="si">Entra</span> ${esc((Store.player(s.in) || {}).name || "?")}</span><button type="button" class="ix" data-act="delSub" data-id="${s.id}" aria-label="Quitar cambio">${icon("x")}</button></li>`).join("")}</ul>` : `<p class="muted small">Todavía no hay cambios. Los minutos pueden escribirse a mano o calcularse con los cambios (partido de ${dur} min).</p>`}
       <div class="row gap wrap foot">${btn("Calcular minutos con los cambios", "calcMin", {}, "ghost", "spark")}</div></section>`;
 
-  const crono = i.played ? `<section class="card"><div class="card-h"><h3>Crónica para las familias</h3></div>${UI.ai["cron" + m.n] ? `<textarea class="inp area" id="cronTxt" rows="6" readonly>${esc(UI.ai["cron" + m.n])}</textarea><div class="row gap wrap">${btn("Copiar texto", "copyCron", {}, "ghost", "copy")}${btn("Escribir otra", "genCron", {}, "ghost", "spark")}</div>` : `<p class="muted small">Un resumen corto del partido, listo para pegar en el grupo de familias.</p><div class="row gap">${btn(UI.ai.busyCron ? "Escribiendo…" : "Escribir crónica con IA", "genCron", {}, "ghost", "spark")}</div>`}${UI.ai.cronErr ? `<p class="err small">${esc(UI.ai.cronErr)}</p>` : ""}</section>` : "";
+  const cards = isF11() ? (m.cards || []) : []; const cardsCard = isF11() ? `<section class="card"><div class="card-h"><h3>Tarjetas</h3><span class="count">${cards.filter(c=>c.type==="Y").length} amarillas · ${cards.filter(c=>c.type==="R").length} rojas</span></div><div class="row gap wrap"><select class="sel grow" id="cardPlayer">${playerOptions(called, null, "Jugador")}</select><select class="sel" id="cardType"><option value="Y">Amarilla</option><option value="R">Roja</option></select><button type="button" class="btn primary" data-act="addCard">Añadir tarjeta</button></div>${cards.length ? `<ul class="slist">${cards.map((c,k)=>`<li><b class="sm">${c.type==="R"?"🟥":"🟨"}</b><span>${esc((Store.player(c.p)||{}).name||"Jugador")} · ${c.type==="R"?"Roja":"Amarilla"}${c.type==="R" ? (Number.isInteger(c.matches) ? ` · ${c.matches} partido(s) de sanción` : " · Pendiente de resolución") : ""}</span>${m.closed && c.type==="R" ? btn(Number.isInteger(c.matches) ? "Rectificar resolución" : "Registrar resolución", "setRedSanction", { k }, "ghost small") : ""}<button type="button" class="ix" data-act="delCard" data-k="${k}">${icon("x")}</button></li>`).join("")}</ul>` : `<p class="muted small">Registra las tarjetas de tu equipo.</p>`}<div class="row end foot">${m.closed ? `<span class="tag">${icon("lock")} Acta cerrada ${cards.some(c=>c.type==="R"&&!Number.isInteger(c.matches))?"· Resolución pendiente":""}</span>` : btn("Cerrar acta", "closeActa", {}, "primary", "check")}</div>${m.sanctions?.length ? `<p class="muted small">Sanciones: ${m.sanctions.map(x=>`${esc((Store.player(x.p)||{}).name||"Jugador")} · ${x.matches} partido(s) · ${esc(x.reason)}`).join(" / ")}</p>` : ""}</section>` : ""; const crono = i.played ? `<section class="card"><div class="card-h"><h3>Crónica para las familias</h3></div>${UI.ai["cron" + m.n] ? `<textarea class="inp area" id="cronTxt" rows="6" readonly>${esc(UI.ai["cron" + m.n])}</textarea><div class="row gap wrap">${btn("Copiar texto", "copyCron", {}, "ghost", "copy")}${btn("Escribir otra", "genCron", {}, "ghost", "spark")}</div>` : `<p class="muted small">Un resumen corto del partido, listo para pegar en el grupo de familias.</p><div class="row gap">${btn(UI.ai.busyCron ? "Escribiendo…" : "Escribir crónica con IA", "genCron", {}, "ghost", "spark")}</div>`}${UI.ai.cronErr ? `<p class="err small">${esc(UI.ai.cronErr)}</p>` : ""}</section>` : "";
 
-  return `<div class="row end foot acta-tools"><span class="muted small">Acta del partido · puedes imprimir esta ficha y rellenarla a mano.</span><button type="button" class="btn ghost" data-act="printActa">${icon("printer")}<span>Imprimir acta</span></button></div>` + scoreBox + scorersCard + players + subCard + crono;
+  const ocrCard = `<section id="acta-excel" class="card"><div class="card-h"><h3>Descargar o subir acta Excel</h3><span class="tag info">Plantilla .xlsx</span></div><p class="muted small">Solo se admite la plantilla Excel de esta temporada y jornada. Descárgala, complétala en Excel y vuelve a subirla. Se validan jugadores y columnas. No se admiten fotografías ni otros modelos de acta.</p>
+  <div class="row gap wrap">${btn("Descargar plantilla Excel", "downloadActaXlsx", {}, "ghost", "down")}</div>
+  ${FilePicker.render({title:"Importar acta Excel cumplimentada",formats:"XLSX · MÁX. 5 MB",help:"Elige el Excel descargado desde Banquillo para esta jornada",icon:"📊",label:"Elegir Excel",accept:".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",change:"importActaXlsx"})}
+  ${UI.actaImport?.busy ? `<p class="muted small">Leyendo plantilla…</p>` : ""}
+  ${UI.actaImport?.error ? `<p class="err small">${esc(UI.actaImport.error)}</p>` : ""}
+  ${UI.actaImport?.rows ? `<p class="muted small">Plantilla comprobada: ${UI.actaImport.rows.length} convocados. Se actualizarán roles, minutos y goles; no las tarjetas.</p><div class="row end">${btn("Revisar y aplicar", "applyActaXlsx", {}, "primary", "check")}</div>` : ""}
+  </section>`; return (m.closed ? `<section class="card"><div class="row between gap wrap"><div><b>Acta cerrada</b><p class="muted small">Los datos están bloqueados. Para corregirlos tendrás que reabrir esta acta y revisar las jornadas posteriores.</p></div>${btn("Reabrir acta", "reopenActa", {}, "ghost", "edit")}</div></section>` : "") + `<div class="row gap wrap foot acta-tools"><span class="muted small">El botón Imprimir abre la impresión del navegador. Para guardar o rellenar una hoja Excel, utiliza estas otras opciones:</span>${btn("Descargar Excel", "downloadActaXlsx", {}, "primary", "down")}<button type="button" class="btn ghost" data-act="jumpActaExcel" aria-label="Ir al formulario para subir el Excel cumplimentado">Subir Excel</button><button type="button" class="btn ghost" data-act="printActa">${icon("printer")}<span>Imprimir acta</span></button>${btn("Descargar PDF", "downloadActaPdf", {}, "ghost", "down")}</div>` + ocrCard + scoreBox + scorersCard + cardsCard + players + subCard + crono;
 };
 
-ACT.printActa = () => window.print();
+ACT.jumpActaExcel = () => { document.getElementById("acta-excel")?.scrollIntoView({behavior:"smooth",block:"start"}); };
+ACT.printActa = () => {
+  const m = curMatch(), season = Store.season() || {}, format = (season.settings || {}).format || "F7";
+  if (!m || m.rest) { toast("Esta jornada no tiene acta.", "err"); return; }
+  const players = calledPlayers(m), scores = m.scorers || [], f7 = format === "F7";
+  const rows = players.map((p, i) => {
+    const d = (m.players || {})[p.id] || {}, goals = scores.filter(id => id === p.id).length;
+    const cell = value => "<td>" + (value == null ? "" : esc(String(value))) + "</td>";
+    return "<tr>" + cell(i + 1) + cell(p.dorsal) + "<td class=\"name\">" + esc(p.name) + "</td>" + cell(d.role === "T" ? "X" : "") + cell(d.role === "S" ? "X" : "") + cell(goals || "") + (f7 ? cell(d.gk ? "X" : "") : "") + cell(d.min) + "<td></td></tr>";
+  }).join("");
+  const css = "@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box}body{font:11px Arial,sans-serif;color:#14253c;margin:0}h1{font-size:21px;margin:0}.head{border-bottom:3px solid #17365d;padding-bottom:9px;display:flex;justify-content:space-between}.sub{color:#58677a;margin-top:6px}.meta{display:grid;grid-template-columns:2fr 2fr 1fr 1fr;gap:8px;margin:12px 0}.meta div{border:1px solid #b8c3d0;padding:8px;min-height:45px}.meta b{display:block;color:#53657c;font-size:9px;text-transform:uppercase;margin-bottom:5px}.meta span{font-size:13px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #aeb9c7;padding:5px;text-align:center;height:25px}th{background:#17365d;color:white}th.name,td.name{text-align:left;width:30%}tbody tr:nth-child(even){background:#eef2f7}.foot{margin-top:12px;display:flex;gap:12px}.foot div{flex:1;min-height:46px;padding:9px;border:1px solid #b8c3d0} @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}";
+  const meta = (label, value) => "<div><b>" + esc(label) + "</b><span>" + esc(String(value)) + "</span></div>";
+  const crestSrc = ClubCrest.current(season);
+   const crestPrint = crestSrc ? '<img src="' + crestSrc + '" alt="Escudo del equipo" style="width:56px;height:56px;object-fit:contain;margin-left:auto">': "";
+   const heading = "<header class=\"head\"><div><h1>ACTA DE PARTIDO · JORNADA " + esc(String(m.n)) + "</h1><div class=\"sub\">" + esc(season.club || "Mi equipo") + " · " + esc(season.category || "") + " · " + esc(season.name || "") + "</div></div><b>" + (f7 ? "FÚTBOL 7" : "FÚTBOL 11") + " · " + (m.home ? "LOCAL" : "VISITANTE") + "</b>" + crestPrint + "</header>";
+  const info = "<div class=\"meta\">" + meta("Rival", m.rival || "Sin indicar") + meta("Fecha", m.date ? fmtLong(m.date) : "Sin indicar") + meta("Hora", m.time || "Sin indicar") + meta("Marcador", (m.ourGoals ?? "___") + " - " + (m.rivalGoals ?? "___")) + "</div>";
+  const head = "<thead><tr><th style=\"width:4%\">Nº</th><th style=\"width:6%\">Dorsal</th><th class=\"name\">Jugadores convocados</th><th style=\"width:7%\">Titular</th><th style=\"width:7%\">Suplente</th><th style=\"width:7%\">Goles</th>" + (f7 ? "<th style=\"width:8%\">Portero X</th>" : "") + "<th style=\"width:8%\">Minutos</th><th>Observaciones</th></tr></thead>";
+  const html = "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Acta jornada " + esc(String(m.n)) + "</title><style>" + css + "</style></head><body>" + heading + info + "<table>" + head + "<tbody>" + rows + "</tbody></table><div class=\"foot\"><div><b>Incidencias / tarjetas:</b></div><div><b>Notas del entrenador:</b></div></div></body></html>";
+  const win = window.open("", "_blank");
+  if (!win) { toast("Permite ventanas emergentes para imprimir el acta.", "err"); return; }
+  win.document.open(); win.document.write(html); win.document.close(); win.focus(); win.print();
+};
+ACT.downloadActaPdf = async () => {
+  const m=curMatch(),season=Store.season()||{},f7=((season.settings||{}).format||"F7")==="F7";
+  if(!m||m.rest)return;
+  try {
+    const JsPDF=await loadLib("jspdf"),doc=new JsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const safe=x=>String(x??"").replace(/[^\x20-\xFF]/g,"").slice(0,90);
+    doc.setFillColor(23,54,93);doc.rect(0,0,297,27,"F");
+     const pdfCrestAdded = ClubCrest.addToPdf(doc, season, 260, 1, 24, 24);
+    doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text(safe("ACTA DE PARTIDO - JORNADA "+m.n),12,13);
+    doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text(safe((season.club||"Mi equipo")+" - "+(season.name||"")+" - "+(f7?"F7":"F11")),12,21);
+    doc.setTextColor(25,40,58);doc.setFontSize(10);
+    [["Rival",m.rival||"Sin indicar"],["Fecha",m.date?fmtLong(m.date):"Sin indicar"],["Hora",m.time||"Sin indicar"],["Campo",m.home?"Local":"Visitante"]].forEach(([k,val],i)=>{let x=12+i*71;doc.setFont("helvetica","bold");doc.text(safe(k),x,35);doc.setFont("helvetica","normal");doc.text(safe(val),x,42);});
+    const labels=["N","Dorsal","Jugador","Titular","Suplente","Goles",...(f7?["Portero X"]:[]),"Minutos","Observaciones"];
+    const widths=[12,19,72,22,24,20,...(f7?[24]:[]),23,f7?59:83];
+    let px=12;labels.forEach((txt,i)=>{doc.setFillColor(23,54,93);doc.rect(px,49,widths[i],9,"F");doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(safe(txt),px+2,55);px+=widths[i];});
+    calledPlayers(m).forEach((p,i)=>{const y=58+i*7.5;if(y+8>198)return;const d=(m.players||{})[p.id]||{},g=(m.scorers||[]).filter(id=>id===p.id).length;const vals=[i+1,p.dorsal??"",p.name,d.role==="T"?"X":"",d.role==="S"?"X":"",g||"",...(f7?[d.gk?"X":""]:[]),d.min??"",""];let x=12;vals.forEach((val,j)=>{doc.setDrawColor(170,184,200);doc.setFillColor(i%2?245:255,247,250);doc.rect(x,y,widths[j],7.5,"FD");doc.setTextColor(25,40,58);doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text(safe(val).slice(0,j===2?35:18),x+2,y+5);x+=widths[j];});});
+    doc.setTextColor(55,70,90);doc.setFontSize(10);const fy=Math.min(188,63+calledPlayers(m).length*7.5);doc.text("Incidencias / tarjetas: _________________________________",12,fy);doc.text("Notas del entrenador: _________________________________",150,fy);
+    await saveFile("acta_jornada_"+m.n+".pdf",doc.output("blob"));
+  } catch(e) {console.error(e);toast("No se pudo generar el PDF.","err");}
+};
+ACT.addCard=()=>{const m=curMatch(),p=document.getElementById("cardPlayer")?.value,type=document.getElementById("cardType")?.value;if(!p){toast("Selecciona un jugador.","err");return;}m.cards=m.cards||[];m.cards.push({id:uid("card"),p,type:type==="R"?"R":"Y",matches:null});m.closed=false;touch(m);};
+ACT.delCard=el=>{const m=curMatch();m.cards=(m.cards||[]).filter((c,k)=>k!==+el.dataset.k);m.closed=false;touch(m);};
+ACT.closeActa=()=>{
+  const m=curMatch();
+  if(m.closed){toast("El acta ya está cerrada.","");return;}
+  if(!Calc.isNum(m.ourGoals)||!Calc.isNum(m.rivalGoals)){toast("Introduce y comprueba el marcador antes de cerrar el acta.","err");return;}
+  const pending=Store.matches.filter(x=>x.n<m.n&&!x.rest&&Calc.matchInfo(x).played&&!x.closed);
+  if(pending.length){toast("Cierra primero las actas anteriores para calcular correctamente las sanciones por acumulación.","err");return;}
+  if(!confirm("¿Cerrar el acta? Comprueba el resultado y las tarjetas."))return;
+  const prior={};
+  Store.matches.filter(x=>x.n<m.n&&x.closed).sort((a,b)=>a.n-b.n).forEach(x=>(x.cards||[]).filter(card=>card.type==="Y").forEach(card=>prior[card.p]=(prior[card.p]||0)+1));
+  const current={};
+  (m.cards||[]).filter(card=>card.type==="Y").forEach(card=>current[card.p]=(current[card.p]||0)+1);
+  m.sanctions=(m.sanctions||[]).filter(x=>x.reason!=="5 amarillas"&&x.reason!=="Tarjeta roja");
+  (m.cards||[]).filter(card=>card.type==="R"&&card.matches>0).forEach(card=>m.sanctions.push({p:card.p,matches:card.matches,reason:"Tarjeta roja"}));
+  Object.entries(current).forEach(([pid,count])=>{
+    const newBans=Math.floor(((prior[pid]||0)+count)/5)-Math.floor((prior[pid]||0)/5);
+    for(let j=0;j<newBans;j++)m.sanctions.push({p:pid,matches:1,reason:"5 amarillas"});
+  });
+  m.closed=true;m.sanctionsConfirmed=!(m.cards||[]).some(c=>c.type==="R"&&!Number.isInteger(c.matches));touch(m);toast(m.sanctionsConfirmed?"Acta cerrada y sanciones calculadas.":"Acta cerrada. Resolución pendiente.","ok");
+};
+ACT.setRedSanction=el=>{
+  const m=curMatch(),k=Number(el.dataset.k),card=(m.cards||[])[k];
+  if(!m.closed||!card||card.type!=="R"){toast("Solo puedes registrar resoluciones de rojas en actas cerradas.","err");return;}
+  const name=(Store.player(card.p)||{}).name||"este jugador";
+  const old=Number.isInteger(card.matches)?String(card.matches):"";
+  const raw=prompt("Resolución oficial para "+name+": ¿cuántos partidos de sanción? (0 si no hay suspensión)",old);
+  if(raw===null)return;
+  const trimmed=raw.trim(),n=Number(trimmed);
+  if(!trimmed||!Number.isInteger(n)||n<0||n>20){toast("Indica un número entero entre 0 y 20.","err");return;}
+  const later=Store.matches.filter(x=>x.n>m.n&&x.closed);
+  if(later.length&&!confirm("Hay "+later.length+" acta(s) posterior(es) cerrada(s). Cambiar esta sanción puede afectar a las convocatorias y partidos ya registrados. ¿Guardar resolución y revisar manualmente esas jornadas?"))return;
+  card.matches=n;
+  m.sanctions=(m.sanctions||[]).filter(s=>s.reason!=="Tarjeta roja");
+  (m.cards||[]).filter(c=>c.type==="R"&&Number.isInteger(c.matches)&&c.matches>0).forEach(c=>m.sanctions.push({p:c.p,matches:c.matches,reason:"Tarjeta roja"}));
+  m.sanctionsConfirmed=!(m.cards||[]).some(c=>c.type==="R"&&!Number.isInteger(c.matches));
+  touch(m);
+  toast(later.length?"Resolución guardada. Revisa las convocatorias posteriores.":"Resolución guardada.","ok");
+};
+ACT.reopenActa=()=>{
+  const m=curMatch();
+  const later=Store.matches.filter(x=>x.n>=m.n&&x.closed);
+  if(!confirm("Al reabrir esta acta también se reabrirán las jornadas posteriores para recalcular las sanciones. ¿Continuar?"))return;
+  later.forEach(x=>{
+    x.closed=false;x.sanctionsConfirmed=false;
+    x.sanctions=(x.sanctions||[]).filter(s=>s.reason!=="5 amarillas");
+    touch(x);
+  });
+  toast("Acta reabierta. Revisa y vuelve a cerrar las jornadas en orden.","ok");
+};
+const ocrTimeout=(promise,ms,message)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]).finally(()=>clearTimeout(timer));};
+CHG.ocrFile=async el=>{
+  const file=el.files&&el.files[0];if(!file)return;
+  UI.ocr={busy:true,progress:"Preparando el lector…"};render(true);
+  let worker=null,imageUrl=null;
+  try{
+    if(!window.Tesseract)throw new Error("Motor OCR no disponible.");
+    const sources=[];
+    const isPdf=file.type==="application/pdf"||/\.pdf$/i.test(file.name||"");
+    if(isPdf){
+      if(!window.pdfjsLib)throw new Error("Lector PDF no disponible.");
+      pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+      if(pdf.numPages>10)throw new Error("El PDF tiene más de 10 páginas. Divide el documento y vuelve a subirlo.");
+      for(let n=1;n<=pdf.numPages;n++){
+        const page=await pdf.getPage(n),vp=page.getViewport({scale:1.7}),canvas=document.createElement("canvas");
+        canvas.width=vp.width;canvas.height=vp.height;
+        await page.render({canvasContext:canvas.getContext("2d"),viewport:vp}).promise;
+        sources.push(canvas);
+      }
+    }else{
+      imageUrl=URL.createObjectURL(file);
+      const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error("No se pudo abrir la imagen."));im.src=imageUrl;});
+      sources.push(img);
+    }
+    UI.ocr.progress="Preparando reconocimiento en español (requiere conexión al iniciar)…";render(true);
+     worker=await ocrTimeout(Tesseract.createWorker("spa"),45000,"No se ha podido iniciar OCR. Comprueba tu conexión a Internet.");
+    const texts=[];
+    for(let i=0;i<sources.length;i++){
+      UI.ocr.progress=`Leyendo página ${i+1} de ${sources.length}…`;render(true);
+      const result=await ocrTimeout(worker.recognize(sources[i]),60000,"OCR ha tardado demasiado. Prueba una imagen JPG más pequeña y nítida.");
+      texts.push(result.data.text||"");
+    }
+    const txt=texts.join("\n\n"),sc=txt.match(/(\d{1,2})\s*[-–:]\s*(\d{1,2})/),lines=txt.split(/\n+/),detected=[];
+    Store.activePlayers().forEach(p=>{
+      const line=lines.find(l=>norm(l).includes(norm(p.name))&&/(amarill|yellow|roja|expuls|red)/i.test(l));
+      if(line)detected.push({p:p.id,type:/(roja|expuls|red)/i.test(line)?"R":"Y"});
+    });
+    UI.ocr={busy:false,text:txt,ourGoals:sc?sc[1]:"",rivalGoals:sc?sc[2]:"",cards:detected,pages:sources.length};
+  }catch(e){UI.ocr={busy:false,error:e.message||"No se pudo leer el acta."};}
+  finally{if(worker)worker.terminate().catch(()=>{});if(imageUrl)URL.revokeObjectURL(imageUrl);}
+  render(true);
+};
+INP.ocrText=el=>{if(UI.ocr)UI.ocr.text=el.value;}; CHG.ocrCardType=el=>{if(UI.ocr&&UI.ocr.cards[+el.dataset.k])UI.ocr.cards[+el.dataset.k].type=el.value;}; ACT.removeOcrCard=el=>{if(UI.ocr)UI.ocr.cards.splice(+el.dataset.k,1);};INP.ocrOur=el=>{if(UI.ocr)UI.ocr.ourGoals=el.value;};INP.ocrRiv=el=>{if(UI.ocr)UI.ocr.rivalGoals=el.value;};
+ACT.applyOcr=()=>{const m=curMatch(),o=UI.ocr;if(!o)return;const a=o.ourGoals===""?null:Number(o.ourGoals),b=o.rivalGoals===""?null:Number(o.rivalGoals);if((a!==null&&(!Number.isInteger(a)||a<0||a>99))||(b!==null&&(!Number.isInteger(b)||b<0||b>99))){toast("Revisa el marcador.","err");return;}if(!confirm("¿Aplicar los datos revisados al partido?"))return;if(a!==null&&b!==null){m.ourGoals=a;m.rivalGoals=b;m.scorers=(m.scorers||[]).slice(0,a);while(m.scorers.length<a)m.scorers.push(null);}if(isF11()&&o.cards?.length){m.cards=m.cards||[];o.cards.forEach(c=>m.cards.push({id:uid("card"),p:c.p,type:c.type,matches:null}));}m.ocrSource="revisado";touch(m);UI.ocr=null;toast("Datos revisados aplicados.","ok");};
 
 const ensureGoals = m => { if (!Calc.isNum(m.ourGoals)) { m.ourGoals = 0; m.scorers = []; } if (!Calc.isNum(m.rivalGoals)) m.rivalGoals = 0; };
 const addGoal = (m, pid) => { ensureGoals(m); m.scorers = (m.scorers || []).slice(0, m.ourGoals); m.scorers.push(pid || null); m.ourGoals = m.scorers.length; };
@@ -315,6 +511,7 @@ T.datos = m => {
   const rivals = [...new Set(Store.matches.map(x => x.rival).filter(Boolean))].sort(sortEs);
   return `<section class="card form">
     <label class="fld"><span>Fecha</span><input type="date" class="inp" data-chg="mDate" value="${esc(m.date || "")}"></label>
+     <label class="fld"><span>Hora</span><input type="time" class="inp" data-chg="mTime" value="${esc(m.time || "")}"></label>
     <label class="fld"><span>Descanso</span><span class="sw"><input type="checkbox" data-chg="mRest" ${m.rest ? "checked" : ""}><i></i><em>Esta jornada el equipo descansa</em></span></label>
     ${m.rest ? "" : `<label class="fld"><span>Rival</span><input type="text" class="inp" list="rivalList" data-chg="mRival" value="${esc(m.rival || "")}" placeholder="Nombre del equipo rival" autocomplete="off"><datalist id="rivalList">${rivals.map(r => `<option value="${esc(r)}">`).join("")}</datalist></label>
     <div class="fld"><span>Campo</span><div class="seg two"><button type="button" class="${m.home ? "on" : ""}" data-act="setHome" data-v="1">Local</button><button type="button" class="${m.home === false ? "on" : ""}" data-act="setHome" data-v="0">Visitante</button></div></div>`}
@@ -322,6 +519,7 @@ T.datos = m => {
     <div class="row between foot"><span></span>${btn("Eliminar jornada", "delMatchAsk", {}, "danger-ghost", "trash")}</div></section>`;
 };
 CHG.mDate = el => { const m = curMatch(); m.date = el.value || null; touch(m); };
+CHG.mTime = el => { const m = curMatch(); m.time = el.value || null; touch(m); };
 CHG.mRival = el => { const m = curMatch(); m.rival = el.value.trim(); touch(m); };
 CHG.mRest = el => { const m = curMatch(); m.rest = el.checked; touch(m); };
 INP.mNotes = el => { const m = curMatch(); m.notes = el.value; touch(m); };

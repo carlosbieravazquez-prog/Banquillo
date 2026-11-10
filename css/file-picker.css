@@ -1,0 +1,24 @@
+/* Selector de archivos reutilizable: Beta, club y formularios de temporada. */
+.file-picker{display:grid;gap:9px;margin:12px 0;color:inherit;max-width:100%}
+.file-picker-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.file-picker-title{font-weight:700;font-size:14px;letter-spacing:.01em}
+.file-picker-format{color:#adc9e2;background:#173955;border:1px solid #355d7b;border-radius:99px;padding:4px 9px;font-size:11px;font-weight:700}
+.file-picker-drop{position:relative;display:flex;align-items:center;gap:14px;min-height:108px;width:100%;padding:18px;border:1.5px dashed #4a779f;border-radius:16px;background:linear-gradient(115deg,rgba(56,116,166,.16),rgba(66,111,145,.045));cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s}
+.file-picker-drop:hover,.file-picker-drop.is-dragover{border-color:#70b9ff;background:rgba(55,139,207,.16);box-shadow:inset 0 0 0 1px rgba(112,185,255,.18)}
+.file-picker-drop:focus-within{outline:3px solid #80bfff;outline-offset:3px}
+.file-picker-input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;margin:0!important;cursor:pointer;z-index:2}
+.file-picker-symbol{width:48px;height:48px;flex:0 0 48px;border-radius:14px;display:grid;place-items:center;background:rgba(79,154,227,.2);color:#b9dfff;font-size:24px}
+.file-picker-copy{display:grid;gap:4px;min-width:0;flex:1}
+.file-picker-copy strong{font-size:14px;line-height:1.35}
+.file-picker-copy small{font-size:12px;color:#a9c3d8;line-height:1.4}
+.file-picker-name{display:block;font-size:12px;overflow-wrap:anywhere;color:#a9c3d8}
+.file-picker.has-file .file-picker-name{color:#83d9b5;font-weight:700}
+.file-picker-button{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;min-height:39px;padding:9px 15px;background:#e5f2ff;color:#173555;font-weight:800;font-size:12px;flex:none;white-space:nowrap}
+.file-picker-preview{display:flex;align-items:center;gap:14px;padding:10px 13px;background:rgba(64,139,199,.10);border:1px solid rgba(102,168,222,.24);border-radius:13px}
+.file-picker-preview .club-crest{width:76px;height:76px;margin:0;padding:5px;border-radius:12px}
+.file-picker-preview-copy{min-width:0;display:grid;gap:4px}
+.file-picker-preview-copy strong{font-size:13px}
+.file-picker-preview-copy small{font-size:12px;color:#a9c3d8}
+.file-picker-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:620px){.file-picker-drop{gap:11px;flex-wrap:wrap;padding:15px}.file-picker-symbol{width:40px;height:40px;flex-basis:40px}.file-picker-button{width:100%}.file-picker-copy{flex:1 1 calc(100% - 65px)}}
+@media(prefers-reduced-motion:reduce){.file-picker-drop{transition:none}}

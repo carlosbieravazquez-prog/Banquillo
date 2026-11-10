@@ -18,31 +18,31 @@ async function aiSample(prompt, signal, kind) {
 }
 const AI_STOP = ["insufficient_tokens", "auth", "rate_limited", "ai_not_deployed", "ai_unavailable", "unavailable"];
 function reportPrompt(pid) {
-  const D = playerReportData(pid), { p, s, t } = D, first = p.name.split(/\s+/)[0];
-  const mot = [s.DT && `${s.DT} por decisión técnica`, s.LS && `${s.LS} por lesión`, s.MP && `${s.MP} por motivos personales`].filter(Boolean).join(", ");
+  const D = playerReportData(pid), { s, t } = D;
   const pj = Calc.record(Store.matches).pj;
-  return `Eres el entrenador de un equipo de fútbol base (categoría ${Store.season().category || "Prebenjamín"}, niños y niñas de fútbol base) y vas a escribir el informe de final de temporada para la familia de un jugador.
+  // PRIVACIDAD: el proveedor IA no recibe nombre, dorsal, notas libres ni motivos médicos/personales.
+  return `Redacta en español de España un informe individual de fútbol base para la familia de una persona menor de edad.
+Usa exclusivamente el identificador literal [JUGADOR] para referirte al jugador, sin inventar ningún nombre propio.
 
-DATOS DE LA TEMPORADA ${Store.season().name}
-- Jugador: ${p.name}${p.dorsal != null && p.dorsal !== "" ? ` (dorsal ${p.dorsal})` : ""}
-- Partidos de liga jugados por el equipo: ${pj}
-- Convocatorias: ${s.conv} de ${D.regCount}${s.noconv ? ` (no convocado ${s.noconv}: ${mot || "sin motivo indicado"})` : ""}
-- Partidos jugados: ${s.played} (${s.T} como titular y ${s.S} como suplente)
-- Minutos jugados: ${s.min ? fmtNum(s.min) : 0}
+DATOS ANÓNIMOS:
+- Partidos del equipo: ${pj}
+- Convocatorias: ${s.conv} de ${D.regCount}
+- Partidos disputados: ${s.played}, titular ${s.T}, suplente ${s.S}
+- Minutos disputados: ${s.min ? fmtNum(s.min) : 0}
 - Goles: ${s.goals}
-- Partidos como portero: ${s.gk}${s.gk ? ` (${s.clean} con la portería a cero)` : ""}
-- Asistencia a entrenamientos: ${fmtPct(t.pct)} (${t.falts} faltas en ${t.asist + t.falts} sesiones)
-- Notas del entrenador sobre ${first}: ${p.notes && p.notes.trim() ? "«" + p.notes.trim() + "»" : "ninguna"}
+- Partidos como portero: ${s.gk}
+- Asistencia a entrenamientos: ${fmtPct(t.pct)}
 
-INSTRUCCIONES
-Escribe el informe en español de España, con tono cercano, positivo y educativo, dirigido a la familia y hablando de ${first} en tercera persona.
-- Entre 110 y 170 palabras, en 2 o 3 párrafos cortos.
-- Usa solo los datos y las notas anteriores. No inventes anécdotas, cualidades técnicas ni resultados que no aparezcan.
-- No compares a ${first} con otros niños ni menciones clasificaciones o rankings.
-- Si hay algo que mejorar (por ejemplo la asistencia o la participación), plantéalo como un objetivo ilusionante para la próxima temporada.
-- No expliques los motivos de las ausencias en las convocatorias salvo que las notas lo pidan.
-- Sin títulos, listas, markdown, saludo ni firma. Devuelve únicamente el texto del informe.`;
+REGLAS: informe positivo y constructivo, entre 110 y 160 palabras, dos o tres párrafos.
+Conserva literalmente [JUGADOR] cada vez que menciones al jugador. No menciones ausencias,
+lesiones, datos médicos, notas privadas, domicilios, colegios ni nombres de clubes.
+No inventes jugadas, cualidades ni resultados. Sin títulos ni listas.`;
 }
+// La sustitución por el nombre ocurre únicamente en el dispositivo, DESPUÉS de recibir el texto.
+const nameLocalReport = (pid, text) => {
+  const p = Store.player(pid), first = p?.name?.trim().split(/\s+/)[0];
+  return first ? String(text).replace(/\[JUGADOR\]/g, first) : String(text);
+};
 function setReport(pid, text, source) {
   const cur = Store.reports[pid] || { id: pid };
   Store.reports[pid] = { ...cur, id: pid, text, source: source || cur.source || "manual", updatedAt: new Date().toISOString() };
@@ -50,7 +50,7 @@ function setReport(pid, text, source) {
 }
 async function genReport(pid, signal) {
   UI.ai.busy = UI.ai.busy || {}; UI.ai.busy[pid] = true; UI.ai.err = null; render(true);
-  try { const text = await aiSample(reportPrompt(pid), signal); setReport(pid, text, "ia"); if (UI.sheet && UI.sheet.type === "report" && UI.sheet.pid === pid) UI.sheet.draft = text; return true; }
+  try { const text = nameLocalReport(pid, await aiSample(reportPrompt(pid), signal)); setReport(pid, text, "ia"); if (UI.sheet && UI.sheet.type === "report" && UI.sheet.pid === pid) UI.sheet.draft = text; return true; }
   catch (e) { if (e && e.code === "insufficient_tokens") Cloud.loadProfile(); if (!(e && e.code === "cancelled")) UI.ai.err = { pid, msg: aiErr(e), code: e && e.code }; return false; }
   finally { UI.ai.busy[pid] = false; render(true); }
 }
@@ -75,17 +75,22 @@ ACT.genAll = async () => {
 ACT.stopAll = () => { if (UI.ai.bulk) UI.ai.bulk.ctl.abort(); };
 ACT.genCron = async () => {
   const m = curMatch(); if (!m) return;
-  const i = Calc.matchInfo(m), club = (Store.season().club || "Mi equipo").replace(/ CD$/, "");
-  const sc = {}; (m.scorers || []).slice(0, m.ourGoals).forEach(x => { if (x && x !== "og") { const n = (Store.player(x) || {}).name; if (n) sc[n] = (sc[n] || 0) + 1; } });
-  const og = (m.scorers || []).slice(0, m.ourGoals).filter(x => x === "og").length;
-  const prompt = `Escribe una crónica muy breve (entre 60 y 90 palabras) de un partido de fútbol base para pegarla en el grupo de WhatsApp de las familias. Tono cercano, positivo y respetuoso con el rival. Sin emojis, sin títulos y sin markdown. Usa solo estos datos y no inventes jugadas ni detalles.
-- Equipo: ${club}${m.home != null ? ` (${m.home ? "jugando como local" : "jugando como visitante"})` : ""}
-- Rival: ${m.rival}
-- Jornada ${m.n}${m.date ? `, ${fmtLong(m.date)}` : ""}
-- Resultado: ${club} ${m.ourGoals} - ${m.rivalGoals} ${m.rival} (${resTxt[i.res].toLowerCase()} para ${club})
-- Goleadores: ${Object.entries(sc).map(([n, g]) => `${n} ${g}`).join(", ") || "sin goleadores indicados"}${og ? `; ${og} gol en propia puerta del rival` : ""}
-- Convocados: ${calledPlayers(m).length} jugadores${(m.notes || "").trim() ? `\n- Notas del entrenador: ${m.notes.trim()}` : ""}
-Devuelve únicamente el texto de la crónica.`;
+  const i = Calc.matchInfo(m);
+  // No se transmite al proveedor IA ningún nombre de jugador, club, rival o nota libre.
+  const sc = {}, goals = (m.scorers || []).slice(0, m.ourGoals);
+  goals.forEach(id => { if (id && id !== "og") sc[id] = (sc[id] || 0) + 1; });
+  const og = goals.filter(id => id === "og").length;
+  const prompt = `Escribe una crónica breve de fútbol base de 60 a 90 palabras, en español de España.
+Sin títulos, emojis ni nombres propios. No inventes jugadas ni datos.
+- Jornada: ${m.n}
+- Local o visitante: ${m.home ? "local" : "visitante"}
+- Goles del equipo: ${m.ourGoals}; goles del rival: ${m.rivalGoals}
+- Resultado: ${i.res === "V" ? "victoria" : i.res === "E" ? "empate" : "derrota"}
+- Número de jugadores convocados: ${calledPlayers(m).length}
+- Número de goleadores diferentes: ${Object.keys(sc).length}
+- Distribución anónima de goles por jugador: ${Object.values(sc).join(", ") || "sin asignar"}
+- Goles en propia puerta rival: ${og}
+Usa expresiones genéricas "nuestro equipo" y "el rival". No menciones nombres de menores ni lesiones.`;
   UI.ai.busyCron = true; UI.ai.cronErr = null; render(true);
   try { UI.ai["cron" + m.n] = await aiSample(prompt, undefined, "cron"); } catch (e) { UI.ai.cronErr = aiErr(e); }
   UI.ai.busyCron = false; render(true);
@@ -166,33 +171,92 @@ ACT.reopenSeason = () => { const s = Store.season(); s.status = "active"; Store.
 /* ---------- AJUSTES de la temporada ---------- */
 ACT.openSettings = () => {
   const s = Store.season(), st = s.settings || {};
-  UI.sheet = { type: "settings", wide: true, d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
+  UI.sheet = { type: "settings", wide: true, page:"data", d: { club: s.club || "", category: s.category || "", matchMinutes: st.matchMinutes || 50, format: st.format || "F7", crest: ClubCrest.current(s), kits: ClubTheme.normalizeKits(st.kits), palette: ClubTheme.cleanPalette(st.palette), trainStart: st.trainStart || "", trainEnd: st.trainEnd || "", trainDays: [...(st.trainDays || [1, 3])] } };
 };
+const crestControl = (data, change, remove) => `
+    <div class="card flat"><div class="card-h"><h3>Escudo del equipo</h3><span class="tag">Opcional</span></div>
+    <p class="muted small">Aparecerá en Banquillo, informes individuales y actas PDF. Sube un PNG transparente si es posible. Puedes preparar la imagen con
+    <a href="https://www.canva.com/es_es/funciones/quitar-fondo-imagen/" target="_blank" rel="noopener noreferrer">Quitafondos de Canva</a>
+    (servicio externo, algunas funciones requieren pago). No es obligatorio utilizar Canva.</p>
+    ${data ? `<div class="file-picker-preview">${ClubCrest.preview(data)}<div class="file-picker-preview-copy"><strong>Escudo seleccionado</strong><small>Se utilizará en la temporada, los informes y las actas</small></div></div>` : ""}
+    ${FilePicker.render({title:"Escudo del equipo",formats:"PNG · JPG · WEBP",help:"Hasta 3 MB · Se ajustará automáticamente al tamaño de los informes",icon:"🛡️",label:data?"Cambiar imagen":"Elegir imagen",accept:"image/png,image/jpeg,image/webp",change})}
+    ${data ? `<div class="file-picker-actions">${btn("Quitar escudo", remove, {}, "ghost")}</div>` : ""}
+    </div>`;
 const DAYSEL = [[1, "Lun"], [2, "Mar"], [3, "Mié"], [4, "Jue"], [5, "Vie"], [6, "Sáb"], [0, "Dom"]];
 V.sheet.settings = sh => {
-  const d = sh.d;
-  return `<h2>Ajustes de la temporada ${esc(Store.season().name)}</h2>
-    <div class="form"><label class="fld"><span>Club</span><input type="text" class="inp" data-inp="setClub" value="${esc(d.club)}"></label>
-    <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="setCat" value="${esc(d.category)}"></label>
-    <label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="${esc(d.matchMinutes)}"></label>
-    <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${d.trainDays.includes(v) ? "on" : ""}" data-act="setDay" data-v="${v}">${l}</button>`).join("")}</div></div>
-    <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="setStart" value="${esc(d.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="setEnd" value="${esc(d.trainEnd)}"></label></div>
-    <p class="muted small">Si cambias las fechas, las faltas ya marcadas se conservan. Las sesiones nuevas aparecen en Entrenos.</p></div>
-    <div class="row end gap foot">${btn("Cancelar", "closeSheet", {}, "ghost")}${btn("Guardar ajustes", "saveSettings", {}, "primary")}</div>`;
+  const d=sh.d,pg=sh.page||"data",tabs=[["data","Datos"],["kits","Equipaciones"],["palette","Identidad visual"]];
+  const nav='<div class="settings-visual-tabs" role="navigation" aria-label="Apartados de configuración">'+tabs.map(([id,title])=>
+    '<button type="button" data-act="settingsPage" data-page="'+id+'" class="'+(pg===id?"on":"")+'" aria-current="'+(pg===id?"page":"false")+'">'+title+'</button>').join("")+'</div>';
+  const general='<div class="form"><label class="fld"><span>Club</span><input type="text" class="inp" data-inp="setClub" value="'+esc(d.club)+'"></label>'+
+    '<label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="setCat" value="'+esc(d.category)+'"></label>'+
+    crestControl(d.crest,"setCrest","removeCrest")+
+    '<label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="setFormat"><option value="F7"'+(d.format==="F7"?" selected":"")+'>Fútbol 7</option><option value="F11"'+(d.format==="F11"?" selected":"")+'>Fútbol 11</option></select></label>'+
+    '<label class="fld"><span>Duración del partido (minutos)</span><input type="text" inputmode="numeric" class="inp mini" data-inp="setMin" value="'+esc(d.matchMinutes)+'"></label>'+
+    '<div class="fld"><span>Días de entrenamiento</span><div class="chips">'+DAYSEL.map(([v,l])=>'<button type="button" class="chip '+(d.trainDays.includes(v)?"on":"")+'" data-act="setDay" data-v="'+v+'">'+l+'</button>').join("")+'</div></div>'+
+    '<div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="setStart" value="'+esc(d.trainStart)+'"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="setEnd" value="'+esc(d.trainEnd)+'"></label></div>'+
+    '<p class="muted small">Los cambios se aplicarán al pulsar Guardar ajustes.</p></div>';
+  const body=pg==="kits"?ClubKitsEditor.renderKits(d,"set"):pg==="palette"?ClubKitsEditor.renderPalette(d,"set"):general;
+  return '<h2>Ajustes de la temporada '+esc(Store.season().name)+'</h2>'+nav+body+
+    '<div class="row end gap foot">'+btn("Cancelar","closeSheet",{},"ghost")+btn("Guardar ajustes","saveSettings",{},"primary")+'</div>';
 };
+ACT.settingsPage = el => {
+  if(UI.sheet?.type==="settings" && ["data","kits","palette"].includes(el.dataset.page))
+    UI.sheet.page=el.dataset.page;
+};
+CHG.setCrest = async el => {
+  const d = UI.sheet && UI.sheet.d;
+  if (!d || !el.files || !el.files[0]) return;
+  try { d.crest = await ClubCrest.upload(el.files[0]); toast("Escudo preparado. Pulsa Guardar ajustes para aplicarlo.", "ok"); }
+  catch (e) { toast(e.message || "No se pudo procesar el escudo.", "err"); }
+  render(true);
+};
+ACT.removeCrest = () => { UI.sheet.d.crest = ""; };
 INP.setClub = el => { UI.sheet.d.club = el.value; };
 INP.setCat = el => { UI.sheet.d.category = el.value; };
-INP.setMin = el => { UI.sheet.d.matchMinutes = el.value; };
+INP.setMin = el => { UI.sheet.d.matchMinutes = el.value; }; CHG.setFormat = el => { UI.sheet.d.format = el.value; }; INP.setKit = el => { UI.sheet.d.kits[el.dataset.kit][el.dataset.part] = el.value; };
 INP.setStart = el => { UI.sheet.d.trainStart = el.value; };
 INP.setEnd = el => { UI.sheet.d.trainEnd = el.value; };
 ACT.setDay = el => { const v = +el.dataset.v, a = UI.sheet.d.trainDays; UI.sheet.d.trainDays = a.includes(v) ? a.filter(x => x !== v) : [...a, v]; };
+/* Controles comunes de equipaciones y paletas para ajustes y asistente. */
+const clubKitDraft = which => which === "w" ? UI.wiz : (UI.sheet && UI.sheet.d);
+const updateClubKit = (which, el) => {
+  const d=clubKitDraft(which),k=el.dataset.kit,p=el.dataset.part;
+  if(!d || !d.kits || !d.kits[k] || !["shirt","shorts","socks"].includes(p) || !ClubTheme.validHex(el.value))return;
+  d.kits[k][p]=el.value.toUpperCase();
+};
+const updateClubPalette = (which, el, kind) => {
+  const d=clubKitDraft(which);if(!d)return;
+  d.palette=ClubTheme.cleanPalette(d.palette);
+  if(kind==="mode" && ["auto","preset","custom"].includes(el.value))d.palette.mode=el.value;
+  if(kind==="preset" && ClubTheme.presets[el.value])d.palette.preset=el.value;
+  if(kind==="custom" && ["customPrimary","customAccent"].includes(el.dataset.part) && ClubTheme.validHex(el.value))
+    d.palette[el.dataset.part]=el.value.toUpperCase();
+};
+const toggleClubThird = which => {
+  const d=clubKitDraft(which);if(!d)return;
+  d.kits=ClubTheme.normalizeKits(d.kits);
+  if(d.kits.third)delete d.kits.third;
+  else d.kits.third={shirt:"#EFEFEF",shorts:"#17365D",socks:"#EFEFEF"};
+};
+CHG.setKit = el => updateClubKit("set",el);
+CHG.wKit = el => updateClubKit("w",el);
+CHG.setPaletteMode = el => updateClubPalette("set",el,"mode");
+CHG.wPaletteMode = el => updateClubPalette("w",el,"mode");
+CHG.setPalettePreset = el => updateClubPalette("set",el,"preset");
+CHG.wPalettePreset = el => updateClubPalette("w",el,"preset");
+CHG.setPaletteCustom = el => updateClubPalette("set",el,"custom");
+CHG.wPaletteCustom = el => updateClubPalette("w",el,"custom");
+ACT.wPaletteChoice = el => { if(UI.wiz && ["auto","preset"].includes(el.dataset.mode)) UI.wiz.palette={...ClubTheme.cleanPalette(UI.wiz.palette),mode:el.dataset.mode}; };
+ACT.setPaletteChoice = el => { if(UI.sheet?.d && ["auto","preset"].includes(el.dataset.mode)) UI.sheet.d.palette={...ClubTheme.cleanPalette(UI.sheet.d.palette),mode:el.dataset.mode}; };
+ACT.setToggleThird = () => toggleClubThird("set");
+ACT.wToggleThird = () => toggleClubThird("w");
 ACT.saveSettings = () => {
   const d = UI.sheet.d, mm = parseNum(d.matchMinutes);
   if (!mm || mm < 10 || mm > 120) { toast("La duración del partido debe estar entre 10 y 120 minutos.", "err"); return; }
   if (d.trainStart && d.trainEnd && d.trainStart > d.trainEnd) { toast("El último entreno no puede ser anterior al primero.", "err"); return; }
   if (!d.trainDays.length) { toast("Elige al menos un día de entrenamiento.", "err"); return; }
   const s = Store.season(); s.club = d.club.trim(); s.category = d.category.trim();
-  s.settings = { matchMinutes: mm, trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
+  s.settings = { ...(s.settings || {}), matchMinutes: mm, format: d.format || "F7", crest: ClubCrest.clean(d.crest), kits: ClubTheme.normalizeKits(d.kits), palette: ClubTheme.cleanPalette(d.palette), trainDays: d.trainDays, trainStart: d.trainStart, trainEnd: d.trainEnd };
   Store.save("season", s); UI.sheet = null; toast("Ajustes guardados.", "ok");
 };
 
@@ -209,11 +273,11 @@ ACT.wizStart = el => {
   const players = first ? [] : Store.activePlayers().map(p => ({ id: null, name: p.name, dorsal: "", keep: true }));
   const matches = first ? [] : Store.matches.map(() => ({ date: "", rival: "", home: true, rest: false }));
   UI.wiz = { step: 1, name: first ? "" : nextSeasonName(cur.name), club: (cur && cur.club) || "", category: (cur && cur.category) || "",
-    matchMinutes: st.matchMinutes || 50, trainDays: [...(st.trainDays || [1, 3])], trainStart: addYear(st.trainStart), trainEnd: addYear(st.trainEnd),
+    matchMinutes: st.matchMinutes || 50, format: st.format || "F7", crest: ClubCrest.current(cur), kits: ClubTheme.normalizeKits(st.kits), palette: ClubTheme.cleanPalette(st.palette), trainDays: [...(st.trainDays || [1, 3])], trainStart: addYear(st.trainStart), trainEnd: addYear(st.trainEnd),
     players, matches, copyNote: !first, progress: null, done: false, newId: null };
   UI.sheet = { type: "wizard", wide: true };
 };
-const WSTEPS = ["Datos", "Plantilla", "Jornadas", "Crear"];
+const WSTEPS = ["Datos", "Equipaciones", "Identidad visual", "Plantilla", "Jornadas", "Crear"];
 V.sheet.wizard = () => {
   const w = UI.wiz;
   const stepper = `<ol class="wsteps">${WSTEPS.map((l, i) => `<li class="${w.step === i + 1 ? "on" : w.step > i + 1 ? "done" : ""}"><i>${i + 1}</i>${l}</li>`).join("")}</ol>`;
@@ -223,19 +287,24 @@ V.sheet.wizard = () => {
       <label class="fld grow"><span>Duración del partido (min)</span><input type="text" inputmode="numeric" class="inp" data-inp="wMin" value="${esc(w.matchMinutes)}"></label></div>
       <label class="fld"><span>Club</span><input type="text" class="inp" data-inp="wClub" value="${esc(w.club)}" placeholder="Nombre de tu club"></label>
       <label class="fld"><span>Categoría</span><input type="text" class="inp" data-inp="wCat" value="${esc(w.category)}" placeholder="Benjamín · Liga Educa"></label>
+       ${crestControl(w.crest, "wCrest", "wRemoveCrest")}<label class="fld"><span>Formato de fútbol</span><select class="sel" data-chg="wFormat"><option value="F7" ${w.format === "F7" ? "selected" : ""}>Fútbol 7</option><option value="F11" ${w.format === "F11" ? "selected" : ""}>Fútbol 11</option></select></label>
       <div class="fld"><span>Días de entrenamiento</span><div class="chips">${DAYSEL.map(([v, l]) => `<button type="button" class="chip ${w.trainDays.includes(v) ? "on" : ""}" data-act="wDay" data-v="${v}">${l}</button>`).join("")}</div></div>
       <div class="row gap wrap"><label class="fld grow"><span>Primer entreno</span><input type="date" class="inp" data-inp="wStart" value="${esc(w.trainStart)}"></label><label class="fld grow"><span>Último entreno</span><input type="date" class="inp" data-inp="wEnd" value="${esc(w.trainEnd)}"></label></div>
       ${w.copyNote ? `<p class="muted small">La plantilla y el número de jornadas se copian de la temporada ${esc(Store.season().name)}. Los dorsales quedan en blanco por si cambian.</p>` : ""}</div>`;
   } else if (w.step === 2) {
+    body = ClubKitsEditor.renderKits(w,"w");
+  } else if (w.step === 3) {
+    body = ClubKitsEditor.renderPalette(w,"w");
+  } else if (w.step === 4) {
     body = `<p class="muted small">Quita a quien se va, corrige nombres y añade los jugadores nuevos. Los dorsales se pueden poner ahora o más tarde.</p>
       <ul class="wlist">${w.players.map((p, i) => `<li class="${p.keep ? "" : "off"}"><input type="checkbox" data-chg="wKeep" data-i="${i}" ${p.keep ? "checked" : ""} aria-label="Seguir en la plantilla"><input type="text" class="inp" data-inp="wPName" data-i="${i}" value="${esc(p.name)}" placeholder="Nombre" aria-label="Nombre"><input type="text" inputmode="numeric" class="inp mini" data-inp="wPDors" data-i="${i}" value="${esc(p.dorsal)}" placeholder="Nº" maxlength="2" aria-label="Dorsal"><button type="button" class="ix" data-act="wDelP" data-i="${i}" aria-label="Quitar">${icon("x")}</button></li>`).join("")}</ul>
       <div class="row gap wrap tool">${btn("Añadir jugador", "wAddP", {}, "ghost", "plus")}<button type="button" class="link" data-act="wPaste">Pegar una lista de nombres</button></div>
-      ${UI.pasteOpen === "p" ? `<textarea class="inp area" rows="5" data-inp="wPasteP" placeholder="Un nombre por línea"></textarea><div class="row end">${btn("Añadir nombres", "wPasteP", {}, "primary")}</div>` : ""}`;
-  } else if (w.step === 3) {
+      ${UI.pasteOpen === "p" ? `<textarea class="inp area" rows="7" data-inp="wPasteP" placeholder="- Oliver Atom – **10**&#10;- Santiago Muñez – **26**&#10;- Benji Price – **1**"></textarea><p class="muted small">Pega un jugador por línea. Reconocemos «Nombre – 10», «- Nombre – **10**», «10 – Nombre» y «10. Nombre». Nombre y dorsal quedan en columnas distintas; revisa los dorsales repetidos antes de terminar.</p><div class="row end">${btn("Añadir jugadores", "wPasteP", {}, "primary")}</div>` : ""}`;
+  } else if (w.step === 5) {
     body = `<p class="muted small">Fecha, rival y campo de cada jornada. Si aún no los tienes, déjalos en blanco y complétalos después en Partidos.</p>
-      <ul class="wm">${w.matches.map((m, i) => `<li class="${m.rest ? "off" : ""}"><b>J${i + 1}</b><input type="date" class="inp" data-inp="wMDate" data-i="${i}" value="${esc(m.date)}" aria-label="Fecha">${m.rest ? `<span class="muted grow">Descansa</span>` : `<input type="text" class="inp grow" data-inp="wMRival" data-i="${i}" value="${esc(m.rival)}" placeholder="Rival" aria-label="Rival"><select class="sel" data-chg="wMHome" data-i="${i}" aria-label="Campo"><option value="1" ${m.home ? "selected" : ""}>Local</option><option value="0" ${!m.home ? "selected" : ""}>Visitante</option></select>`}<label class="chk" title="Jornada de descanso"><input type="checkbox" data-chg="wMRest" data-i="${i}" ${m.rest ? "checked" : ""}>Desc.</label><button type="button" class="ix" data-act="wDelM" data-i="${i}" aria-label="Quitar jornada">${icon("x")}</button></li>`).join("")}</ul>
+      <ul class="wm">${w.matches.map((m, i) => `<li class="${m.rest ? "off" : ""}"><b>J${m.n || i + 1}</b><input type="date" class="inp" data-inp="wMDate" data-i="${i}" value="${esc(m.date)}" aria-label="Fecha">${m.rest ? `<span class="muted grow">Descansa</span>` : `<input type="text" class="inp grow" data-inp="wMRival" data-i="${i}" value="${esc(m.rival)}" placeholder="Rival" aria-label="Rival"><select class="sel" data-chg="wMHome" data-i="${i}" aria-label="Local o visitante"><option value="" ${m.home == null ? "selected" : ""}>Por definir</option><option value="1" ${m.home === true ? "selected" : ""}>Local</option><option value="0" ${m.home === false ? "selected" : ""}>Visitante</option></select>`}<label class="chk" title="Jornada de descanso"><input type="checkbox" data-chg="wMRest" data-i="${i}" ${m.rest ? "checked" : ""}>Desc.</label><button type="button" class="ix" data-act="wDelM" data-i="${i}" aria-label="Quitar jornada">${icon("x")}</button></li>`).join("")}</ul>
       <div class="row gap wrap tool">${btn("Añadir jornada", "wAddM", {}, "ghost", "plus")}<button type="button" class="link" data-act="wPasteM">Pegar el calendario</button></div>
-      ${UI.pasteOpen === "m" ? `<textarea class="inp area" rows="6" data-inp="wPasteM" placeholder="Una jornada por línea:\n17/10/2027; Lora del Río CF; V\n24/10/2027; CMD San Juan; L\n08/01/2028; DESCANSA"></textarea><p class="muted small">Formato: fecha; rival; L (local) o V (visitante).</p><div class="row end">${btn("Añadir jornadas", "wPasteM", {}, "primary")}</div>` : ""}`;
+      ${UI.pasteOpen === "m" ? `<textarea class="inp area" rows="9" data-inp="wPasteM" placeholder="Por ejemplo: - Jornada 1; Fecha: Sábado, 14 de noviembre de 2026; Rival: Rayo Ficticio\n17/10/2027; Lora del Río CF; V\n24/10/2027; CMD San Juan; L\n08/01/2028; DESCANSA">${esc(UI.wizPasteM || "")}</textarea><p class="muted small">Puedes pegar «Jornada 1», «Fecha: Sábado, 14 de noviembre de 2026» y «Rival: Rayo Ficticio», incluso con viñetas Markdown. También se admite fecha; rival; L/V. Si no indicas casa o fuera se quedará «Por definir», sin suponer que eres local.</p><div class="row end">${btn("Analizar y añadir jornadas", "wApplyPasteM", {}, "primary")}</div>` : ""}`;
   } else {
     const keep = w.players.filter(p => p.keep && p.name.trim()).length;
     body = w.done ? `<div class="okbox"><div class="okmark">${icon("check")}</div><h3>Temporada ${esc(w.name)} creada</h3><p class="muted">${keep} jugadores y ${w.matches.length} jornadas listos. Ya puedes empezar a usarla.</p>
@@ -244,13 +313,21 @@ V.sheet.wizard = () => {
         <p class="muted small">La temporada actual no se toca. Todo lo nuevo empieza vacío.</p>
         ${w.progress ? `<div class="prog"><i style="width:${Math.round(w.progress[0] / w.progress[1] * 100)}%"></i></div><p class="muted small">Creando… ${w.progress[0]} de ${w.progress[1]}</p>` : ""}${w.err ? `<p class="err small">${esc(w.err)}</p>` : ""}</div>`;
   }
-  const nav = w.step === 4 && w.done ? "" : `<div class="row between gap foot">${w.step > 1 && !w.progress ? btn("Atrás", "wBack", {}, "ghost", "back") : btn("Cancelar", "closeSheet", {}, "ghost")}${w.step < 4 ? btn("Siguiente", "wNext", {}, "primary") : btn(w.progress ? "Creando…" : "Crear temporada", "wCreate", {}, "primary", "check")}</div>`;
+  const nav = w.step === 6 && w.done ? "" : `<div class="row between gap foot">${w.step > 1 && !w.progress ? btn("Atrás", "wBack", {}, "ghost", "back") : btn("Cancelar", "closeSheet", {}, "ghost")}${w.step < 6 ? btn("Siguiente", "wNext", {}, "primary") : btn(w.progress ? "Creando…" : "Crear temporada", "wCreate", {}, "primary", "check")}</div>`;
   return `<h2>Nueva temporada</h2>${stepper}<div class="wbody">${body}</div>${nav}`;
 };
+CHG.wCrest = async el => {
+  const w = UI.wiz;
+  if (!w || !el.files || !el.files[0]) return;
+  try { w.crest = await ClubCrest.upload(el.files[0]); toast("Escudo añadido a la nueva temporada.", "ok"); }
+  catch (e) { toast(e.message || "No se pudo procesar el escudo.", "err"); }
+  render(true);
+};
+ACT.wRemoveCrest = () => { UI.wiz.crest = ""; };
 INP.wName = el => { UI.wiz.name = el.value; };
 INP.wMin = el => { UI.wiz.matchMinutes = el.value; };
 INP.wClub = el => { UI.wiz.club = el.value; };
-INP.wCat = el => { UI.wiz.category = el.value; };
+INP.wCat = el => { UI.wiz.category = el.value; }; CHG.wFormat = el => { UI.wiz.format = el.value; }; INP.wKit = el => { UI.wiz.kits[el.dataset.kit][el.dataset.part] = el.value; };
 INP.wStart = el => { UI.wiz.trainStart = el.value; };
 INP.wEnd = el => { UI.wiz.trainEnd = el.value; };
 ACT.wDay = el => { const w = UI.wiz, v = +el.dataset.v; w.trainDays = w.trainDays.includes(v) ? w.trainDays.filter(x => x !== v) : [...w.trainDays, v]; };
@@ -262,29 +339,49 @@ ACT.wAddP = () => { UI.wiz.players.push({ id: null, name: "", dorsal: "", keep: 
 ACT.wPaste = () => { UI.pasteOpen = UI.pasteOpen === "p" ? false : "p"; };
 INP.wPasteP = el => { UI.wizPasteP = el.value; };
 ACT.wPasteP = () => {
-  (UI.wizPasteP || "").split(/\n+/).map(x => x.trim()).filter(Boolean).forEach(n => { if (!UI.wiz.players.some(p => norm(p.name) === norm(n))) UI.wiz.players.push({ id: null, name: n, dorsal: "", keep: true }); });
+  const rows = PlayerListImport.parseList(UI.wizPasteP || "");
+  let added = 0, duplicates = 0, repeatedDorsals = 0;
+  for (const row of rows) {
+    if (UI.wiz.players.some(p => norm(p.name) === norm(row.name))) { duplicates++; continue; }
+    // Preservamos exactamente el dorsal introducido, incluso cuando se repite.
+    // Avisamos del conflicto, pero nunca borramos un número al importar.
+    if (row.dorsal !== null && UI.wiz.players.some(p => p.keep && String(p.dorsal) === String(row.dorsal))) repeatedDorsals++;
+    UI.wiz.players.push({ id: null, name: row.name, dorsal: row.dorsal === null ? "" : String(row.dorsal), keep: true });
+    added++;
+  }
   UI.wizPasteP = ""; UI.pasteOpen = false;
+  toast(`${added} jugadores añadidos.${duplicates ? " "+duplicates+" nombres repetidos omitidos." : ""}${repeatedDorsals ? " Aviso: "+repeatedDorsals+" dorsales repetidos conservados; revísalos." : ""}`, repeatedDorsals ? "err" : "ok");
 };
 INP.wMDate = el => { UI.wiz.matches[+el.dataset.i].date = el.value; };
 INP.wMRival = el => { UI.wiz.matches[+el.dataset.i].rival = el.value; };
-CHG.wMHome = el => { UI.wiz.matches[+el.dataset.i].home = el.value === "1"; };
+CHG.wMHome = el => { UI.wiz.matches[+el.dataset.i].home = el.value === "" ? null : el.value === "1"; };
 CHG.wMRest = el => { UI.wiz.matches[+el.dataset.i].rest = el.checked; };
 ACT.wDelM = el => { UI.wiz.matches.splice(+el.dataset.i, 1); };
-ACT.wAddM = () => { UI.wiz.matches.push({ date: "", rival: "", home: true, rest: false }); };
-ACT.wPasteM = el => {
-  if (!el || !el.dataset || UI.pasteOpen !== "m" || el.tagName === "BUTTON" && el.textContent.trim() === "Pegar el calendario") { UI.pasteOpen = UI.pasteOpen === "m" ? false : "m"; return; }
-  const lines = (UI.wizPasteM || "").split(/\n+/).map(x => x.trim()).filter(Boolean);
-  let bad = 0;
-  lines.forEach(l => {
-    const parts = l.split(/\s*[;\t]\s*/);
-    const date = parseEsDate(parts[0]);
-    if (!date) { bad++; return; }
-    const rest = /^descansa$/i.test(parts[1] || "");
-    const campo = (parts[2] || "").trim().toLowerCase();
-    UI.wiz.matches.push({ date, rival: rest ? "" : (parts[1] || ""), home: !(campo.startsWith("v")), rest });
-  });
-  UI.wizPasteM = ""; UI.pasteOpen = false;
-  toast(bad ? `${lines.length - bad} jornadas añadidas. ${bad} líneas no tenían una fecha válida.` : `${lines.length} jornadas añadidas.`, bad ? "err" : "ok");
+ACT.wAddM = () => { UI.wiz.matches.push({ date: "", rival: "", home: null, rest: false }); };
+ACT.wPasteM = () => { UI.pasteOpen = UI.pasteOpen === "m" ? false : "m"; };
+ACT.wApplyPasteM = () => {
+  const w = UI.wiz, result = MatchListImport.parse(UI.wizPasteM || "");
+  if (result.errors.length) {
+    toast("Revisa el calendario: " + result.errors[0] + (result.errors.length > 1 ? " (" + result.errors.length + " avisos)" : ""), "err");
+    return;
+  }
+  const occupied = new Set(w.matches.map((m,i) => m.n || i + 1));
+  let added=0,duplicates=0,unknown=0;
+  for (const row of result.matches) {
+    let n=row.n;
+    if(n != null && occupied.has(n)){duplicates++;continue;}
+    if(n == null){
+      n=1;while(occupied.has(n))n++;
+    }
+    occupied.add(n);
+    if(!row.rest && row.home===null)unknown++;
+    w.matches.push({n,date:row.date,rival:row.rival,home:row.home,rest:row.rest});
+    added++;
+  }
+  if(!added){toast(duplicates?"Las jornadas ya estaban añadidas.":"No se encontraron jornadas válidas.","err");return;}
+  UI.wizPasteM = "";UI.pasteOpen = false;
+  toast(added+" jornadas añadidas."+(duplicates?" "+duplicates+" jornadas repetidas omitidas.":"")+
+    (unknown?" "+unknown+" pendientes de local o visitante.":""),unknown||duplicates?"err":"ok");
 };
 INP.wPasteM = el => { UI.wizPasteM = el.value; };
 ACT.wBack = () => { UI.wiz.step = Math.max(1, UI.wiz.step - 1); UI.pasteOpen = false; };
@@ -299,7 +396,7 @@ ACT.wNext = () => {
     if (w.trainStart && w.trainEnd && w.trainStart > w.trainEnd) { toast("El último entreno no puede ser anterior al primero.", "err"); return; }
     w.name = name;
   }
-  if (w.step === 2 && !w.players.some(p => p.keep && p.name.trim())) { toast("Añade al menos un jugador.", "err"); return; }
+  if (w.step === 4 && !w.players.some(p => p.keep && p.name.trim())) { toast("Añade al menos un jugador.", "err"); return; }
   w.step++; UI.pasteOpen = false;
 };
 ACT.wCreate = async () => {
@@ -307,10 +404,10 @@ ACT.wCreate = async () => {
   if (!w.sid) w.sid = w.name.replace(/\s*[\/-]\s*/, "-") + "-" + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
   const id = w.sid;
   const plist = w.players.filter(p => p.keep && p.name.trim()).map((p, i) => ({ id: "p" + String(i + 1).padStart(2, "0"), name: p.name.trim(), dorsal: parseNum(p.dorsal), order: i + 1, active: true, notes: "" }));
-  const mlist = w.matches.map((m, i) => ({ id: "j" + String(i + 1).padStart(2, "0"), n: i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
+  const mlist = w.matches.map((m, i) => ({ id: "j" + String(m.n || i + 1).padStart(2, "0"), n: m.n || i + 1, date: m.date || null, rival: m.rest ? "" : m.rival.trim(), home: m.rest ? null : m.home, rest: m.rest, notes: "", ourGoals: null, rivalGoals: null, scorers: [], players: {}, noCall: [], subs: [], callDone: false }));
   w.progress = [0, 1 + plist.length + mlist.length + 1]; w.err = null; render(true);
   try {
-    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
+    await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), format: w.format || "F7", crest: ClubCrest.clean(w.crest), kits: ClubTheme.normalizeKits(w.kits), palette: ClubTheme.cleanPalette(w.palette), trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
       (n, t) => { w.progress = [n, t]; render(true); });
     w.newId = id; w.done = true; w.progress = null;
   } catch (e) { console.error(e); w.progress = null; w.err = "No se pudo guardar la temporada completa. Comprueba tu conexión e inténtalo de nuevo: continuará donde se quedó."; }

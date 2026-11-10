@@ -12,3 +12,14 @@
 @media(max-width:760px){.pending-assignment{grid-template-columns:1fr 1fr}.pending-team{grid-column:1/-1}.pending-assignment button{grid-column:1/-1}.pending-assignment label{min-width:0}}
 
 .team-config{width:100%;margin-top:13px}.editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+
+/* Compatibilidad visual del prototipo con el editor moderno de equipaciones. */
+:root{--surface:#fff;--surface-2:#f6f8fb;--brand:var(--navy);--brand-ink:#fff;--accent:var(--green);--accent-soft:var(--green-soft);--ink-2:var(--muted);--f-display:Manrope,Arial,sans-serif}
+.demo-settings-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:5px 0 16px}
+.demo-settings-tabs button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:10px;padding:10px 14px;font-weight:700}
+.demo-settings-tabs button.on{background:var(--navy);color:#fff}
+.demo-settings-screen{max-width:950px}
+.demo-settings-screen .club-kit-panel{margin:0 0 16px}
+.demo-settings-screen .club-kit-panel h3{font-size:22px}
+.demo-settings-screen .club-theme-option.selected{border-color:var(--green)}
+.demo-settings-screen .club-kit-part span{font-size:13px}
