@@ -5,15 +5,16 @@ const AuthThrottle = (() => {
   const key="bq.auth-wait.v1."+String((typeof window!=="undefined"&&window.BQ_CONFIG?.SUPABASE_URL)||"unconfigured").replace(/[^a-z0-9]/gi,"_").slice(0,90);
   const kinds=["signup","login","forgot"];
   const deadlines={signup:0,login:0,forgot:0};
+  const reasons={};
   const now=()=>Date.now();
   try{
     const saved=JSON.parse(localStorage.getItem(key)||"null");
     if(saved&&typeof saved==="object")for(const kind of kinds){
       const v=Number(saved[kind])||0;
-      if(v>now()&&v<now()+86400000)deadlines[kind]=v;
+      if(v>now()&&v<now()+86400000){deadlines[kind]=v;if(saved.reasons?.[kind]==="email")reasons[kind]="email";}
     }
   }catch(_){}
-  const save=()=>{try{localStorage.setItem(key,JSON.stringify(deadlines))}catch(_){}};
+  const save=()=>{try{localStorage.setItem(key,JSON.stringify({...deadlines,reasons}))}catch(_){}};
   const remaining=kind=>Math.max(0,Math.ceil(((deadlines[kind]||0)-now())/1000));
   const format=seconds=>Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
   const retrySeconds=error=>{
@@ -36,14 +37,19 @@ const AuthThrottle = (() => {
     const seconds=remaining(kind);
     if(!seconds)return "";
     const label=kind==="signup"?"registro":kind==="login"?"inicio de sesión":"recuperación de contraseña";
+    if(reasons[kind]==="email")return "Límite de correos de Supabase alcanzado (no es un bloqueo por bot). Espera aproximadamente "+format(seconds)+". El servicio de pruebas puede limitar a 2 correos por hora para todo el proyecto; el contador es orientativo.";
     return "Límite temporal de "+label+". Espera al menos "+format(seconds)+" antes de repetir la solicitud. El contador es orientativo: Supabase podría exigir más espera.";
   };
   const observe=(error,kind)=>{
     const cls=classify(error);
     if(!kinds.includes(kind)||!["email","requests"].includes(cls))return {kind:cls,seconds:0};
     // El servidor tiene la última palabra. Nunca inventar un desbloqueo exacto.
-    const seconds=retrySeconds(error)??(cls==="email"?60:30);
-    deadlines[kind]=Math.max(deadlines[kind],now()+seconds*1000);
+    const seconds=retrySeconds(error)??(cls==="email"?3600:30);
+    const affected=cls==="email"?["signup","forgot"]:[kind];
+    for(const affectedKind of affected){
+      deadlines[affectedKind]=Math.max(deadlines[affectedKind],now()+seconds*1000);
+      reasons[affectedKind]=cls;
+    }
     save();startTicker();
     return {kind:cls,seconds:remaining(kind)};
   };
