@@ -24,7 +24,7 @@ const TurnstileGuard = (() => {
         script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
         script.async = true; script.defer = true;
         script.onload = () => { loading = false; mount(); };
-        script.onerror = () => { loading = false; const p = document.querySelector('#authSlot [data-bq-turnstile]'); if (p) p.textContent = 'No se pudo cargar la verificación. Comprueba tu conexión.'; };
+        script.onerror = () => { loading = false; script.remove(); const p = document.querySelector('#authSlot [data-bq-turnstile]'); if (p) p.textContent = 'No se pudo cargar la verificación. Comprueba tu conexión e inténtalo de nuevo.'; };
         document.head.appendChild(script);
       }
       return;
