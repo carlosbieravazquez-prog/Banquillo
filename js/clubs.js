@@ -7,14 +7,15 @@ const ClubSpace = (() => {
   const canSave=()=>!!current();
   async function refresh(){
     if(state.loading||Auth.state!=="in")return;
+    const uid=Auth.uid;
     state.loading=true;state.error="";render(true);
     try{
       const rows=await Cloud.rpc("bq_clubs_list");
-      if(Auth.state!=="in")return;
+      if(Auth.state!=="in"||Auth.uid!==uid)return;
       state.clubs=Array.isArray(rows)?rows:[];
       if(!state.clubs.some(c=>c.id===state.selected))state.selected=state.clubs[0]?.id||null;
-    }catch(err){state.error="No se han podido cargar los clubes. Comprueba la conexión con Supabase-Staging.";}
-    finally{state.loading=false;if(Auth.state==="in")render(true);}
+    }catch(err){if(Auth.uid===uid)state.error="No se han podido cargar los clubes. Comprueba la conexión con Supabase-Staging.";}
+    finally{state.loading=false;if(Auth.state==="in"&&Auth.uid===uid)render(true);}
   }
   const head=(title,description,actions="")=>'<div class="phead"><div><h1>'+e(title)+'</h1><p class="sub">'+e(description)+'</p></div><div class="phead-r">'+actions+'</div></div>';
   const tabBtn=(id,label)=>'<button type="button" data-act="clubTab" data-tab="'+id+'" class="'+(state.tab===id?"on":"")+'">'+label+'</button>';
@@ -225,6 +226,7 @@ const ClubSpace = (() => {
       if(UI.sheet===sh)UI.sheet=null;await refresh();toast("Configuración del club guardada.","ok");
     }catch(_){sh.busy=false;toast("No se pudo guardar la configuración del club.","err");render(true);}
   };
-  return {state,current,refresh,clubPage};
+  const reset=()=>{state.clubs=null;state.selected=null;state.loading=false;state.error="";state.tab="teams";};
+  return {state,current,refresh,clubPage,reset};
 })();
 V.clubes=()=>ClubSpace.clubPage();
