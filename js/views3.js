@@ -178,10 +178,9 @@ const crestControl = (data, change, remove) => `
     <p class="muted small">Aparecerá en Banquillo, informes individuales y actas PDF. Sube un PNG transparente si es posible. Puedes preparar la imagen con
     <a href="https://www.canva.com/es_es/funciones/quitar-fondo-imagen/" target="_blank" rel="noopener noreferrer">Quitafondos de Canva</a>
     (servicio externo, algunas funciones requieren pago). No es obligatorio utilizar Canva.</p>
-    ${ClubCrest.preview(data)}
-    <label class="fld"><span>Seleccionar escudo · PNG, JPG o WebP (máx. 3 MB)</span>
-    <input type="file" class="inp" accept="image/png,image/jpeg,image/webp" data-chg="${change}"></label>
-    ${data ? btn("Quitar escudo", remove, {}, "ghost") : ""}
+    ${data ? `<div class="file-picker-preview">${ClubCrest.preview(data)}<div class="file-picker-preview-copy"><strong>Escudo seleccionado</strong><small>Se utilizará en la temporada, los informes y las actas</small></div></div>` : ""}
+    ${FilePicker.render({title:"Escudo del equipo",formats:"PNG · JPG · WEBP",help:"Hasta 3 MB · Se ajustará automáticamente al tamaño de los informes",icon:"🛡️",label:data?"Cambiar imagen":"Elegir imagen",accept:"image/png,image/jpeg,image/webp",change})}
+    ${data ? `<div class="file-picker-actions">${btn("Quitar escudo", remove, {}, "ghost")}</div>` : ""}
     </div>`;
 const DAYSEL = [[1, "Lun"], [2, "Mar"], [3, "Mié"], [4, "Jue"], [5, "Vie"], [6, "Sáb"], [0, "Dom"]];
 V.sheet.settings = sh => {
