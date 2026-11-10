@@ -1,0 +1,29 @@
+/* Editor de equipaciones destacado, legible y compatible con ambos modos de interfaz */
+.club-kit-panel{border:1px solid var(--line);border-radius:17px;padding:18px;background:var(--surface);display:grid;gap:14px;margin:17px 0}
+.club-kit-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.club-kit-head h3{font:700 21px var(--f-display);margin:0}
+.club-kit-head p{margin:4px 0 0;font-size:13px;color:var(--ink-2);max-width:580px}
+.club-kit-tag{font-size:11px;letter-spacing:.06em;font-weight:800;text-transform:uppercase;border-radius:30px;padding:6px 10px;background:var(--accent-soft);color:var(--ink)}
+.club-kit-grid{display:grid;gap:14px}
+.club-kit-set{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:12px}
+.club-kit-set h4{margin:0;font:700 17px var(--f-display)}
+.club-kit-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.club-kit-part{display:grid;gap:6px;min-width:0;color:var(--ink)}
+.club-kit-part span{font-weight:700;font-size:12px}
+.club-kit-part input[type=color]{display:block;width:100%;height:58px;min-width:0;padding:3px;border-radius:11px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer}
+.club-kit-part small{font-size:11px;text-align:center;font-family:monospace;color:var(--ink-2)}
+.club-kit-strip{display:flex;gap:5px;height:14px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.club-kit-strip i{display:block;flex:1}
+.club-kit-add{border:1px dashed var(--line);background:transparent;color:var(--info);font-weight:700;border-radius:12px;padding:11px;cursor:pointer;text-align:left}
+.club-kit-palette{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:10px}
+.club-kit-palette h4{margin:0;font:700 18px var(--f-display)}
+.club-kit-palette select{width:100%}
+.club-kit-palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.club-kit-note{background:var(--surface-2);border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 9px 9px 0;font-size:12px;color:var(--ink-2)}
+.club-kit-sample{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.club-kit-sample-top{padding:12px 14px;font-weight:700;color:#fff}
+.club-kit-sample-inner{display:flex;gap:8px;align-items:center;padding:10px 14px}
+.club-kit-sample-pill{border-radius:8px;padding:7px 12px;font-size:12px;font-weight:750}
+.club-kit-sample-inner small{font-size:12px;color:var(--ink-2)}
+@media(min-width:750px){.club-kit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.club-kit-grid .club-kit-set:nth-child(3){grid-column:1/-1}}
+@media(max-width:440px){.club-kit-fields{gap:5px}.club-kit-part span{font-size:11px}.club-kit-part input[type=color]{height:48px}}
