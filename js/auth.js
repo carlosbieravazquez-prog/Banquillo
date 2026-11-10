@@ -45,7 +45,7 @@ const FORM = {};
       html = card("Elige una contraseña nueva", `<form data-form="authNewPass" class="form" novalidate>
         <p class="muted small">Solo puedes modificar la contraseña después de abrir un enlace de recuperación válido enviado a tu correo.</p>
         <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span>${passwordInput("new-password", 12)}<small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
-        <label class="fld"><span>Confirmar contraseña nueva</span><input class="inp" type="password" name="confirm_password" autocomplete="new-password" minlength="12" required></label>
+        <label class="fld"><span>Confirmar contraseña nueva</span>${passwordInput("new-password", 12, "confirm_password")}</label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
       html = card("Comprueba tu correo o inicia sesión", `<p>Si acabas de crear la cuenta, revisa el correo de <b>${esc(u.email)}</b> para confirmar el registro.</p>
@@ -63,6 +63,7 @@ const FORM = {};
       html = card(u.mode === "join" ? "Únete a tu equipo" : "Crea tu cuenta", `${tabs()}${u.mode === "join" ? `<p class="auth-join-guide">Introduce el código específico de tu equipo. Primero confirmaremos tu correo; después se solicitará el acceso automáticamente desde este navegador.</p>` : ""}<form data-form="authSignup" class="form" novalidate>
         <label class="fld"><span>Tu nombre</span><input class="inp" type="text" name="name" autocomplete="given-name" maxlength="60" value="${esc(u.name)}" required></label>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
+        ${PhoneCountry.render(u.phoneCountry || "ES",u.phoneNumber || "")}
         <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span>${passwordInput("new-password", 12)}<small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
         ${u.mode === "join" ? `<label class="fld"><span>Código de mi equipo</span><input class="inp code-inp" name="join_code" type="text" required maxlength="12" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX" value="${esc(u.joinCode || "")}" data-inp="authJoinCode"><small class="muted">Si prefieres registrarte sin código, puedes añadirlo después en «Unirme con un código».</small></label>` : ""}
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
@@ -91,8 +92,8 @@ const FORM = {};
     <span>Si el correo ya estaba registrado, no recibirás otro mensaje de confirmación.</span>
     <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Iniciar sesión</button>
     <button class="link center-t" type="button" data-act="authMode" data-v="forgot">Recuperar contraseña</button></div>`;
-  const passwordInput = (autocomplete, minimum = 0) => `<div class="auth-password-wrap">
-      <input class="inp" type="password" name="password" autocomplete="${autocomplete}"${minimum ? ` minlength="${minimum}"` : ""} required>
+  const passwordInput = (autocomplete, minimum = 0, name = "password") => `<div class="auth-password-wrap">
+      <input class="inp" type="password" data-password-control name="${name}" autocomplete="${autocomplete}"${minimum ? ` minlength="${minimum}"` : ""} required>
       <button class="auth-password-toggle" type="button" data-password-toggle aria-label="Mostrar contraseña" title="Mostrar contraseña" aria-pressed="false">
         <svg class="auth-eye-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3.2"/>
@@ -114,7 +115,7 @@ const FORM = {};
   document.addEventListener("click", event => {
     const button = event.target.closest?.("[data-password-toggle]");
     if (!button) return;
-    const field = button.parentElement?.querySelector('input[name="password"]');
+    const field = button.parentElement?.querySelector("input[data-password-control]");
     if (!field || field.disabled) return;
     const visible = field.type === "password";
     field.type = visible ? "text" : "password";
@@ -132,6 +133,7 @@ const FORM = {};
 
   ACT.authMode = el => { A.ui.mode = el.dataset.v; A.ui.msg = null; };
   INP.authJoinCode = el => { A.ui.joinCode = el.value; };
+  INP.authPhoneNumber = el => { A.ui.phoneNumber = el.value.replace(/[^0-9 ()-]/g,"").slice(0,20); };
   // Código temporal (máximo 1 h) en este navegador: permite completar la confirmación en otra pestaña.
   const PENDING_KEY = "bq.pending-team-code.v1." + String(Cloud.cfg?.SUPABASE_URL || "not-configured").replace(/[^a-z0-9]/gi,"_").slice(0,100);
   const validCode = value => /^[A-Z0-9]{8}$/.test(String(value || "").toUpperCase().replace(/[^A-Z0-9]/g,""));
