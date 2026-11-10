@@ -65,6 +65,8 @@ const FORM = {};
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
         ${typeof PhoneCountry !== "undefined" ? PhoneCountry.render(u.phoneCountry || "ES",u.phoneNumber || "") : ""}
         <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span>${passwordInput("new-password", 12)}<small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
+        <label class="fld"><span>Repetir contraseña</span>${passwordInput("new-password", 12, "confirm_password")}</label>
+        <p class="err small" role="alert" data-signup-password-mismatch hidden>Las contraseñas no coinciden. Escríbelas igual para continuar.</p>
         ${u.mode === "join" ? `<label class="fld"><span>Código de mi equipo</span><input class="inp code-inp" name="join_code" type="text" required maxlength="12" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX" value="${esc(u.joinCode || "")}" data-inp="authJoinCode"><small class="muted">Si prefieres registrarte sin código, puedes añadirlo después en «Unirme con un código».</small></label>` : ""}
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
         ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button>${loginHelp()}</form>`);
@@ -180,6 +182,15 @@ const FORM = {};
     if (!name) { setMsg("err", "Escribe tu nombre."); return rerender(); }
     if (!validEmail(email)) { setMsg("err", "Ese correo no parece válido."); return rerender(); }
     if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
+    const confirmPassword=f.elements.confirm_password;
+    if (!confirmPassword || password !== confirmPassword.value) {
+      const notice=f.querySelector?.("[data-signup-password-mismatch]");
+      if(notice){notice.hidden=false;notice.textContent="Las contraseñas no coinciden. Escríbelas igual para continuar.";}
+      confirmPassword?.setAttribute?.("aria-invalid","true");
+      confirmPassword?.focus?.();
+      return;
+    }
+    confirmPassword.removeAttribute?.("aria-invalid");
     if (!f.elements.accept.checked) { setMsg("err", "Para crear la cuenta tienes que aceptar la política de privacidad."); return rerender(); }
     const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
     if (code) setPendingJoin(code,email);
