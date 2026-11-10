@@ -133,3 +133,12 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] **Pendiente P0:** clave pública de prueba, widget en staging, configuración secreta de Supabase en staging y prueba de acceso de los tres formularios, incluido móvil.
 - [ ] **Pendiente P0:** límites de tasa de Auth del proyecto y protección real del servidor. El control visual por sí solo no bloquea intentos fuera del navegador.
 - [ ] No activar el CAPTCHA en producción hasta haber desplegado una versión compatible y validado su funcionamiento.
+
+## Preparación de activación Turnstile (10 noviembre 2026)
+
+- Conector Supabase: una sola organización visible (**Banquillo**), un proyecto existente, ninguna rama de base de datos de pruebas. No se ha creado un proyecto nuevo: falta elegir explícitamente organización y revisar su coste.
+- [x] Corregido problema de recuperación de red al descargar el script externo: en caso de error se elimina el script fallido y puede reintentarse, manteniendo bloqueado el envío si la clave de sitio está configurada pero falta desafío.
+- [x] Ampliadas las pruebas de regresión de `tests/auth-captcha.test.cjs`: creación única del widget, verificación de token solo mientras está montado y reintento de carga.
+- [x] Cinco comprobaciones funcionales equivalentes ejecutadas sobre `js/auth-captcha.js`: modo desactivado, creación única, token entregado, rechazo si desconectado y recuperación del error de red.
+- [ ] Próximo paso: acordar la organización del proyecto staging y revisar cualquier coste antes de crearlo. No incorporar datos reales ni habilitar CAPTCHA en el Supabase principal durante estas pruebas.
+- [ ] Se necesita una **sitekey pública** de Cloudflare Turnstile para ese entorno. La clave secreta se configura en el panel de Supabase; nunca pedirla por chat ni subirla al repositorio.
