@@ -372,3 +372,16 @@ body.in-app #landing{display:none}
 .auth-check-notice{padding:14px 15px;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface-2);border-radius:12px;margin:16px 0}
 .auth-check-notice strong{display:block;font-size:14px;color:var(--ink)}
 .auth-check-notice p{margin:7px 0 0;font-size:13px;line-height:1.5;color:var(--ink-2)}
+
+/* Contraseñas: botón mostrar/ocultar accesible, sin alterar el valor escrito. */
+.auth-password-wrap{position:relative;width:100%;min-width:0}
+.auth-password-wrap>.inp{display:block;width:100%;padding-right:54px}
+.auth-password-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:42px;height:42px;border:1px solid transparent;border-radius:10px;color:var(--ink-2);background:transparent;cursor:pointer;z-index:1}
+.auth-password-toggle:hover{color:var(--ink);background:var(--surface-2)}
+.auth-password-toggle:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.auth-password-toggle .auth-eye-closed{display:none}
+.auth-password-toggle[aria-pressed="true"] .auth-eye-open{display:none}
+.auth-password-toggle[aria-pressed="true"] .auth-eye-closed{display:block}
+.auth-staging-help{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 14px;margin:10px 0 15px;background:var(--surface-2);display:grid;gap:5px}
+.auth-staging-help strong{font-size:13px;color:var(--ink)}
+.auth-staging-help span{font-size:12px;color:var(--ink-2);line-height:1.5}
