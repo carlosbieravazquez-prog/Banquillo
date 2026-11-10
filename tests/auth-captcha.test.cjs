@@ -27,10 +27,10 @@ test('con clave pública exige token y muestra hueco para desafío',() => {
 });
 test('solo protege los tres formularios de autenticación que acepta Supabase',() => {
   assert.equal((auth.match(/TurnstileGuard\.placeholder\(\)/g)||[]).length,3);
-  assert.equal((auth.match(/captchaForSubmit\(\)/g)||[]).length,3);
-  assert.match(auth,/signInWithPassword\([^\n]+captchaToken/);
-  assert.match(auth,/signUp\([^\n]+captchaToken/);
-  assert.match(auth,/resetPasswordForEmail\([^\n]+captchaToken/);
+  assert.equal((auth.match(/captchaForSubmit\(f,"(?:signup|login|forgot)"\)/g)||[]).length,3);
+  assert.match(auth,/signInWithPassword\([\s\S]*?captchaToken/);
+  assert.match(auth,/signUp\([\s\S]*?captchaToken/);
+  assert.match(auth,/resetPasswordForEmail\([\s\S]*?captchaToken/);
   assert.match(auth,/captchaToken === ""/);
 });
 
