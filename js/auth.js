@@ -55,34 +55,41 @@ const FORM = {};
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
         <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
-        ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button></form>`);
+        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button></form>`);
     } else if (u.mode === "forgot") {
       html = card("Recuperar contraseña", `<form data-form="authForgot" class="form" novalidate>
         <p class="muted small">Escribe tu correo y te enviaremos un enlace para elegir una contraseña nueva.</p>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
-        ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Enviando…" : "Enviar enlace"}</button>
+        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Enviando…" : "Enviar enlace"}</button>
         <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Volver</button></form>`);
     } else {
       html = card("Entrar", `${tabs()}<form data-form="authLogin" class="form" novalidate>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
         <label class="fld"><span>Contraseña</span><input class="inp" type="password" name="password" autocomplete="current-password" required></label>
-        ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Entrando…" : "Entrar"}</button>
+        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Entrando…" : "Entrar"}</button>
         <button class="link center-t" type="button" data-act="authMode" data-v="forgot">¿Has olvidado la contraseña?</button></form>`);
     }
     if (slot.dataset.h !== html) { slot.innerHTML = html; slot.dataset.h = html; }
+    TurnstileGuard.mount();
   };
   const card = (t, inner) => `<div class="auth-card"><h2>${t}</h2>${inner}</div>`;
   const tabs = () => `<div class="seg auth-tabs" role="tablist"><button type="button" class="${A.ui.mode === "login" ? "on" : ""}" data-act="authMode" data-v="login">Entrar</button><button type="button" class="${A.ui.mode === "signup" ? "on" : ""}" data-act="authMode" data-v="signup">Crear cuenta</button></div>`;
   const msgHtml = () => A.ui.msg ? `<p class="${A.ui.msg.type === "ok" ? "okm" : "err"} small" role="alert">${esc(A.ui.msg.text)}</p>` : "";
   const val = (f, n) => (f.elements[n] ? String(f.elements[n].value || "").trim() : "");
   const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+  const captchaForSubmit = () => {
+    const captchaToken = TurnstileGuard.token();
+    if (captchaToken === "") { setMsg("err", "Completa la verificación de seguridad antes de continuar."); rerender(); return false; }
+    return captchaToken;
+  };
 
   ACT.authMode = el => { A.ui.mode = el.dataset.v; A.ui.msg = null; };
   FORM.authLogin = async f => {
     const email = val(f, "email"), password = f.elements.password.value; A.ui.email = email;
     if (!validEmail(email) || !password) { setMsg("err", "Escribe tu correo y tu contraseña."); return rerender(); }
+    const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
     A.ui.busy = true; setMsg(); rerender();
-    const { error } = await Cloud.sb.auth.signInWithPassword({ email, password });
+    const { error } = await Cloud.sb.auth.signInWithPassword({ email, password, ...(captchaToken ? { options: { captchaToken } } : {}) });
     A.ui.busy = false;
     if (error) { setMsg("err", friendly(error)); rerender(); }
   };
@@ -93,8 +100,9 @@ const FORM = {};
     if (!validEmail(email)) { setMsg("err", "Ese correo no parece válido."); return rerender(); }
     if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
     if (!f.elements.accept.checked) { setMsg("err", "Para crear la cuenta tienes que aceptar la política de privacidad."); return rerender(); }
+    const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
     A.ui.busy = true; setMsg(); rerender();
-    const { data, error } = await Cloud.sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: redirectUrl() } });
+    const { data, error } = await Cloud.sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: redirectUrl(), ...(captchaToken ? { captchaToken } : {}) } });
     A.ui.busy = false;
     if (error) { setMsg("err", friendly(error)); return rerender(); }
     if (data && data.session) return;                       // entra solo (si el proyecto no exige confirmar el correo)
@@ -103,8 +111,9 @@ const FORM = {};
   FORM.authForgot = async f => {
     const email = val(f, "email"); A.ui.email = email;
     if (!validEmail(email)) { setMsg("err", "Escribe un correo válido."); return rerender(); }
+    const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
     A.ui.busy = true; setMsg(); rerender();
-    const { error } = await Cloud.sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() });
+    const { error } = await Cloud.sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl(), ...(captchaToken ? { captchaToken } : {}) });
     A.ui.busy = false;
     if (error && /rate limit/i.test(error.message || "")) setMsg("err", friendly(error));
     else setMsg("ok", "Si ese correo tiene cuenta, recibirás un enlace en unos minutos.");
