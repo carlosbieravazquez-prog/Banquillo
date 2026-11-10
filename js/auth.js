@@ -183,6 +183,7 @@ const FORM = {};
   };
   A.enter = async session => {
     const sessionUser = session.user.id;
+    if(typeof ClubSpace!=="undefined")ClubSpace.reset();
     A.uid = sessionUser; A.state = "in";
     Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
     Cloud.profile = null;
@@ -202,6 +203,7 @@ const FORM = {};
   };
   A.leave = () => {
     Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
+    if(typeof ClubSpace!=="undefined")ClubSpace.reset();
     A.uid = null; A.state = "out"; Cloud.profile = null; Cloud.aiPrivacyAccepted = false; Store.reset(); Store.connecting = false;
     UI.sheet = null; UI.wiz = null; UI.ai = {};
     A.ui = { mode: "welcome", busy: false, msg: null, email: "", name: "" };
