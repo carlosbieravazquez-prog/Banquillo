@@ -406,3 +406,8 @@ body.in-app #landing{display:none}
 .phone-option-flag{font-size:20px;min-width:27px}
 .phone-no-match{font-size:12px;color:var(--ink-2);padding:10px;margin:0}
 @media(max-width:520px){.phone-country-menu{left:-8px;right:-8px;min-width:0}.phone-registration{padding:11px}}
+
+/* Avisos de límite temporal de Supabase: sin bloquear al usuario indefinidamente. */
+.auth-wait{border:1px solid var(--line);border-left:4px solid #b7791f;border-radius:10px;padding:11px 13px;margin:8px 0 12px;background:var(--surface-2);color:var(--ink);line-height:1.55}
+.auth-wait[hidden],[data-auth-inline][hidden]{display:none!important}
+[data-auth-inline]:not([hidden]){margin:8px 0 12px}
