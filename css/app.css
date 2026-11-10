@@ -363,3 +363,12 @@ body.in-app #landing{display:none}
 .top-l .club-crest{width:30px;height:30px}
 .sheet .club-crest{width:100px;height:100px;object-fit:contain;margin:8px 0;border:1px solid var(--line,#dbe2e8);padding:7px;border-radius:14px;background:#f5f7fa}
 @media(max-width:600px){.brand .club-crest{width:32px;height:32px}.top-l .club-crest{width:27px;height:27px}}
+
+/* Avisos claros en alta de usuarios, sin revelar si existe un correo por defecto. */
+.auth-login-help{display:grid;gap:8px;margin-top:12px;padding:15px;border:1px solid var(--line);background:var(--surface-2);border-radius:13px}
+.auth-login-help strong{font-size:14px;color:var(--ink)}
+.auth-login-help span{font-size:12px;line-height:1.55;color:var(--ink-2)}
+.auth-login-help .link{justify-self:center;font-size:12px}
+.auth-check-notice{padding:14px 15px;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface-2);border-radius:12px;margin:16px 0}
+.auth-check-notice strong{display:block;font-size:14px;color:var(--ink)}
+.auth-check-notice p{margin:7px 0 0;font-size:13px;line-height:1.5;color:var(--ink-2)}
