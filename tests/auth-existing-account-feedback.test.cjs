@@ -13,7 +13,9 @@ function makeAuth(signUpResponse){
   const auth={
     signUp: async () => typeof signUpResponse==="function"?signUpResponse():signUpResponse
   };
+  const PhoneCountry=require("../js/phone-country.js");
   const ctx=vm.createContext({
+    PhoneCountry,
     Cloud:{cfg:{SUPABASE_URL:"https://staging.example.test"},configured:()=>true,sb:{auth}},
     localStorage:{setItem(){},getItem(){return null},removeItem(){}},
     location:{origin:"http://127.0.0.1:5500",pathname:"/staging.html"},
@@ -31,6 +33,7 @@ function makeAuth(signUpResponse){
     email:{value:"prueba@example.test"},
     password:{value:"ClaveLargaFicticia2026"},
     confirm_password:{value:"ClaveLargaFicticia2026",removeAttribute(){}},
+    phone_optional:{value:"612345678"},
     accept:{checked:true}
   }};
   return {h,form,slot};
