@@ -1,5 +1,5 @@
 /* ===== Cuentas: entrar, registrarse, recuperar contraseña, unirse con código, compartir y Mi cuenta ===== */
-const Auth = { state: "loading", uid: null, ui: { mode: "login", busy: false, msg: null, email: "", name: "" } };
+const Auth = { state: "loading", uid: null, ui: { mode: "welcome", busy: false, msg: null, email: "", name: "" } };
 const FORM = {};
 
 (function () {
@@ -47,13 +47,20 @@ const FORM = {};
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
       html = card("Revisa tu correo", `<p>Te hemos enviado un mensaje a <b>${esc(u.email)}</b>. Pulsa el enlace que contiene para confirmar tu cuenta y vuelve aquí.</p>
-        <p class="muted small">Si no aparece, mira en la carpeta de spam. El enlace caduca en una hora.</p>
+        <p class="muted small">Si no aparece, revisa spam. Si has indicado un código de equipo, mantén esta pestaña abierta y vuelve a iniciar sesión después de confirmar el correo. También puedes introducir el código cuando ya estés dentro.</p>
         <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Ya lo he confirmado: entrar</button>`);
-    } else if (u.mode === "signup") {
-      html = card("Crea tu cuenta", `${tabs()}<form data-form="authSignup" class="form" novalidate>
+    } else if (u.mode === "welcome") {
+      html = card("Empieza con Banquillo", `<p class="muted small">Gestiona un equipo, crea una cuenta o entra con el código que te ha dado tu director deportivo.</p><div class="auth-choices">
+        <button type="button" class="auth-choice" data-act="authMode" data-v="login"><b>Iniciar sesión</b><small>Ya tengo una cuenta</small></button>
+        <button type="button" class="auth-choice" data-act="authMode" data-v="signup"><b>Registrarme</b><small>Crear mi cuenta gratuitamente</small></button>
+        <button type="button" class="auth-choice emphasized" data-act="authMode" data-v="join"><b>Unirme a mi club</b><small>Crear cuenta con código de mi equipo</small></button>
+       </div>`);
+    } else if (u.mode === "signup" || u.mode === "join") {
+      html = card(u.mode === "join" ? "Únete a tu equipo" : "Crea tu cuenta", `${tabs()}${u.mode === "join" ? `<p class="auth-join-guide">Introduce el código específico de tu equipo. Primero confirmaremos tu correo; después se solicitará el acceso automáticamente desde este navegador.</p>` : ""}<form data-form="authSignup" class="form" novalidate>
         <label class="fld"><span>Tu nombre</span><input class="inp" type="text" name="name" autocomplete="given-name" maxlength="60" value="${esc(u.name)}" required></label>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
         <label class="fld"><span>Contraseña (mínimo 12 caracteres)</span><input class="inp" type="password" name="password" autocomplete="new-password" minlength="12" required><small class="muted">Utiliza una contraseña única y evita reutilizar la de tu correo.</small></label>
+        ${u.mode === "join" ? `<label class="fld"><span>Código de mi equipo</span><input class="inp code-inp" name="join_code" type="text" required maxlength="12" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX" value="${esc(u.joinCode || "")}" data-inp="authJoinCode"><small class="muted">Si prefieres registrarte sin código, puedes añadirlo después en «Unirme con un código».</small></label>` : ""}
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
         ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button></form>`);
     } else if (u.mode === "forgot") {
@@ -73,7 +80,7 @@ const FORM = {};
     TurnstileGuard.mount();
   };
   const card = (t, inner) => `<div class="auth-card"><h2>${t}</h2>${inner}</div>`;
-  const tabs = () => `<div class="seg auth-tabs" role="tablist"><button type="button" class="${A.ui.mode === "login" ? "on" : ""}" data-act="authMode" data-v="login">Entrar</button><button type="button" class="${A.ui.mode === "signup" ? "on" : ""}" data-act="authMode" data-v="signup">Crear cuenta</button></div>`;
+  const tabs = () => `<div class="seg auth-tabs" role="group" aria-label="Acceso a Banquillo"><button type="button" class="${A.ui.mode === "login" ? "on" : ""}" data-act="authMode" data-v="login">Entrar</button><button type="button" class="${A.ui.mode === "signup" ? "on" : ""}" data-act="authMode" data-v="signup">Crear cuenta</button><button type="button" class="${A.ui.mode === "join" ? "on" : ""}" data-act="authMode" data-v="join">Unirme a un club</button></div>`;
   const msgHtml = () => A.ui.msg ? `<p class="${A.ui.msg.type === "ok" ? "okm" : "err"} small" role="alert">${esc(A.ui.msg.text)}</p>` : "";
   const val = (f, n) => (f.elements[n] ? String(f.elements[n].value || "").trim() : "");
   const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
@@ -84,6 +91,28 @@ const FORM = {};
   };
 
   ACT.authMode = el => { A.ui.mode = el.dataset.v; A.ui.msg = null; };
+  INP.authJoinCode = el => { A.ui.joinCode = el.value; };
+  const PENDING_KEY = "bq.pending-team-code.v1";
+  const validCode = value => /^[A-Z0-9]{8}$/.test(String(value || "").toUpperCase().replace(/[^A-Z0-9]/g,""));
+  const setPendingJoin = (code,email) => {
+    try { sessionStorage.setItem(PENDING_KEY,JSON.stringify({code:code.toUpperCase().replace(/[^A-Z0-9]/g,""),email:email.toLowerCase(),expires:Date.now()+3600000})); } catch (_) { /* sesión sin almacenamiento */ }
+  };
+  const clearPendingJoin = () => { try { sessionStorage.removeItem(PENDING_KEY); } catch (_) {} };
+  const consumePendingJoin = async (sessionUser) => {
+    let pending;
+    try {pending=JSON.parse(sessionStorage.getItem(PENDING_KEY)||"null");}catch(_){clearPendingJoin();return;}
+    if(!pending)return;
+    if(pending.expires<Date.now()){clearPendingJoin();return;}
+    if(String(sessionUser.email||"").toLowerCase()!==pending.email)return;
+    clearPendingJoin();
+    try {
+      const result=await Cloud.rpc("join_season",{p_code:pending.code});
+      if(result?.ok && A.uid===sessionUser.id && A.state==="in"){
+        await Store.afterJoin(result.season_id);
+        go("inicio"); toast("Ya tienes acceso a tu equipo. ¡Bienvenido!","ok");
+      } else if(A.uid===sessionUser.id) toast("No se pudo aplicar el código. Puedes introducirlo en Temporadas → Unirme con un código.","err");
+    }catch(_){if(A.uid===sessionUser.id)toast("No se pudo aplicar el código. Introduce el código desde Temporadas.","err");}
+  };
   FORM.authLogin = async f => {
     const email = val(f, "email"), password = f.elements.password.value; A.ui.email = email;
     if (!validEmail(email) || !password) { setMsg("err", "Escribe tu correo y tu contraseña."); return rerender(); }
@@ -95,16 +124,20 @@ const FORM = {};
   };
   FORM.authSignup = async f => {
     const name = val(f, "name"), email = val(f, "email"), password = f.elements.password.value;
+    const code = A.ui.mode === "join" ? val(f,"join_code") : "";
+    if (A.ui.mode === "join" && !validCode(code)) { setMsg("err","Introduce las 8 letras o números del código de tu equipo."); return rerender(); }
+    A.ui.joinCode=code;
     A.ui.name = name; A.ui.email = email;
     if (!name) { setMsg("err", "Escribe tu nombre."); return rerender(); }
     if (!validEmail(email)) { setMsg("err", "Ese correo no parece válido."); return rerender(); }
     if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
     if (!f.elements.accept.checked) { setMsg("err", "Para crear la cuenta tienes que aceptar la política de privacidad."); return rerender(); }
     const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
+    if (code) setPendingJoin(code,email);
     A.ui.busy = true; setMsg(); rerender();
     const { data, error } = await Cloud.sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: redirectUrl(), ...(captchaToken ? { captchaToken } : {}) } });
     A.ui.busy = false;
-    if (error) { setMsg("err", friendly(error)); return rerender(); }
+    if (error) { if(code)clearPendingJoin(); setMsg("err", friendly(error)); return rerender(); }
     if (data && data.session) return;                       // entra solo (si el proyecto no exige confirmar el correo)
     A.ui.mode = "check"; rerender();
   };
@@ -161,6 +194,7 @@ const FORM = {};
       if (A.uid !== sessionUser || A.state !== "in") return;
       Store.connecting = false;
       await Cloud.loadProfile();
+      if (A.uid === sessionUser && A.state === "in") await consumePendingJoin(session.user);
       if (A.uid === sessionUser && A.state === "in") render(true);
     } catch (e) {
       if (A.uid === sessionUser && A.state === "in") { Store.connecting = false; render(true); }
@@ -170,7 +204,7 @@ const FORM = {};
     Cloud.profileEpoch = (Cloud.profileEpoch || 0) + 1;
     A.uid = null; A.state = "out"; Cloud.profile = null; Cloud.aiPrivacyAccepted = false; Store.reset(); Store.connecting = false;
     UI.sheet = null; UI.wiz = null; UI.ai = {};
-    A.ui = { mode: "login", busy: false, msg: null, email: "", name: "" };
+    A.ui = { mode: "welcome", busy: false, msg: null, email: "", name: "" };
     const slot = $("#authSlot"); if (slot) slot.dataset.h = "";
     render(true);
   };
