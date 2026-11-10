@@ -128,7 +128,8 @@ test("Selector de teléfonos cubre países, banderas, prefijos y no almacena el 
  assert.match(html,/data-phone-select="ES"/);
  assert.match(html,/data-phone-select="MX"/);
  assert.match(html,/data-phone-toggle/);
- assert.match(html,/no se envían SMS ni se guarda este número/);
+ assert.match(html,/no se guarda ni se envían SMS/);
+ assert.match(html,/name="phone_optional"[^>]+required/);
  assert.equal(PhoneCountry.normalized("México"),"mexico");
  const authSource=fs.readFileSync(path.join(__dirname,"../js/auth.js"),"utf8");
  assert.match(authSource,/PhoneCountry\.render/);
