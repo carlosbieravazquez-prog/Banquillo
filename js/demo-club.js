@@ -105,9 +105,26 @@
   lines.push("— Dirección deportiva · "+state.club.name);
   return lines.join("\n");
  }
+ function monthMessage(){
+  const day=parseDate(state.calendarDate),year=day.getFullYear(),month=day.getMonth();
+  const from=dateKey(new Date(year,month,1)),to=dateKey(new Date(year,month+1,0));
+  const events=state.schedule.filter(m=>m.date>=from&&m.date<=to).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const header=new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(day);
+  const lines=["📅 "+state.club.name+" · Plan mensual",header.toUpperCase(),""];
+  for(const m of events){
+    const t=teamOf(m.teamId),res=resourceList(m.modality).find(x=>x.id===m.resource);
+    lines.push((m.home?"🏠 LOCAL":"✈️ VISITANTE")+" · "+t.name+" vs "+m.opponent);
+    lines.push("📆 "+fmt(parseDate(m.date))+(m.time?" · 🕒 "+m.time:" · Hora pendiente"));
+    if(m.home)lines.push(res?"📍 "+res.label:"📍 Campo pendiente");
+    lines.push(m.status==="published"?"✅ Horario publicado":"🟡 Pendiente de confirmar","");
+  }
+  if(!events.length)lines.push("No hay partidos registrados para este mes.");
+  lines.push("— Dirección deportiva · "+state.club.name);
+  return lines.join("\\n");
+ }
  function comunicaciones(){
   const start=monday(parseDate(state.calendarDate)),end=addDays(start,6),events=state.schedule.filter(m=>m.date>=dateKey(start)&&m.date<=dateKey(end));
-  return '<div class="page-head"><div><h2>Comunicaciones</h2><p>Prepara un aviso semanal para compartir con los entrenadores.</p></div><span class="tag green">Listo para WhatsApp</span></div><section class="panel"><div class="panel-head"><div><h3>Resumen semanal</h3><span class="muted">'+esc(fmtRange(start,end))+' · '+events.length+' partidos</span></div><button class="btn primary" data-action="copy-week">Copiar mensaje</button></div><pre class="message-preview">'+esc(weekMessage())+'</pre><div class="notice">El mensaje distingue partidos locales y visitantes, e indica claramente los horarios o campos pendientes. Solo contiene información deportiva del calendario.</div><div class="communication-actions"><button class="btn ghost" data-action="print">Imprimir / guardar PDF</button><button class="btn ghost" data-action="go" data-view="calendario">Editar calendario</button></div></section>';
+  return '<div class="page-head"><div><h2>Comunicaciones</h2><p>Prepara un aviso semanal para compartir con los entrenadores.</p></div><span class="tag green">Listo para WhatsApp</span></div><section class="panel"><div class="panel-head"><div><h3>Resumen semanal</h3><span class="muted">'+esc(fmtRange(start,end))+' · '+events.length+' partidos</span></div><button class="btn primary" data-action="copy-week">Copiar mensaje</button><button class="btn ghost" data-action="copy-month">Copiar mes completo</button></div><pre class="message-preview">'+esc(weekMessage())+'</pre><div class="notice">El mensaje distingue partidos locales y visitantes, e indica claramente los horarios o campos pendientes. Solo contiene información deportiva del calendario.</div><div class="communication-actions"><button class="btn ghost" data-action="print">Imprimir / guardar PDF</button><button class="btn ghost" data-action="go" data-view="calendario">Editar calendario</button></div></section>';
  }
  function uniformCard(key,label){const u=state.uniforms[key];return '<section class="panel uniform-card"><h3>'+label+'</h3><p class="muted">Elige por separado el color de cada prenda. Ejemplo: camiseta roja, pantalón negro y medias rojas.</p><div class="form-grid"><div class="field"><label>Camiseta</label><input type="color" id="uniform-'+key+'-shirt" value="'+esc(u.shirt)+'"><small>Color de la parte superior.</small></div><div class="field"><label>Pantalón</label><input type="color" id="uniform-'+key+'-shorts" value="'+esc(u.shorts)+'"><small>Color del pantalón.</small></div><div class="field"><label>Medias</label><input type="color" id="uniform-'+key+'-socks" value="'+esc(u.socks)+'"><small>Color de las medias.</small></div></div><div class="kit-preview"><span style="background:'+esc(u.shirt)+'">Camiseta</span><span style="background:'+esc(u.shorts)+'">Pantalón</span><span style="background:'+esc(u.socks)+';color:#222">Medias</span></div></section>'}
  function avisos(){return '<div class="page-head"><div><h2>Avisos de actividad</h2><p>Tareas pendientes de los entrenadores.</p></div><span class="tag amber">'+state.notifications.filter(n=>n.status==="Pendiente").length+' pendientes</span></div><section class="panel"><div class="notice">Ejemplos ficticios de esta demostración. En la versión conectada, estos avisos se generarían a partir de la actividad real de los equipos.</div>'+state.notifications.map(n=>'<article class="notice-card"><div class="notice-head"><b>'+esc(n.title)+'</b><span class="tag amber">'+esc(n.status)+'</span></div><p><b>'+esc(n.team)+'</b> · Entrenador/a: '+esc(n.coach)+'</p><p>'+esc(n.detail)+'</p><small>'+esc(n.date)+'</small></article>').join('')+'</section>'}
@@ -133,6 +150,7 @@
   if(a.dataset.action==="publish"){const m=state.schedule.find(x=>x.id===id);if(m){const problem=validate(m,id);if(problem){alert("No se puede publicar: "+problem);return}m.status="published";save();render()}}
   if(a.dataset.action==="delete-match"){if(!confirm("¿Eliminar este partido de la demostración?"))return;state.schedule=state.schedule.filter(x=>x.id!==id);save();render()}
   if(a.dataset.action==="copy-week"){const msg=weekMessage();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Mensaje copiado. Ya puedes pegarlo en WhatsApp."),()=>prompt("Copia el mensaje:",msg))}else prompt("Copia el mensaje:",msg)}
+  if(a.dataset.action==="copy-month"){const msg=monthMessage();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Resumen mensual copiado."),()=>prompt("Copia el resumen mensual:",msg))}else prompt("Copia el resumen mensual:",msg)}
   if(a.dataset.action==="print"){window.print()}
  });
  document.addEventListener("submit",e=>{
