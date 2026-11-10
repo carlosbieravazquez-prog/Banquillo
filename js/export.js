@@ -184,10 +184,26 @@ async function buildWorkbook() {
   const head = (ws, row, labels, from = 1) => labels.forEach((l, i) => { const c = ws.getCell(row, from + i); c.value = l; c.font = { name: "Calibri", bold: true, color: { argb: "FFFFFFFF" } }; c.fill = fill(BLUE); c.border = box; c.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; });
   const cellsOf = (ws, row, vals, opt = {}) => vals.forEach((v, i) => { const c = ws.getCell(row, 1 + i); c.value = v; c.border = box; c.font = { name: "Calibri", size: 11, bold: !!(opt.bold && opt.bold.includes(i)) }; c.alignment = { horizontal: i === (opt.left ?? 1) || (opt.leftAll && opt.leftAll.includes(i)) ? "left" : "center", vertical: "middle" }; });
   const sub = `${s.club || ""} · ${s.category || ""} · Temporada ${s.name}`;
+  const crestData = ClubCrest.current(s);
+  // ExcelJS admite PNG embebido: se añade a las cabeceras sin servidor externo.
+  // El archivo sigue siendo válido si el club no tiene escudo o si falla la imagen.
+  let crestImageId = null;
+  if (crestData) {
+    try { crestImageId = wb.addImage({ base64: crestData.split(",")[1], extension: "png" }); }
+    catch (err) { console.warn("No se pudo añadir el escudo al libro Excel."); }
+  }
+  const titleWithCrest = (sheet, text, subtitle, span) => {
+    title(sheet, text, subtitle, span);
+    if (crestImageId !== null) {
+      try { sheet.addImage(crestImageId, {tl:{col: Math.max(0,span-1)+0.05,row:0.04},ext:{width:48,height:48},editAs:"oneCell"}); }
+      catch (err) { console.warn("No se pudo dibujar el escudo en esta hoja."); }
+    }
+  };
+
 
   // RESUMEN
   let ws = sheet("RESUMEN", "FF70AD47"); ws.columns = [{ width: 34 }, { width: 14 }, { width: 3 }, { width: 24 }, { width: 10 }, { width: 3 }, { width: 18 }, { width: 11 }, { width: 11 }, { width: 14 }];
-  title(ws, "RESUMEN DE LA TEMPORADA " + s.name, sub, 10);
+  titleWithCrest(ws, "RESUMEN DE LA TEMPORADA " + s.name, sub, 10);
   head(ws, 4, ["Resultados del equipo", "Valor"]);
   [["Partidos jugados", rec.pj], ["Victorias", rec.v], ["Empates", rec.e], ["Derrotas", rec.d], ["Goles a favor", rec.gf], ["Goles en contra", rec.gc], ["Diferencia de goles", rec.dg], ["% de victorias", rec.pctV == null ? "" : rec.pctV]].forEach((r, i) => { cellsOf(ws, 5 + i, r, { left: 0, bold: [1] }); if (i === 7) ws.getCell(5 + i, 2).numFmt = "0%"; });
   const motTot = { DT: 0, LS: 0, MP: 0 }; ms.forEach(m => (m.noCall || []).forEach(x => { if (x.m in motTot) motTot[x.m]++; }));
@@ -203,7 +219,7 @@ async function buildWorkbook() {
   // PLANTILLA
   ws = sheet("PLANTILLA", "FF70AD47");
   ws.columns = [8, 24, 8, 8, 11, 12, 7, 7, 7, 9, 10, 9, 9, 10, 12, 11, 10, 12].map(w => ({ width: w }));
-  title(ws, "PLANTILLA · TEMPORADA " + s.name, sub, 18);
+  titleWithCrest(ws, "PLANTILLA · TEMPORADA " + s.name, sub, 18);
   head(ws, 4, ["ID", "Jugador", "Dorsal", "Goles", "Convocados", "No convocados", "D.T", "L.S", "M.P", "Titular", "Suplente", "Jugados", "Minutos", "Partidos portero", "Porterías a cero", "Entrenos asistidos", "Faltas entreno", "% asistencia"]);
   ws.getRow(4).height = 32;
   ps.forEach((p, i) => { const st = pStats(p), t = ts.per[p.id]; cellsOf(ws, 5 + i, [p.id.toUpperCase(), p.name, p.dorsal ?? "", st.goals, st.conv, st.noconv, st.DT, st.LS, st.MP, st.T, st.S, st.played, st.min, st.gk, st.clean, t.asist, t.falts, t.pct == null ? "" : t.pct], { bold: [1, 3] }); ws.getCell(5 + i, 18).numFmt = "0%"; });
@@ -211,7 +227,7 @@ async function buildWorkbook() {
 
   // PARTIDOS
   ws = sheet("PARTIDOS"); ws.columns = [{ width: 9 }, { width: 13 }, { width: 31 }, { width: 31 }, { width: 11 }, { width: 11 }, { width: 12 }, { width: 17 }, { width: 46 }];
-  title(ws, "CALENDARIO Y PARTIDOS DE LIGA", sub, 9);
+  titleWithCrest(ws, "CALENDARIO Y PARTIDOS DE LIGA", sub, 9);
   head(ws, 4, ["Jornada", "Fecha", "Local", "Visitante", "Goles local", "Goles visitante", "Estado", "Resultado", "Observaciones"]);
   ms.forEach((m, i) => {
     const inf = Calc.matchInfo(m), club = s.club;
@@ -226,7 +242,7 @@ async function buildWorkbook() {
 
   // CONVOCATORIAS
   ws = sheet("CONVOCATORIAS"); ws.columns = [{ width: 11 }, { width: 13 }, { width: 30 }, { width: 28 }, { width: 24 }, { width: 14 }];
-  title(ws, "CONVOCATORIAS", "Por jornada: jugadores NO convocados y motivo (D.T Decisión técnica · L.S Lesionado · M.P Motivos personales).", 6);
+  titleWithCrest(ws, "CONVOCATORIAS", "Por jornada: jugadores NO convocados y motivo (D.T Decisión técnica · L.S Lesionado · M.P Motivos personales).", 6);
   head(ws, 4, ["Jornada", "Fecha", "Rival", "Jugador no convocado", "Motivo", "Convocados"]);
   let r = 5;
   ms.filter(m => !m.rest).forEach(m => {
@@ -242,7 +258,7 @@ async function buildWorkbook() {
 
   // GOLES Y ESTADISTICAS
   ws = sheet("GOLES Y ESTADISTICAS"); ws.columns = [{ width: 11 }, { width: 28 }, { width: 24 }, { width: 14 }, { width: 10 }, { width: 10 }, { width: 10 }];
-  title(ws, "GOLES Y ESTADÍSTICAS POR JORNADA", "Titular/suplente, minutos, portero y goles de cada jugador convocado.", 7);
+  titleWithCrest(ws, "GOLES Y ESTADÍSTICAS POR JORNADA", "Titular/suplente, minutos, portero y goles de cada jugador convocado.", 7);
   head(ws, 4, ["Jornada", "Rival", "Jugador", "Titular / Suplente", "Minutos", "Portero", "Goles"]);
   r = 5;
   ms.filter(m => !m.rest).forEach(m => {
@@ -267,7 +283,7 @@ async function buildWorkbook() {
   ws = sheet("ENTRENAMIENTOS"); const sess = seasonSessions(), skipped = new Set(Store.training.skipped || []), abs = Store.training.absences || {};
   ws.getColumn(1).width = 26; [2, 3, 4].forEach(c => { ws.getColumn(c).width = 10; });
   sess.forEach((_, i) => { ws.getColumn(5 + i).width = 4.6; });
-  title(ws, "ENTRENAMIENTOS", "X = no vino · en blanco = vino · gris = sin entreno.", Math.max(4 + sess.length, 8));
+  titleWithCrest(ws, "ENTRENAMIENTOS", "X = no vino · en blanco = vino · gris = sin entreno.", Math.max(4 + sess.length, 8));
   const mon = {}; sess.forEach((k, i) => { (mon[k.slice(0, 7)] = mon[k.slice(0, 7)] || []).push(5 + i); });
   Object.entries(mon).forEach(([k, cols], mi) => {
     if (cols.length > 1) ws.mergeCells(4, cols[0], 4, cols[cols.length - 1]);
