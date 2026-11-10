@@ -30,7 +30,8 @@
  state.facilities.divisible=state.facilities.divisible||[];
  state.schedule=Array.isArray(state.schedule)?state.schedule:JSON.parse(JSON.stringify(seed.schedule));
  state.calendarDate=state.calendarDate||seed.calendarDate;
- state.uniforms=state.uniforms||JSON.parse(JSON.stringify(seed.uniforms));
+ state.uniforms=ClubTheme.normalizeKits(state.uniforms||JSON.parse(JSON.stringify(seed.uniforms)));
+ state.palette=ClubTheme.cleanPalette(state.palette);
  state.notifications=Array.isArray(state.notifications)?state.notifications:JSON.parse(JSON.stringify(seed.notifications));
  const $=s=>document.querySelector(s);
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -128,9 +129,29 @@
  }
  function uniformCard(key,label){const u=state.uniforms[key];return '<section class="panel uniform-card"><h3>'+label+'</h3><p class="muted">Elige por separado el color de cada prenda. Ejemplo: camiseta roja, pantalón negro y medias rojas.</p><div class="form-grid"><div class="field"><label>Camiseta</label><input type="color" id="uniform-'+key+'-shirt" value="'+esc(u.shirt)+'"><small>Color de la parte superior.</small></div><div class="field"><label>Pantalón</label><input type="color" id="uniform-'+key+'-shorts" value="'+esc(u.shorts)+'"><small>Color del pantalón.</small></div><div class="field"><label>Medias</label><input type="color" id="uniform-'+key+'-socks" value="'+esc(u.socks)+'"><small>Color de las medias.</small></div></div><div class="kit-preview"><span style="background:'+esc(u.shirt)+'">Camiseta</span><span style="background:'+esc(u.shorts)+'">Pantalón</span><span style="background:'+esc(u.socks)+';color:#222">Medias</span></div></section>'}
  function avisos(){return '<div class="page-head"><div><h2>Avisos de actividad</h2><p>Tareas pendientes de los entrenadores.</p></div><span class="tag amber">'+state.notifications.filter(n=>n.status==="Pendiente").length+' pendientes</span></div><section class="panel"><div class="notice">Ejemplos ficticios de esta demostración. En la versión conectada, estos avisos se generarían a partir de la actividad real de los equipos.</div>'+state.notifications.map(n=>'<article class="notice-card"><div class="notice-head"><b>'+esc(n.title)+'</b><span class="tag amber">'+esc(n.status)+'</span></div><p><b>'+esc(n.team)+'</b> · Entrenador/a: '+esc(n.coach)+'</p><p>'+esc(n.detail)+'</p><small>'+esc(n.date)+'</small></article>').join('')+'</section>'}
- function ajustes(){return '<div class="page-head"><div><h2>Configuración inicial del club</h2><p>Identidad, datos territoriales y colores de las equipaciones.</p></div></div><section class="panel"><div class="form-grid"><div class="field full">'+FilePicker.render({title:"Escudo del club",formats:"PNG · JPG · WEBP",help:"Selecciona el escudo de tu club · hasta 3 MB",icon:"🛡️",label:"Elegir escudo",accept:"image/png,image/jpeg,image/webp",inputId:"clubCrestUpload"})+'<p class="muted">PNG transparente recomendado · <a href="https://www.canva.com/es_es/funciones/quitar-fondo-imagen/" target="_blank" rel="noopener noreferrer">Preparar en Canva</a> (servicio externo, ciertas funciones pueden ser de pago)</p>'+(ClubCrest.current({settings:{crest:state.club.crest}})?'<img src="'+ClubCrest.current({settings:{crest:state.club.crest}})+'" alt="Escudo del club" width="90" height="90" style="object-fit:contain"><button type="button" class="btn ghost" data-action="remove-club-crest">Quitar escudo</button>':'')+'</div><div class="field"><label>Nombre del club</label><input id="clubName" value="'+esc(state.club.name)+'"></div><div class="field"><label>Municipio</label><input id="clubTown" value="'+esc(state.club.town)+'"></div><div class="field"><label>Provincia</label><input id="clubProvince" value="'+esc(state.club.province)+'"></div><div class="field"><label>Comunidad autónoma</label><input id="clubCommunity" value="'+esc(state.club.community)+'"></div><div class="field"><label>Temporada</label><input id="clubSeason" value="'+esc(state.club.season)+'"></div></div><div class="notice"><b>Ayuda:</b> selecciona el color de camiseta, pantalón y medias. Por ejemplo, una primera equipación puede ser camiseta azul, pantalón blanco y medias azules.</div><div style="display:flex;justify-content:flex-end;margin-top:15px"><button class="btn primary" data-action="save-club">Guardar cambios</button></div></section>'+uniformCard("first","Primera equipación") + uniformCard("second","Segunda equipación") + '<div class="notice">Los datos son ficticios y se guardan solo en este navegador.</div>'}
- const render=()=>{shell();const v=UI.view||"resumen";$("#pageTitle").textContent=viewTitles[v];$("#viewRoot").innerHTML=({resumen,equipos,equipo:editorEquipo,directores,instalaciones,calendario:calendar,comunicaciones,avisos,ajustes}[v]||resumen)();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));};
- const UI={view:"resumen",teamId:null};
+ function ajustes(){
+  const tab=UI.settingsTab||"data";
+  const tabs='<div class="demo-settings-tabs" role="navigation" aria-label="Configuración del club">'+
+    [["data","Datos y escudo"],["kits","Equipaciones"],["palette","Identidad visual"]].map(([id,label])=>
+      '<button type="button" data-action="demo-settings-tab" data-tab="'+id+'" class="'+(id===tab?"on":"")+'">'+label+'</button>').join("")+'</div>';
+  const general='<section class="panel"><div class="form-grid"><div class="field full">'+
+    FilePicker.render({title:"Escudo del club",formats:"PNG · JPG · WEBP",help:"Hasta 3 MB · imagen sin fondo recomendada",
+      icon:"🛡️",label:"Elegir escudo",accept:"image/png,image/jpeg,image/webp",inputId:"clubCrestUpload"})+
+    '<p class="muted">Prepara la imagen con <a href="https://www.canva.com/es_es/funciones/quitar-fondo-imagen/" target="_blank" rel="noopener noreferrer">Canva</a> si lo necesitas (herramienta externa; ciertas funciones requieren pago).</p>'+
+    (ClubCrest.current({settings:{crest:state.club.crest}})?
+      '<img src="'+ClubCrest.current({settings:{crest:state.club.crest}})+'" alt="Escudo del club" width="90" height="90" style="object-fit:contain"><button type="button" class="btn ghost" data-action="remove-club-crest">Quitar escudo</button>':'')+
+    '</div>'+[["name","Nombre del club"],["town","Municipio"],["province","Provincia"],["community","Comunidad autónoma"],["season","Temporada"]].map(([key,label])=>
+       '<div class="field"><label>'+label+'</label><input id="club'+key[0].toUpperCase()+key.slice(1)+'" value="'+esc(state.club[key]||"")+'"></div>').join("")+
+    '</div><div style="display:flex;justify-content:flex-end;margin-top:15px"><button class="btn primary" data-action="save-club">Guardar datos</button></div></section>';
+  const values={club:state.club.name,kits:state.uniforms,palette:state.palette};
+  const body=tab==="kits"?ClubKitsEditor.renderKits(values,"set"):
+    tab==="palette"?ClubKitsEditor.renderPalette(values,"set"):general;
+  return '<div class="demo-settings-screen"><div class="page-head"><div><h2>Configuración del club</h2>'+
+    '<p>El mismo editor de equipaciones e identidad visual de Banquillo, adaptado al club.</p></div></div>'+
+    tabs+body+'<div class="notice">Demo local: los datos son ficticios. Para crear equipos y códigos válidos abre la Beta autenticada, apartado «Clubes».</div></div>';
+ }
+ const render=()=>{const colors=ClubTheme.derive(state.uniforms,state.palette).light;document.documentElement.style.setProperty("--navy",colors["--brand"]);document.documentElement.style.setProperty("--green",colors["--accent"]);document.documentElement.style.setProperty("--green-soft",colors["--accent-soft"]);shell();const v=UI.view||"resumen";$("#pageTitle").textContent=viewTitles[v];$("#viewRoot").innerHTML=({resumen,equipos,equipo:editorEquipo,directores,instalaciones,calendario:calendar,comunicaciones,avisos,ajustes}[v]||resumen)();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));};
+ const UI={view:"resumen",teamId:null,settingsTab:"data"};
  document.addEventListener("click",e=>{
   const nav=e.target.closest("[data-view]");if(nav){UI.view=nav.dataset.view;render();return}
   const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;save();render();return}
