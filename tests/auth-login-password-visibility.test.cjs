@@ -44,7 +44,7 @@ test("Pulsar ojo muestra y oculta la contraseña sin perder su valor ni reenviar
   assert.equal(typeof events.click,"function");
   const field={type:"password",value:"ContrasenaDePrueba123",disabled:false};
   const attributes={};
-  const button={parentElement:{querySelector(selector){return selector==='input[name="password"]'?field:null;}},
+  const button={parentElement:{querySelector(selector){return selector==='input[data-password-control]'?field:null;}},
     setAttribute(name,value){attributes[name]=value;}};
   const e={target:{closest(selector){return selector==="[data-password-toggle]"?button:null;}}};
   events.click(e);
