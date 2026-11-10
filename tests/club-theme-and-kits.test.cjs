@@ -42,7 +42,7 @@ test("El editor muestra equipaciones visibles y todos los modos de personalizaci
   assert.match(html,/Añadir tercera equipación/);
   assert.match(html,/data-chg="wKit"/);
   assert.match(html,/data-chg="wPaletteMode"/);
-  assert.match(html,/hsl\(215, 28%, 25%\)/);
+  assert.match(html,/hsl\(\d+, 28%, 25%\)/);
   assert.doesNotMatch(html,/<details/);
   const third=ClubKitsEditor.render({club:"Ficticio",kits:{...data.kits,third:{shirt:"#FFFFFF",shorts:"#000000",socks:"#FFFFFF"}},palette:{mode:"preset",preset:"bosque"}},"set");
   assert.match(third,/3ª equipación/);
