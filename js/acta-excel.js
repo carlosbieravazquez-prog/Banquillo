@@ -7,6 +7,7 @@
     return Store.activePlayers().filter(p => !(p.id in nc));
   };
   const value = (sheet, r, c) => String(sheet.getRow(r).getCell(c).value ?? "").trim();
+  const rosterKey = m => convocados(m).map(p => p.id).sort().join("|");
   const heads = () => ["ID", "Dorsal", "Jugador", "Titular X", "Suplente X", "Goles", ...(f7() ? ["Portero X"] : []), "Minutos"];
 
   ACT.downloadActaXlsx = async () => {
@@ -25,12 +26,13 @@
         const d = (m.players || {})[p.id] || {};
         ws.addRow([p.id, p.dorsal ?? "", p.name, d.role === "T" ? "X" : "", d.role === "S" ? "X" : "", score.filter(id => id === p.id).length || "", ...(f7() ? [d.gk ? "X" : ""] : []), d.min ?? ""]);
       });
-      ws.columns = [{width:15},{width:12},{width:32},{width:15},{width:16},{width:12},{width:14},{width:14}];
+      ws.columns = heads().map((_, i) => ({width: i === 2 ? 32 : i === 0 ? 20 : 15}));
       ws.getRow(4).font = {bold:true,color:{argb:"FFFFFFFF"}};
       ws.getRow(4).fill = {type:"pattern",pattern:"solid",fgColor:{argb:"FF17365D"}};
       ws.views = [{state:"frozen",ySplit:4}];
       const buffer = await wb.xlsx.writeBuffer();
-      await saveFile("banquillo_acta_j"+m.n+".xlsx",buffer);
+      const saved = await saveFile("banquillo_acta_j"+m.n+".xlsx",buffer);
+      if (saved === false) toast("No se ha confirmado la descarga. Comprueba los permisos del navegador.", "err");
     } catch (e) {
       console.error(e);
       toast("No se ha podido descargar la plantilla Excel.", "err");
@@ -49,8 +51,10 @@
       const wb = new Excel.Workbook();
       await wb.xlsx.load(await file.arrayBuffer());
       const ws = wb.getWorksheet("Acta");
-      if (!ws || value(ws,1,1) !== "BANQUILLO_ACTA_V1" || value(ws,2,2) !== String(Store.sid) || Number(value(ws,2,4)) !== m.n)
+      if (!ws || value(ws,1,1) !== "BANQUILLO_ACTA_V1" || value(ws,2,2) !== String(Store.sid) || Number(value(ws,2,4)) !== Number(m.n))
         throw new Error("El archivo no corresponde a esta temporada y jornada de Banquillo.");
+      if (ws.rowCount > 120 || ws.columnCount > 20)
+        throw new Error("El Excel tiene demasiadas filas o columnas para un acta.");
       if (heads().some((header,i) => value(ws,4,i+1) !== header))
         throw new Error("Las columnas no coinciden con la plantilla. Descarga una copia original.");
       const players = convocados(m), ids = new Set(players.map(p => p.id)), seen = new Set(), rows = [];
@@ -73,7 +77,7 @@
       }
       if (rows.length !== players.length)
         throw new Error("Faltan jugadores convocados: aparecen "+rows.length+" de "+players.length+".");
-      UI.actaImport={rows,matchId:m.id};
+      UI.actaImport={rows,matchId:m.id,seasonId:Store.sid,rosterKey:rosterKey(m)};
     } catch (e) {
       UI.actaImport={error:e.message||"No se pudo leer el archivo."};
     }
@@ -82,7 +86,11 @@
 
   ACT.applyActaXlsx = () => {
     const m=acta(), data=UI.actaImport;
-    if (!m || !data || !data.rows || data.matchId!==m.id) return;
+    if (!m || m.closed || Store.readOnly() || !data || !data.rows || data.matchId!==m.id || data.seasonId!==Store.sid || data.rosterKey!==rosterKey(m)) {
+      toast("La temporada, la convocatoria o los permisos han cambiado. Vuelve a subir el Excel.", "err");
+      UI.actaImport=null;
+      return;
+    }
     if (!confirm("¿Aplicar el Excel? Sustituirá los roles, minutos y goles de esta jornada. Comprueba primero los datos.")) return;
     const players={...(m.players||{})},scorers=[];
     data.rows.forEach(r=>{
