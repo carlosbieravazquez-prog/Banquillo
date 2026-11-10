@@ -178,3 +178,13 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [ ] Crear usuarios ficticios por el flujo normal de Auth y verificar `handle_new_user()` tras revocar su EXECUTE directo. **No escribir manualmente cuentas en `auth.users`** para sustituir una prueba real.
 - [ ] Pruebas positivas de lector, editor, propietario y negativas de actualización/eliminación sobre documentos ficticios de staging con sesiones reales.
 - [ ] Configurar Turnstile en Cloudflare y Supabase-Staging; no se ha habilitado la verificación del servidor aún.
+
+## Trabajo realizado desde el instituto sin acceso al PC local (10 noviembre 2026)
+
+- [x] Workflow `.github/workflows/beta-security.yml` añadido en rama Beta. Disparadores: push a `feature/actas-sanciones-f11-ocr`, PR a `main` y ejecución manual. Comprobará sintaxis JS y ejecutará `node --test tests/*.test.cjs`; requiere GitHub Actions habilitado. **No afirmar ejecución verde hasta revisar el resultado real de Actions.**
+- [x] Corregidos dos escapes de salto de línea en `tests/auth-captcha.test.cjs` que habrían impedido evaluar el componente con `vm`.
+- [x] CSP ampliada en `index.html` y `staging.html` con `https://challenges.cloudflare.com` en `connect-src` además de `script-src` y `frame-src`.
+- [x] Supabase-Staging: consulta `anon` de tabla de documentos rechazada; identidad ficticia sin membresías no puede consultar ni editar; intento de inserción sin permiso rechazado. No se copiaron datos reales.
+- [x] Security Advisors de staging revisados: `rls_enabled_no_policy` sobre tablas privadas `seasons_meta` y `join_attempts` (intencional), y avisos sobre funciones `SECURITY DEFINER` accesibles a autenticados que requieren análisis de autorización individual. No revocar RPC usadas por la app sin verificar.
+- [ ] Falta constatar resultado del workflow en GitHub Actions, completar pruebas de navegador y configurar URL de Auth en staging desde el Dashboard.
+- [ ] Falta registrar cuentas ficticias, prueba de inserción positiva con `owner`/`editor`, rechazo de cambios como `viewer`, Turnstile activo en staging, recuperación de cuentas y respaldo restaurable.
