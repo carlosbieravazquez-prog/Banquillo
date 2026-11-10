@@ -29,6 +29,50 @@ const FORM = {};
   };
   const setMsg = (type, text) => { A.ui.msg = text ? { type, text } : null; };
   const rerender = () => render(true);
+  const throttle = typeof AuthThrottle !== "undefined" ? AuthThrottle : null;
+  // El cronómetro es informativo; Supabase decide cuándo termina el límite real.
+  const cooldownNotice = kind => throttle
+    ? `<p class="auth-wait small" role="status" data-auth-cooldown="${kind}"${throttle.remaining(kind) ? "" : " hidden"}>${esc(throttle.message(kind))}</p>`
+    : "";
+  const updateFeedback = (f,kind,text,type="err") => {
+    setMsg(type,text);
+    const output=f?.querySelector?.("[data-auth-inline]");
+    if(output){
+      output.textContent=text;
+      output.hidden=!text;
+      output.className=(type==="err"?"err":"okm")+" small";
+    }
+    throttle?.sync();
+  };
+  const setBusy = (f,busy,busyLabel,normalLabel) => {
+    A.ui.busy=busy;
+    const button=f?.querySelector?.("[data-auth-submit]");
+    if(button){
+      button.dataset.authBusy=busy?"true":"";
+      button.disabled=busy||!!throttle?.remaining(button.dataset.authKind);
+      button.textContent=busy?busyLabel:normalLabel;
+    }
+  };
+  const allowed = (f,kind) => {
+    if(A.ui.busy)return false;
+    if(throttle?.remaining(kind)){
+      updateFeedback(f,kind,throttle.message(kind));
+      return false;
+    }
+    return true;
+  };
+  const authFailure = (f,kind,error) => {
+    const verdict=throttle?.observe(error,kind);
+    if(verdict && verdict.seconds){
+      updateFeedback(f,kind,throttle.message(kind));
+      return;
+    }
+    if(verdict?.kind==="captcha"){
+      updateFeedback(f,kind,"No se ha podido completar la verificación antirrobots. Compruébala antes de intentarlo de nuevo.");
+      return;
+    }
+    updateFeedback(f,kind,kind==="login"?loginFeedback(error):friendly(error));
+  };
 
   /* ---------- pantalla de entrada (dentro de la página de inicio) ---------- */
   A.render = () => {
@@ -69,22 +113,23 @@ const FORM = {};
         <p class="err small" role="alert" data-signup-password-mismatch hidden>Las contraseñas no coinciden. Escríbelas igual para continuar.</p>
         ${u.mode === "join" ? `<label class="fld"><span>Código de mi equipo</span><input class="inp code-inp" name="join_code" type="text" required maxlength="12" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX" value="${esc(u.joinCode || "")}" data-inp="authJoinCode"><small class="muted">Si prefieres registrarte sin código, puedes añadirlo después en «Unirme con un código».</small></label>` : ""}
         <label class="chk"><input type="checkbox" name="accept" required><span>He leído y acepto la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y el <a href="legal/aviso-legal.html" target="_blank" rel="noopener">aviso legal</a>. Me comprometo a usar solo nombres de pila (o inicial del apellido) de los menores y a contar con la autorización de sus familias.</span></label>
-        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button>${loginHelp()}</form>`);
+        ${TurnstileGuard.placeholder()}${msgHtml()}<p class="err small" role="alert" data-auth-inline hidden></p>${cooldownNotice("signup")}<button class="btn primary block" type="submit" data-auth-submit data-auth-kind="signup" ${u.busy || throttle?.remaining("signup") ? "disabled" : ""}>${u.busy ? "Creando…" : "Crear cuenta"}</button>${loginHelp()}</form>`);
     } else if (u.mode === "forgot") {
       html = card("Recuperar contraseña", `<form data-form="authForgot" class="form" novalidate>
         <p class="muted small">Escribe tu correo y te enviaremos un enlace para elegir una contraseña nueva.</p>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
-        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Enviando…" : "Enviar enlace"}</button>
+        ${TurnstileGuard.placeholder()}${msgHtml()}<p class="err small" role="alert" data-auth-inline hidden></p>${cooldownNotice("forgot")}<button class="btn primary block" type="submit" data-auth-submit data-auth-kind="forgot" ${u.busy || throttle?.remaining("forgot") ? "disabled" : ""}>${u.busy ? "Enviando…" : "Enviar enlace"}</button>
         <button class="btn ghost block" type="button" data-act="authMode" data-v="login">Volver</button></form>`);
     } else {
       html = card("Entrar", `${tabs()}${Cloud.cfg.STAGING ? `<div class="auth-staging-help" role="note"><strong>Banquillo Beta · Datos de prueba</strong><span>Inicia sesión con una cuenta creada en esta Beta. Las cuentas de la versión oficial no se comparten.</span></div>` : ""}<form data-form="authLogin" class="form" novalidate>
         <label class="fld"><span>Correo electrónico</span><input class="inp" type="email" name="email" autocomplete="email" inputmode="email" value="${esc(u.email)}" required></label>
         <label class="fld"><span>Contraseña</span>${passwordInput("current-password")}</label>
-        ${TurnstileGuard.placeholder()}${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Entrando…" : "Entrar"}</button>
+        ${TurnstileGuard.placeholder()}${msgHtml()}<p class="err small" role="alert" data-auth-inline hidden></p>${cooldownNotice("login")}<button class="btn primary block" type="submit" data-auth-submit data-auth-kind="login" ${u.busy || throttle?.remaining("login") ? "disabled" : ""}>${u.busy ? "Entrando…" : "Entrar"}</button>
         <button class="link center-t" type="button" data-act="authMode" data-v="forgot">¿Has olvidado la contraseña?</button></form>`);
     }
     if (slot.dataset.h !== html) { slot.innerHTML = html; slot.dataset.h = html; }
     TurnstileGuard.mount();
+    throttle?.sync();
   };
   const card = (t, inner) => `<div class="auth-card"><h2>${t}</h2>${inner}</div>`;
   const tabs = () => `<div class="seg auth-tabs" role="group" aria-label="Acceso a Banquillo"><button type="button" class="${A.ui.mode === "login" ? "on" : ""}" data-act="authMode" data-v="login">Entrar</button><button type="button" class="${A.ui.mode === "signup" ? "on" : ""}" data-act="authMode" data-v="signup">Crear cuenta</button><button type="button" class="${A.ui.mode === "join" ? "on" : ""}" data-act="authMode" data-v="join">Unirme a un club</button></div>`;
