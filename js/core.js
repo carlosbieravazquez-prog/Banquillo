@@ -76,19 +76,20 @@ function accountBtn(compact) {
 }
 function shell() {
   const s = Store.season();
+  const crest = s ? ClubCrest.preview(ClubCrest.current(s)) : "";
   const rn = UI.route.name;
   const activeKey = rn === "partido" ? "partidos" : rn === "jugador" ? "plantilla" : rn;
   const nav = (cls) => NAV.map(([k, l, ic]) => `<button type="button" class="${cls} ${activeKey === k ? "on" : ""}" data-act="go" data-to="${k}" ${activeKey === k ? 'aria-current="page"' : ""}>${icon(ic)}<span>${l}</span></button>`).join("");
   const seasonChip = s ? `<button type="button" class="schip" data-act="go" data-to="temporadas" title="Cambiar de temporada">${esc(s.name)}${s.status === "closed" ? " · cerrada" : ""}${icon("chev")}</button>` : "";
   return `<div class="shell ${Store.readOnly() ? "ro" : ""}">
     <aside class="side">
-      <div class="brand"><span class="mark">${icon("ball")}</span><div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
+      <div class="brand">${crest || `<span class="mark">${icon("ball")}</span>`}<div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
       <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button></nav>
       <div class="side-foot">${seasonChip}${syncBadge()}${accountBtn()}</div>
     </aside>
     <div class="col">
       <header class="top"><div class="top-in">
-        <div class="top-l"><span class="mark sm">${icon("ball")}</span><b class="top-t">${ROUTE_TITLE[rn] === "Inicio" ? "Banquillo" : ROUTE_TITLE[rn]}</b></div>
+        <div class="top-l">${crest || `<span class="mark sm">${icon("ball")}</span>`}<b class="top-t">${ROUTE_TITLE[rn] === "Inicio" ? "Banquillo" : ROUTE_TITLE[rn]}</b></div>
         <div class="top-r mob-only">${seasonChip}${accountBtn(true)}</div><div class="top-r desk-only">${syncBadge()}</div>
       </div></header>
       <main id="main" class="main">${Store.readOnly() ? "" : ""}${bodyView()}</main>
