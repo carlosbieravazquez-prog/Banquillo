@@ -123,9 +123,10 @@ function render(force) {
   raf = requestAnimationFrame(doRender);
 }
 function doRender() {
-  if (typeof Auth !== "undefined" && Auth.state !== "in") { UI.force = false; UI.dirty = false; Auth.render(); return; }
+  if (typeof Auth !== "undefined" && Auth.state !== "in") { if(typeof ClubTheme!=="undefined")ClubTheme.apply(null); UI.force = false; UI.dirty = false; Auth.render(); return; }
   if (!UI.force && isEditing()) { UI.dirty = true; return; }
   UI.force = false; UI.dirty = false;
+  if(typeof ClubTheme!=="undefined")ClubTheme.apply(Store.season());
   const keep = { y: window.scrollY, sc: {} };
   $$("[data-scroll]").forEach(e => { keep.sc[e.dataset.scroll] = [e.scrollLeft, e.scrollTop]; });
   const sheetBody = $("#sheetRoot .sheet");
