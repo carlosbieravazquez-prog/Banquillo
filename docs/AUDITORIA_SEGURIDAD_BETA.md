@@ -188,3 +188,13 @@ Solo pasar a la versión oficial tras pruebas de roles y aislamiento documentada
 - [x] Security Advisors de staging revisados: `rls_enabled_no_policy` sobre tablas privadas `seasons_meta` y `join_attempts` (intencional), y avisos sobre funciones `SECURITY DEFINER` accesibles a autenticados que requieren análisis de autorización individual. No revocar RPC usadas por la app sin verificar.
 - [ ] Falta constatar resultado del workflow en GitHub Actions, completar pruebas de navegador y configurar URL de Auth en staging desde el Dashboard.
 - [ ] Falta registrar cuentas ficticias, prueba de inserción positiva con `owner`/`editor`, rechazo de cambios como `viewer`, Turnstile activo en staging, recuperación de cuentas y respaldo restaurable.
+
+## Pruebas de autenticación y autorización RPC (10 noviembre 2026)
+
+- [x] El usuario confirma que configuró **Site URL** y **Redirect URLs** de `Banquillo-Staging`. El conector no ofrece lectura de estos ajustes; se registra según confirmación del usuario, pendiente de validarlo con un enlace real de registro.
+- [x] **GitHub Actions:** ejecución real n.º 9 `42807250725`, `conclusion=success`; superadas sintaxis JavaScript, pruebas automatizadas y aislamiento de staging. Enlace: https://github.com/carlosbieravazquez-prog/Banquillo/actions/runs/42807250725 .
+- [x] **Staging RPC, sin datos reales:** `season_share` sin propietario -> `not_owner`; `season_members_list` sin membresía -> `not_member`; `set_member_role` sin propietario -> `not_owner`; `my_profile` como anónimo -> `permission denied`. Se ejecutaron mediante transacciones `READ ONLY`; 4/4 negativas correctas.
+- [x] SQL de reproducción en `supabase/security/test_rpc_no_autorizados_STAGING.sql`.
+- [x] CSP actualizada en `index.html` y `staging.html` para conexiones a recursos Cloudflare Turnstile; añadida una aserción correspondiente en pruebas de staging.
+- [ ] **Sigue pendiente:** prueba real de alta y confirmación de correo, conexión remota al frontend de staging, roles positivos con usuarios ficticios y Turnstile funcionando con clave pública + validación del servidor. No afirmar que estas partes están comprobadas.
+- [ ] Antes de habilitar Turnstile en staging, obtener sitekey pública correspondiente y configurar secret directamente en Supabase, sin subirla al repositorio.
