@@ -153,10 +153,24 @@
  const render=()=>{const colors=ClubTheme.derive(state.uniforms,state.palette).light;document.documentElement.style.setProperty("--navy",colors["--brand"]);document.documentElement.style.setProperty("--green",colors["--accent"]);document.documentElement.style.setProperty("--green-soft",colors["--accent-soft"]);shell();const v=UI.view||"resumen";$("#pageTitle").textContent=viewTitles[v];$("#viewRoot").innerHTML=({resumen,equipos,equipo:editorEquipo,directores,instalaciones,calendario:calendar,comunicaciones,avisos,ajustes}[v]||resumen)();document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));};
  const UI={view:"resumen",teamId:null,settingsTab:"data"};
  document.addEventListener("click",e=>{
+  const kitAct=e.target.closest("[data-act]");
+  if(kitAct){
+    if(kitAct.dataset.act==="setToggleThird"){
+      state.uniforms=ClubTheme.normalizeKits(state.uniforms);
+      if(state.uniforms.third)delete state.uniforms.third;
+      else state.uniforms.third={shirt:"#FFFFFF",shorts:"#17365D",socks:"#FFFFFF"};
+      save();render();return;
+    }
+    if(kitAct.dataset.act==="setPaletteChoice"&&["auto","preset"].includes(kitAct.dataset.mode)){
+      state.palette={...ClubTheme.cleanPalette(state.palette),mode:kitAct.dataset.mode};
+      save();render();return;
+    }
+  }
   const nav=e.target.closest("[data-view]");if(nav){UI.view=nav.dataset.view;render();return}
   const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;save();render();return}
   const a=e.target.closest("[data-action]");if(!a)return;
   const id=a.dataset.id;
+  if(a.dataset.action==="demo-settings-tab"&&["data","kits","palette"].includes(a.dataset.tab)){UI.settingsTab=a.dataset.tab;render();return}
   if(a.dataset.action==="go"){UI.view=a.dataset.view;render()}
   if(a.dataset.action==="edit-team"){UI.teamId=id;UI.view="equipo";render();return}
   if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}
@@ -189,6 +203,15 @@
   state.schedule.push(m);state.calendarDate=m.date;save();render();
  });
  document.addEventListener("change",async e=>{
+  if(e.target.dataset.chg==="setKit"){
+    const key=e.target.dataset.kit,part=e.target.dataset.part;
+    if(state.uniforms[key]&&["shirt","shorts","socks"].includes(part)&&ClubTheme.validHex(e.target.value)){
+      state.uniforms[key][part]=e.target.value;save();render();
+    }return;
+  }
+  if(e.target.dataset.chg==="setPalettePreset"){
+    if(ClubTheme.presets[e.target.value]){state.palette={...ClubTheme.cleanPalette(state.palette),mode:"preset",preset:e.target.value};save();render();}return;
+  }
   if(e.target.id==="clubCrestUpload"&&e.target.files?.[0]){
     try{state.club.crest=await ClubCrest.upload(e.target.files[0]);save();render();}
     catch(err){alert(err.message||"No se pudo cargar el escudo.");}
