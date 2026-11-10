@@ -1,5 +1,5 @@
 /* ===== Cuentas: entrar, registrarse, recuperar contraseña, unirse con código, compartir y Mi cuenta ===== */
-const Auth = { state: "loading", uid: null, ui: { mode: "welcome", busy: false, msg: null, email: "", name: "" } };
+const Auth = { state: "loading", uid: null, eventSeq: 0, sessionEpoch: 0, recovery: null, signingOut: false, ui: { mode: "welcome", busy: false, msg: null, email: "", name: "" } };
 const FORM = {};
 
 (function () {
@@ -43,7 +43,9 @@ const FORM = {};
       html = `<div class="auth-card"><div class="loading"><div class="spin"></div><p>Comprobando tu sesión…</p></div></div>`;
     } else if (A.state === "recovery") {
       html = card("Elige una contraseña nueva", `<form data-form="authNewPass" class="form" novalidate>
+        <p class="muted small">Solo puedes modificar la contraseña después de abrir un enlace de recuperación válido enviado a tu correo.</p>
         <label class="fld"><span>Contraseña nueva (mínimo 12 caracteres)</span>${passwordInput("new-password", 12)}<small class="muted">Utiliza una contraseña única. Puedes usar un gestor de contraseñas.</small></label>
+        <label class="fld"><span>Confirmar contraseña nueva</span><input class="inp" type="password" name="confirm_password" autocomplete="new-password" minlength="12" required></label>
         ${msgHtml()}<button class="btn primary block" type="submit" ${u.busy ? "disabled" : ""}>${u.busy ? "Guardando…" : "Guardar contraseña"}</button></form>`);
     } else if (u.mode === "check") {
       html = card("Comprueba tu correo o inicia sesión", `<p>Si acabas de crear la cuenta, revisa el correo de <b>${esc(u.email)}</b> para confirmar el registro.</p>
@@ -199,13 +201,36 @@ const FORM = {};
   };
   FORM.authNewPass = async f => {
     const password = f.elements.password.value;
+    const confirmation = f.elements.confirm_password?.value || "";
+    if (A.state !== "recovery" || !A.recovery?.uid) {
+      setMsg("err", "La recuperación no está verificada. Solicita un enlace nuevo desde «Recuperar contraseña».");
+      A.state = "out"; A.ui.mode = "forgot"; return rerender();
+    }
     if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
-    A.ui.busy = true; setMsg(); rerender();
-    const { error } = await Cloud.sb.auth.updateUser({ password });
-    A.ui.busy = false;
-    if (error) { setMsg("err", friendly(error)); return rerender(); }
-    history.replaceState(null, "", location.pathname);
-    A.state = "in-pending"; const { data } = await Cloud.sb.auth.getSession(); if (data.session) A.enter(data.session); else { A.state = "out"; rerender(); }
+    if (password !== confirmation) { setMsg("err", "Las dos contraseñas deben coincidir."); return rerender(); }
+    if (A.ui.busy) return;
+    const recoveryUid=A.recovery.uid, epoch=A.sessionEpoch;
+    A.ui.busy=true; setMsg(); rerender();
+    try {
+      const { data: verified, error: verifyError } = await Cloud.sb.auth.getUser();
+      if (verifyError || !verified?.user || verified.user.id !== recoveryUid || A.state !== "recovery" || epoch !== A.sessionEpoch)
+        throw new Error("recovery_not_verified");
+      const { error } = await Cloud.sb.auth.updateUser({ password });
+      if (error) throw error;
+      // No dejar una sesión abierta tras recuperar la contraseña.
+      try { await Cloud.sb.auth.signOut({scope:"local"}); } catch (_) { /* el cambio ya se realizó */ }
+      A.leave();
+      A.ui.mode="login";
+      setMsg("ok","Contraseña actualizada. Inicia sesión con tu contraseña nueva.");
+      try { history.replaceState(null,"",location.pathname); } catch (_) {}
+    } catch (error) {
+      if (error?.message==="recovery_not_verified"){
+        A.recovery=null; A.state="out"; A.ui.mode="forgot";
+        setMsg("err","El enlace no es válido o la sesión de recuperación ha cambiado. Solicita un enlace nuevo.");
+      } else setMsg("err",friendly(error));
+    } finally {
+      A.ui.busy=false; rerender();
+    }
   };
   document.addEventListener("submit", e => {
     const f = e.target.closest && e.target.closest("form[data-form]"); if (!f) return;
