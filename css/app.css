@@ -356,3 +356,10 @@ body.in-app #landing{display:none}
  #app .plist, #app .glist, #app .slist { break-inside: avoid; }
  #app .prow, #app .glist li, #app .slist li { border-bottom: 1px solid #ddd !important; }
 }
+
+/* Escudo opcional del club/equipo. Imagen cuadrada completa sin recortes. */
+.club-crest{display:inline-block;vertical-align:middle;width:42px;height:42px;max-width:100%;object-fit:contain;flex:none;border-radius:9px;background:transparent}
+.brand .club-crest{width:38px;height:38px}
+.top-l .club-crest{width:30px;height:30px}
+.sheet .club-crest{width:100px;height:100px;object-fit:contain;margin:8px 0;border:1px solid var(--line,#dbe2e8);padding:7px;border-radius:14px;background:#f5f7fa}
+@media(max-width:600px){.brand .club-crest{width:32px;height:32px}.top-l .club-crest{width:27px;height:27px}}
