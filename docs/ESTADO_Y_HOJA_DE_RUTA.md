@@ -1,7 +1,7 @@
 # Banquillo — Documento maestro de proyecto
 
 > Documento vivo de continuidad. Se actualizará al cerrar cada bloque de análisis, implementación y pruebas.
-> Última actualización: 9 de noviembre de 2026.
+> Última actualización: 10 de noviembre de 2026.
 > Estado: auditoría inicial completada; Fase 1 aún no implementada.
 
 ## 1. Propósito y visión
@@ -264,3 +264,44 @@ Se mantiene fuera de Fase 1 cualquier cobro o suscripción. Se mantienen en la h
 | 2026-11-09 | Asesores de Supabase | Persisten avisos de seguridad y rendimiento; salud sin hallazgos |
 | 2026-11-09 | Validación estática de JavaScript en main | 11/11 módulos parseados; sin prueba de navegador |
 | 2026-11-09 | Cambios de producción | Ninguno: solo lecturas; sin migraciones, cambios de permisos ni modificaciones de datos |
+
+
+## 10. Revisión de continuidad — 10 de noviembre de 2026
+
+### 10.1 Cambios nuevos detectados en `main`
+
+- Comparación entre el commit documental anterior `247cbab430a9e4e323ea28db5ca29e905d70d352` y `main`: **3 commits posteriores**, con cambios en **8 archivos**: `css/app.css`, `css/demo-club.css`, `demo-club.html`, `docs/GUIA_PRESENTACION_BANQUILLO.md`, `index.html`, `js/calc.js`, `js/demo-club.js` y `js/views1.js`. No son cambios únicamente documentales: incluyen interfaz y lógica JavaScript.
+- El `main` observado antes de actualizar este documento corresponde a `1e369f6830786556ffb66a837decd62a6cb7a2fa`. La landing enlaza ahora explícitamente a `demo-club.html` y aclara que la gestión de clubes conectada a cuentas está en desarrollo.
+- Se añadió una guía de presentación de 5–7 minutos. El código de `js/demo-club.js` confirma que la demo usa datos ficticios y `localStorage`, no Auth ni Supabase. Incluye equipos, dos perfiles de dirección, instalaciones, calendario, avisos de ejemplo y comunicaciones. Su existencia en `main` no acredita pruebas funcionales de navegador.
+- **Advertencia de alcance:** la demo contiene **15 equipos ficticios**, mientras que la Fase 1 acordada limita inicialmente a **12 equipos por club**. La demo no representa todavía una regla de negocio validada en servidor; antes de implementar Fase 1, definir el tratamiento de clubes con más de 12 equipos y aplicar el límite en backend con transacciones/validaciones seguras, no solo en interfaz.
+- La rama `feature/fase-1-clubes-equipos` ha divergido respecto de `main`: comparación actual **59 commits por delante y 4 por detrás**. No fusionar automáticamente: revisar las diferencias y resolver el desfase antes de integrar mejoras de convocatorias y el prototipo.
+- No se ha ejecutado una prueba de navegador ni se ha comprobado la publicación efectiva de GitHub Pages; no se declara la web validada.
+
+### 10.2 Estado vivo de Supabase (solo lectura, 2026-11-10)
+
+- Proyecto `ACTIVE_HEALTHY`, PostgreSQL 17.11; las cinco tablas públicas siguen con RLS activo.
+- Recuentos aproximados devueltos por el listado de tablas: `profiles` 2, `seasons_meta` **2**, `season_members` **3**, `docs` **54**, `join_attempts` 0. Frente al 9-11, han aumentado temporadas, membresías y documentos. **Son recuentos del conector, no una auditoría de quién los creó ni una verificación de integridad**; no se han consultado identidades ni documentos de menores.
+- Consulta SQL de metadatos de solo lectura: **6 políticas RLS**, **17 funciones SECURITY DEFINER ejecutables por authenticated**, **2 por anon**, y **0 tablas de Fase 1** entre `clubs`, `teams`, `club_members`, `audit_log` y `notifications`.
+- **0 migraciones registradas** y **0 Edge Functions desplegadas**. El crecimiento de registros no demuestra por sí solo cambios de esquema.
+- Los asesores de seguridad mantienen: dos tablas con RLS sin políticas (`seasons_meta`, `join_attempts`), las dos funciones SECURITY DEFINER accesibles por anon (`handle_new_user`, `rls_auto_enable`), 17 accesibles por authenticated y protección de contraseñas filtradas desactivada.
+- Los asesores de rendimiento señalan FK sin índice (`seasons_meta.owner_id`), optimización de `profiles_select_own` y ausencia de PK en `join_attempts`. El asesor de salud no devuelve hallazgos. No se debe interpretar cada aviso como una vulnerabilidad explotada.
+- **No se han realizado escrituras en Supabase, migraciones, cambios de Auth, RLS, permisos ni datos.**
+
+### 10.3 Próximas acciones priorizadas
+
+1. **Respaldo verificable y plan de recuperación** antes de cualquier cambio de esquema o permisos; documentar cómo comprobar restauración sin tocar producción.
+2. Revisar con detalle cuerpos, grants y llamadas de las funciones SECURITY DEFINER, preparar un cambio mínimo y pruebas de registro/invitación; **no aplicarlo sin autorización**.
+3. Definir esquema aditivo de clubes, equipos, membresías y directores con aislamiento entre clubes, máximo inicial de 12 equipos y compatibilidad con las temporadas/documentos JSONB existentes.
+4. Diseñar auditoría con actor, fecha, entidad, campo, valor anterior y nuevo; notificaciones agrupadas y estado leído; y vinculación del Prebenjamín mediante referencia, sin copiar ni borrar sus documentos.
+5. Preparar pruebas automatizadas con datos ficticios de permisos, concurrencia al crear el equipo número 13, cambios de director, auditoría, notificaciones y aislamiento. Comprobar demo en navegador antes de afirmar que funciona.
+6. Revisar diferencias entre `main` y `feature/fase-1-clubes-equipos` y decidir integración por bloques. No implementar cobros ni suscripciones. Mantener después avisos IA, identidad/historial de jugadores y deshacer cambios.
+
+### 10.4 Registro de esta revisión
+
+| Fecha | Trabajo | Resultado |
+|---|---|---|
+| 2026-11-10 | Comparación GitHub desde `247cbab` | 3 commits posteriores, 8 archivos modificados o añadidos; demo de club y landing ahora en main |
+| 2026-11-10 | Revisión del prototipo y guía | Demo ficticia local de 15 equipos; diferencia con límite de 12 documentada |
+| 2026-11-10 | Comparación entre ramas | Feature 59 commits por delante y 4 por detrás de main; divergencia pendiente de resolver |
+| 2026-11-10 | Lecturas de Supabase y asesores | 5 tablas, recuentos 2/2/3/54/0; 6 políticas; 17/2 funciones SECURITY DEFINER; sin migraciones ni Edge Functions |
+| 2026-11-10 | Cambios efectuados durante la revisión | Solo este documento; ninguna modificación de base de datos, permisos ni código funcional |
