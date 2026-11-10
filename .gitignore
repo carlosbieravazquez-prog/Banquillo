@@ -1,0 +1,40 @@
+# Dependencias, caches y archivos temporales
+node_modules/
+.npm/
+.cache/
+dist/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Credenciales y configuración PRIVADA (config.js y config.staging.js solo guardan claves públicas)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.credentials.json
+secrets/
+private/
+
+# Copias de bases de datos y exportaciones con datos privados
+backups/
+backup/
+*.backup
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.csv
+*.xlsx
+*.xls
+*.zip
+
+# Importaciones privadas: nunca subir datos identificables de jugadores
+importar_temporada*.sql
+datos_jugadores*.sql
+jugadores_privados*
