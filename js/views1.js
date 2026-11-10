@@ -150,7 +150,7 @@ T.convocatoria = m => {
     <ul class="clist">${rows}</ul>
     <div class="row between gap wrap foot">
       <span class="muted small">${done ? "Convocatoria confirmada." : "Aún sin confirmar."}</span>
-      ${done ? btn("Ir a la ficha", "setTab", { v: "ficha" }, "primary", "ball") : btn("Confirmar convocatoria", "confirmCall", {}, "primary", "check")}
+      ${done ? btn("Ir a la ficha", "setTab", { v: "ficha" }, "primary", "ball") : btn("Confirmar convocatoria", "confirmCall", {}, "primary", "check")}${btn("Preparar mensaje", "openConvocationMessage", {}, "ghost", "copy")}
     </div></section>`;
 };
 ACT.setCall = el => {
@@ -173,6 +173,41 @@ ACT.applySanctions = () => {
   toApply.forEach(x => m.noCall.push({ p: x.p, m: "SA" }));
   touch(m);
   toast(`Sanciones aplicadas a ${toApply.length} jugador(es). Revisa y confirma la convocatoria.`, "ok");
+};
+/* Compartir convocatoria: el texto se construye en el dispositivo y requiere copiarlo explícitamente. */
+ACT.openConvocationMessage = () => {
+  const m = curMatch();
+  if (!m || m.rest) { toast("Esta jornada no tiene convocatoria.", "err"); return; }
+  UI.sheet = {type:"convocationMessage",matchId:m.id,mode:"called",kit:"first",wide:true};
+};
+V.sheet.convocationMessage = sh => {
+  const m = Store.matches.find(x => x.id === sh.matchId);
+  if (!m || m.rest) return "<h2>Convocatoria no disponible</h2>";
+  const s = Store.season(),msg = ConvocatoriaMessage.build(s,m,Store.activePlayers(),{mode:sh.mode,kit:sh.kit});
+  return `<h2>Mensaje de la jornada ${esc(m.n)}</h2>
+    <p class="muted small">Elige qué jugadores mostrar y qué equipación llevar. Se genera en este navegador; revisa el mensaje antes de compartirlo con las familias o entrenadores.</p>
+    ${!m.callDone ? '<p class="tag warn">Convocatoria todavía sin confirmar</p>' : ""}
+    <div class="row gap wrap"><button type="button" class="btn ${sh.mode==="called"?"primary":"ghost"}" data-act="setMessageMode" data-v="called">Convocados</button>
+    <button type="button" class="btn ${sh.mode==="absent"?"primary":"ghost"}" data-act="setMessageMode" data-v="absent">No convocados y motivo</button></div>
+    <div class="row gap wrap"><span>Equipación:</span>
+    <button type="button" class="btn ${sh.kit==="first"?"primary":"ghost"}" data-act="setMessageKit" data-v="first">Primera</button>
+    <button type="button" class="btn ${sh.kit==="second"?"primary":"ghost"}" data-act="setMessageKit" data-v="second">Segunda</button></div>
+    <pre class="message-preview" style="white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border:1px solid var(--line,#dbe2e8);border-radius:10px">${esc(msg)}</pre>
+    <div class="row end gap foot">${btn("Cerrar", "closeSheet", {}, "ghost")}${btn("Copiar mensaje", "copyConvocationMessage", {}, "primary", "copy")}</div>`;
+};
+ACT.setMessageMode = el => { if(UI.sheet?.type==="convocationMessage")UI.sheet.mode=el.dataset.v==="absent"?"absent":"called"; };
+ACT.setMessageKit = el => { if(UI.sheet?.type==="convocationMessage")UI.sheet.kit=el.dataset.v==="second"?"second":"first"; };
+ACT.copyConvocationMessage = async () => {
+  const sh=UI.sheet,m=Store.matches.find(x=>x.id===sh?.matchId);
+  if(!m||!sh||sh.type!=="convocationMessage")return;
+  const msg=ConvocatoriaMessage.build(Store.season(),m,Store.activePlayers(),sh);
+  try{
+    if(!navigator.clipboard?.writeText)throw new Error("clipboard-not-supported");
+    await navigator.clipboard.writeText(msg);
+    toast("Mensaje copiado. Revísalo antes de enviarlo.", "ok");
+  }catch(e){
+    window.prompt("Copia este mensaje:",msg);
+  }
 };
 ACT.confirmCall = () => { const m = curMatch(); m.callDone = true; touch(m); toast("Convocatoria confirmada.", "ok"); };
 
