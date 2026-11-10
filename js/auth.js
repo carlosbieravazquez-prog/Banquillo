@@ -172,9 +172,12 @@ const FORM = {};
   });
   const val = (f, n) => (f.elements[n] ? String(f.elements[n].value || "").trim() : "");
   const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
-  const captchaForSubmit = () => {
+  const captchaForSubmit = (f,kind) => {
     const captchaToken = TurnstileGuard.token();
-    if (captchaToken === "") { setMsg("err", "Completa la verificación de seguridad antes de continuar."); rerender(); return false; }
+    if (captchaToken === "") {
+      updateFeedback(f,kind,"Completa la verificación de seguridad antes de continuar.");
+      return false;
+    }
     return captchaToken;
   };
 
@@ -204,31 +207,41 @@ const FORM = {};
     }catch(_){if(A.uid===sessionUser.id)toast("No se pudo aplicar el código. Introduce el código desde Temporadas.","err");}
   };
   FORM.authLogin = async f => {
-    const email = val(f, "email"), password = f.elements.password.value; A.ui.email = email;
-    if (!validEmail(email) || !password) { setMsg("err", "Escribe tu correo y tu contraseña."); return rerender(); }
-    const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
-    A.ui.busy = true; setMsg(); rerender();
-    try {
-      const { error } = await Cloud.sb.auth.signInWithPassword({ email, password, ...(captchaToken ? { options: { captchaToken } } : {}) });
-      if (error) { setMsg("err", loginFeedback(error)); }
-    } catch (_) {
-      setMsg("err", "No se ha podido contactar con el servicio de acceso. Revisa la conexión y vuelve a intentarlo.");
-    } finally {
-      A.ui.busy = false;
-      if (A.state === "out") rerender();
+    if(!allowed(f,"login"))return;
+    const email=val(f,"email"),password=f.elements.password?.value||"";
+    A.ui.email=email;
+    if(!validEmail(email)||!password){
+      updateFeedback(f,"login","Escribe tu correo y tu contraseña.");
+      return;
     }
+    const captchaToken=captchaForSubmit(f,"login");if(captchaToken===false)return;
+    updateFeedback(f,"login","");
+    setBusy(f,true,"Entrando…","Entrar");
+    try {
+      const {error}=await Cloud.sb.auth.signInWithPassword({email,password,...(captchaToken?{options:{captchaToken}}:{})});
+      if(error)authFailure(f,"login",error);
+    }catch(_){
+      updateFeedback(f,"login","No se ha podido contactar con el servicio de acceso. Revisa tu conexión y vuelve a intentarlo.");
+    }finally{setBusy(f,false,"Entrando…","Entrar");throttle?.sync();}
   };
   FORM.authSignup = async f => {
-    const name = val(f, "name"), email = val(f, "email"), password = f.elements.password.value;
-    const code = A.ui.mode === "join" ? val(f,"join_code") : "";
-    if (A.ui.mode === "join" && !validCode(code)) { setMsg("err","Introduce las 8 letras o números del código de tu equipo."); return rerender(); }
-    A.ui.joinCode=code;
-    A.ui.name = name; A.ui.email = email;
-    if (!name) { setMsg("err", "Escribe tu nombre."); return rerender(); }
-    if (!validEmail(email)) { setMsg("err", "Ese correo no parece válido."); return rerender(); }
-    if (password.length < 12) { setMsg("err", "La contraseña debe tener al menos 12 caracteres."); return rerender(); }
+    if(!allowed(f,"signup"))return;
+    const name=val(f,"name"),email=val(f,"email"),password=f.elements.password?.value||"";
+    const code=A.ui.mode==="join"?val(f,"join_code"):"";
+    const phone=val(f,"phone_optional"),country=A.ui.phoneCountry||"ES";
+    A.ui.name=name;A.ui.email=email;A.ui.joinCode=code;A.ui.phoneNumber=phone;
+    if(A.ui.mode==="join"&&!validCode(code)){
+      updateFeedback(f,"signup","Introduce las 8 letras o números del código de tu equipo.");return;
+    }
+    if(!name){updateFeedback(f,"signup","Escribe tu nombre.");return;}
+    if(!validEmail(email)){updateFeedback(f,"signup","Ese correo no parece válido.");return;}
+    if(!(typeof PhoneCountry!=="undefined"&&PhoneCountry.validNumber(phone,country))){
+      updateFeedback(f,"signup","Escribe un número de teléfono válido con su país y prefijo. Este dato aún no se guarda ni verifica.");
+      f.elements.phone_optional?.focus?.();return;
+    }
+    if(password.length<12){updateFeedback(f,"signup","La contraseña debe tener al menos 12 caracteres.");return;}
     const confirmPassword=f.elements.confirm_password;
-    if (!confirmPassword || password !== confirmPassword.value) {
+    if(!confirmPassword||password!==confirmPassword.value){
       const notice=f.querySelector?.("[data-signup-password-mismatch]");
       if(notice){notice.hidden=false;notice.textContent="Las contraseñas no coinciden. Escríbelas igual para continuar.";}
       confirmPassword?.setAttribute?.("aria-invalid","true");
@@ -236,26 +249,42 @@ const FORM = {};
       return;
     }
     confirmPassword.removeAttribute?.("aria-invalid");
-    if (!f.elements.accept.checked) { setMsg("err", "Para crear la cuenta tienes que aceptar la política de privacidad."); return rerender(); }
-    const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
-    if (code) setPendingJoin(code,email);
-    A.ui.busy = true; setMsg(); rerender();
-    const { data, error } = await Cloud.sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: redirectUrl(), ...(captchaToken ? { captchaToken } : {}) } });
-    A.ui.busy = false;
-    if (error) { if(code)clearPendingJoin(); setMsg("err", existingSignupError(error) ? "Esta cuenta ya existe. Debes iniciar sesión o recuperar tu contraseña." : friendly(error)); return rerender(); }
-    if (data && data.session) return;                       // entra solo (si el proyecto no exige confirmar el correo)
-    A.ui.mode = "check"; rerender();
+    if(!f.elements.accept?.checked){updateFeedback(f,"signup","Para crear la cuenta tienes que aceptar la política de privacidad.");return;}
+    const captchaToken=captchaForSubmit(f,"signup");if(captchaToken===false)return;
+    if(code)setPendingJoin(code,email);
+    updateFeedback(f,"signup","");
+    setBusy(f,true,"Creando…","Crear cuenta");
+    try{
+      const {data,error}=await Cloud.sb.auth.signUp({
+        email,password,options:{data:{name},emailRedirectTo:redirectUrl(),...(captchaToken?{captchaToken}:{})}
+      });
+      if(error){
+        if(code)clearPendingJoin();
+        if(existingSignupError(error)){updateFeedback(f,"signup","Esta cuenta ya existe. Debes iniciar sesión o recuperar tu contraseña.");}
+        else authFailure(f,"signup",error);
+        return;
+      }
+      if(data?.session)return;
+      A.ui.mode="check";rerender();
+    }catch(_){
+      if(code)clearPendingJoin();
+      updateFeedback(f,"signup","No se ha podido contactar con el servidor de registro. Comprueba la conexión e inténtalo de nuevo.");
+    }finally{setBusy(f,false,"Creando…","Crear cuenta");throttle?.sync();}
   };
   FORM.authForgot = async f => {
-    const email = val(f, "email"); A.ui.email = email;
-    if (!validEmail(email)) { setMsg("err", "Escribe un correo válido."); return rerender(); }
-    const captchaToken = captchaForSubmit(); if (captchaToken === false) return;
-    A.ui.busy = true; setMsg(); rerender();
-    const { error } = await Cloud.sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl(), ...(captchaToken ? { captchaToken } : {}) });
-    A.ui.busy = false;
-    if (error && /rate limit/i.test(error.message || "")) setMsg("err", friendly(error));
-    else setMsg("ok", "Si ese correo tiene cuenta, recibirás un enlace en unos minutos.");
-    rerender();
+    if(!allowed(f,"forgot"))return;
+    const email=val(f,"email");A.ui.email=email;
+    if(!validEmail(email)){updateFeedback(f,"forgot","Escribe un correo válido.");return;}
+    const captchaToken=captchaForSubmit(f,"forgot");if(captchaToken===false)return;
+    updateFeedback(f,"forgot","");
+    setBusy(f,true,"Enviando…","Enviar enlace");
+    try{
+      const {error}=await Cloud.sb.auth.resetPasswordForEmail(email,{redirectTo:redirectUrl(),...(captchaToken?{captchaToken}:{})});
+      if(error){authFailure(f,"forgot",error);return;}
+      updateFeedback(f,"forgot","Si ese correo tiene cuenta, recibirás un enlace en unos minutos.","ok");
+    }catch(_){
+      updateFeedback(f,"forgot","No hemos podido solicitar el enlace. Comprueba la conexión antes de volver a intentarlo.");
+    }finally{setBusy(f,false,"Enviando…","Enviar enlace");throttle?.sync();}
   };
   FORM.authNewPass = async f => {
     const password = f.elements.password.value;
