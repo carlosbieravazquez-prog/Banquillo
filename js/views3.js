@@ -313,7 +313,7 @@ ACT.wCreate = async () => {
     await Store.createSeason({ id, name: w.name, club: w.club.trim(), category: w.category.trim(), settings: { matchMinutes: parseNum(w.matchMinutes), trainDays: w.trainDays, trainStart: w.trainStart, trainEnd: w.trainEnd }, players: plist, matches: mlist },
       (n, t) => { w.progress = [n, t]; render(true); });
     w.newId = id; w.done = true; w.progress = null;
-  } catch (e) { console.error(e); w.progress = null; w.err = "No se pudo guardar la temporada completa. Comprueba tu conexión e inténtalo de nuevo: continuará donde se quedó."; }
+  } catch (e) { console.error(e); w.progress = null; w.err = String(e?.message||e||"").includes("insufficient_management_whistles") ? "No tienes suficientes silbatos de gestión para crear un equipo independiente. Puedes consultar el saldo en Configuración de Dirección Deportiva." : "No se pudo guardar la temporada completa. Comprueba tu conexión e inténtalo de nuevo: continuará donde se quedó."; }
   render(true);
 };
 ACT.wizFinish = () => { const id = UI.wiz.newId; UI.sheet = null; UI.wiz = null; if (id) { Store.selectSeason(id); } go("inicio"); toast("Temporada nueva abierta.", "ok"); };
