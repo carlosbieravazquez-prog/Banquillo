@@ -97,7 +97,7 @@ grant select, insert, update on public.banquillo_teams to authenticated;
 
 -- Validaciones atómicas de integridad: no confiar en los campos enviados por el navegador.
 create or replace function public.banquillo_team_guard() returns trigger
-language plpgsql security invoker set search_path = '' as $
+language plpgsql security definer set search_path = '' as $
 declare n integer;
 begin
   -- Serializar altas por club para impedir que dos altas simultáneas superen el límite.
@@ -122,7 +122,7 @@ create trigger banquillo_team_guard_trg before insert or update on public.banqui
 for each row execute function public.banquillo_team_guard();
 
 create or replace function public.banquillo_director_guard() returns trigger
-language plpgsql security invoker set search_path = '' as $
+language plpgsql security definer set search_path = '' as $
 declare n integer;
 begin
   perform pg_advisory_xact_lock(hashtext(new.club_id::text), 64018);
@@ -134,4 +134,7 @@ drop trigger if exists banquillo_director_guard_trg on public.banquillo_club_dir
 create trigger banquillo_director_guard_trg before insert on public.banquillo_club_directors
 for each row execute function public.banquillo_director_guard();
 
+-- Estas funciones de trigger no son endpoints RPC públicos.
+revoke all on function public.banquillo_team_guard() from public, anon, authenticated;
+revoke all on function public.banquillo_director_guard() from public, anon, authenticated;
 commit;
