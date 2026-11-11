@@ -117,7 +117,7 @@ function openClubSettings(){
  const choices=Array.from({length:available},(_,i)=>
   '<label class="bq-field-split"><input type="checkbox" name="split_f11" value="'+i+'" '+
   (checked[i]!==false?"checked":"")+'><span>Campo F11 '+(i+1)+' divisible en dos campos F7</span></label>').join("");
- formModal("Instalaciones del club","clubSettingsForm",
+ formModal("Datos, instalaciones y equipaciones","clubSettingsForm",
  '<p class="muted">Configura campos y mitades de F11. Los dos directores verán la misma planificación y los conflictos se comprobarán antes de guardar.</p>'+
  input("town","Localidad",v.town||"","text",false,'maxlength="80"')+
  input("province","Provincia",v.province||"","text",false,'maxlength="80"')+
