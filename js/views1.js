@@ -44,6 +44,7 @@ V.inicio = () => {
   if (nx && nx.date && daysBetween(today, nx.date) <= 3 && daysBetween(today, nx.date) >= 0 && !Calc.isRegistered(nx)) avisos.push(`<li>La convocatoria de la jornada ${nx.n} está sin confirmar.</li>`);
 
   return `${pageHead(esc(s.club || "Tu equipo"), `${esc(s.category || "")} · Temporada ${esc(s.name)}`)}
+    <div class="bq-coach-today"><div><small>HOY</small><strong>${new Intl.DateTimeFormat("es-ES", {weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date())}</strong></div><div><small>PRÓXIMA JORNADA</small><strong>${nx ? (nx.home === true ? "🏠 " : nx.home === false ? "✈️ " : "⚽ ") + esc(matchLabel(nx)) : "Calendario por configurar"}</strong>${nx ? `<span>Jornada ${esc(nx.n)} · ${nx.date ? esc(fmtLong(nx.date)) : "Fecha pendiente"}</span>` : ""}</div></div>
     ${nextCard}
     <section class="tiles">
       <div class="tile"><b>${rec.pj}</b><span>Jugados</span></div>
