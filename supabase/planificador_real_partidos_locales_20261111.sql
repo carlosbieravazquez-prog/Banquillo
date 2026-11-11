@@ -89,11 +89,11 @@ begin
  v_f7:=coalesce(v_settings.fields_f7,0);
  v_number:=split_part(v_resource,'-',2)::integer;
  if v_team.modality='F11' then
-   if v_resource not ~ '^f11-([1-9]|1[0-2])$' or v_number>v_f11
+   if v_resource !~ '^f11-([1-9]|1[0-2])$' or v_number>v_f11
    then raise exception 'field_not_available_for_f11';end if;
  elsif v_team.modality='F7' then
    if v_resource ~ '^f7-' then
-      if v_resource not ~ '^f7-([1-9]|1[0-2])$' or v_number>v_f7
+      if v_resource !~ '^f7-([1-9]|1[0-2])$' or v_number>v_f7
       then raise exception 'field_not_available_for_f7';end if;
    else
       v_divisible:=coalesce((v_settings.divisible->(v_number-1))::text='true',true);
