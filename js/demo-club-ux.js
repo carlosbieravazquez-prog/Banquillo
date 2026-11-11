@@ -166,7 +166,7 @@ const DemoClubUX=(()=>{
        (n.reminderPrepared?'<p class="ux-reminder">Recordatorio ya preparado una vez. No se repetirá.</p>':"")+
        '</article>';
    };
-   return '<div class="ux-demo-hint">Alertas ficticias para la presentación. En esta demo no existe entrega automática a entrenadores; «Preparar aviso» abre WhatsApp con un texto, sin enviarlo por sí solo.</div>'+
+   return '<div class="ux-demo-hint">Alertas ficticias para la presentación. En esta demo no existe entrega automática a entrenadores; «Preparar aviso» simula una notificación local. La versión oficial dispone de mensajería privada por equipo.</div>'+
      '<div class="ux-alert-summary">'+badges([["Prioritarios",top.length,"warning"],["Secundarios",secondary.length],["Ámbito",state.modality==="todos"?"Todo el club":state.modality]])+'</div>'+
      '<section class="ux-box"><div class="ux-box-title"><h3>Requieren atención</h3><span>Se muestran a partir de 48 horas del evento</span></div>'+
      (top.length?top.map(noticeCard).join(""):'<div class="ux-empty">No hay avisos prioritarios pendientes para este ámbito.</div>')+'</section>'+
