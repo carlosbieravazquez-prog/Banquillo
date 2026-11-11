@@ -26,6 +26,7 @@
  };
  let state;
  try{state=JSON.parse(localStorage.getItem(KEY))||JSON.parse(JSON.stringify(seed))}catch(e){state=JSON.parse(JSON.stringify(seed))}
+ state.activeDirector=state.directors?.[0]?.id||"d1";
  state.facilities=state.facilities||JSON.parse(JSON.stringify(seed.facilities));
  state.facilities.divisible=state.facilities.divisible||[];
  state.schedule=Array.isArray(state.schedule)?state.schedule:JSON.parse(JSON.stringify(seed.schedule));
