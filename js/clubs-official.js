@@ -207,7 +207,7 @@ async function loadMessaging(silent=false){
  if(cid!==state.clubId)return;
  const oldId=state.events[0]?.id;
  state.messages=messages||[];state.events=events||[];
- if(silent&&oldId&&state.events.length&&state.events[0].id!==oldId)notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");
+ if(silent&&oldId&&state.events.length&&state.events[0].id!==oldId){notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");if(state.view==="avisos")await loadAllData();}
  if(["comunicaciones","avisos"].includes(state.view))render();
 }
 
@@ -299,8 +299,8 @@ async function action(name,id){try{
  if(name==="deleteClub")return openDeleteClubForm();
  if(name==="restoreBackup")return openBackupForm();
  if(name==="saveBackup")return saveBackup();
- if(name==="inviteDirector")return refreshInvitation();
- if(name==="rotateInvite")return refreshInvitation(true);
+ if(name==="inviteDirector")return await refreshInvitation();
+ if(name==="rotateInvite")return await refreshInvitation(true);
  if(name==="ejectDirector")return ask("Expulsar al otro director","Perderá el acceso a Dirección Deportiva. Si expulsas al titular y eres el segundo director, asumirás automáticamente la titularidad del club. Los permisos independientes de temporadas deben revisarse aparte.","acceptEjectDirector",id,"Expulsar director");
  if(name==="leaveClub")return ask("Abandonar club","Se retirará tu acceso. Si eres el titular y existe un segundo director, le transferirás la titularidad. Si eres el único director tendrás que cerrar o eliminar el club primero.","acceptLeaveClub",state.clubId,"Abandonar club");
  if(name==="composeMessage")return openMessageForm();
