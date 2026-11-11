@@ -1,0 +1,14 @@
+/* Mensajería privada recibida por el entrenador. */
+.bq-inbox{margin:16px 0}
+.bq-inbox .card-h{align-items:center;justify-content:space-between}
+.bq-inbox-pill{background:#e8f2ed;color:#176c4f;border:1px solid #cce4d7;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:800}
+.bq-inbox-list{display:grid;gap:11px}
+.bq-coach-message{border:1px solid #e4edf2;border-radius:12px;background:#fbfdfe;padding:14px 16px;display:flex;gap:15px;align-items:center;justify-content:space-between}
+.bq-coach-message.bq-unread{background:#eaf6f3;border-left:4px solid #16845b}
+.bq-coach-message>div{min-width:0;flex:1}
+.bq-coach-message small,.bq-coach-message b{display:block}
+.bq-coach-message small{font-size:11px;color:#65849a;margin-bottom:7px}
+.bq-coach-message b{font-size:14px;color:#19435c}
+.bq-coach-message p{font-size:13px;line-height:1.55;color:#48697e;margin:7px 0 0;white-space:pre-wrap}
+.bq-coach-message button{flex-shrink:0}
+@media(max-width:640px){.bq-coach-message{flex-direction:column;align-items:stretch}.bq-coach-message button{align-self:flex-start}}
