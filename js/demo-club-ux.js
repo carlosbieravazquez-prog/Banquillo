@@ -115,9 +115,7 @@ const DemoClubUX=(()=>{
    return '<section class="ux-box"><div class="ux-box-title"><h3>Cuerpo técnico</h3><span>'+escape(t.name)+'</span></div>'+
     '<div class="ux-person"><span class="ux-person-avatar">DT</span><div><strong>'+escape(d.coachStatus==="active"?t.coach:"Vacante")+'</strong><small>Entrenador principal</small></div><span class="ux-pill '+(d.coachStatus==="active"?"good":"")+'">'+(d.coachStatus==="active"?"Activo":"Sin asignar")+'</span></div>'+
     (d.assistant?'<div class="ux-person"><span class="ux-person-avatar">2º</span><div><strong>'+escape(d.assistant)+'</strong><small>Segundo entrenador</small></div></div>':"")+
-    '<div class="ux-actions"><button class="btn ghost" type="button" data-action="demo-change-coach">Asignar o cambiar entrenador</button>'+
-    (d.coachStatus==="active"?'<button class="btn ghost ux-danger" type="button" data-action="demo-remove-coach">Dar de baja y renovar código</button>':"")+'</div>'+
-    '<p class="ux-caution">Demostración local: quitar un entrenador aquí no revoca sesiones reales. En la versión conectada debe eliminarse su membresía del equipo en el servidor y rotarse el código en la misma operación.</p></section>';
+    '<p class="ux-caution">El cuerpo técnico de esta demostración es ficticio. En la versión oficial las cuentas se incorporan por código, son aprobadas por Dirección Deportiva y reciben un cargo desde sus perfiles verificados. No se pueden crear entrenadores escribiendo nombres.</p></section>';
  }
  function teamTabs(tab){
    return '<div class="ux-tabs" role="navigation" aria-label="Secciones del equipo">'+[
