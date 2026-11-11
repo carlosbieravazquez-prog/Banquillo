@@ -5,11 +5,25 @@ const sb=window.supabase?.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
 const show=(id,v)=>$(id).classList.toggle("hide",!v);
 const status=(msg,kind="")=>{$("status").textContent=msg;$("status").className="status "+kind;};
 let me=null;
+async function currentUser(){
+ const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+ if(sessionError){
+   if(/auth session missing/i.test(String(sessionError.message||"")))return null;
+   throw sessionError;
+ }
+ if(!sessionData?.session)return null;
+ const {data:userData,error:userError}=await sb.auth.getUser();
+ if(userError){
+   if(/auth session missing/i.test(String(userError.message||"")))return null;
+   throw userError;
+ }
+ return userData?.user||null;
+}
 async function rpc(name,args){const{data,error}=await sb.rpc(name,args);if(error)throw error;return data;}
 async function boot(){
  if(!sb){status("No se ha podido cargar Supabase. Recarga la página.","err");return;}
  try{
- const {data:{user},error}=await sb.auth.getUser();if(error)throw error;
+ const user=await currentUser();
  me=user;show("loginPanel",!user);show("accountPanel",!!user);show("joinPanel",!!user);
  if(!user){status("Para la Cuenta 1, inicia sesión con un usuario nuevo y sin equipos.","warn");return;}
  $("accountEmail").textContent="Sesión iniciada: "+(user.email||"Cuenta registrada");

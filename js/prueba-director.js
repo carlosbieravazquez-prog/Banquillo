@@ -15,6 +15,20 @@ const dateKey=d=>d.toISOString().slice(0,10);
 const asDate=n=>new Date(Date.UTC(2026,8,5+14*n));
 const today=dateKey(new Date());
 const reportErr=e=>String(e?.message||e||"Error desconocido").replace(/insufficient_management_whistles/,"No tienes suficientes silbatos de gestión (se necesitan 10).").replace(/active_club_exists/,"Esta cuenta ya tiene un club activo; usa una cuenta nueva para la prueba.").replace(/team_limit/,"Se alcanzó el límite de equipos del club.");
+async function currentUser(){
+ const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+ if(sessionError){
+   if(/auth session missing/i.test(String(sessionError.message||"")))return null;
+   throw sessionError;
+ }
+ if(!sessionData?.session)return null;
+ const {data:userData,error:userError}=await sb.auth.getUser();
+ if(userError){
+   if(/auth session missing/i.test(String(userError.message||"")))return null;
+   throw userError;
+ }
+ return userData?.user||null;
+}
 async function rpc(name,args){const {data,error}=await sb.rpc(name,args||{});if(error)throw error;return data;}
 async function query(q){const {data,error}=await q;if(error)throw error;return data;}
 function progress(i,total,text){
@@ -23,7 +37,7 @@ function progress(i,total,text){
 async function inspect(){
  if(!sb){status("Falta Supabase. Recarga esta página.","err");return;}
  try{
- const {data:{user},error}=await sb.auth.getUser();if(error)throw error;
+ const user=await currentUser();
  me=user;show("loginPanel",!user);show("accountPanel",!!user);
  if(!user){status("Inicia sesión con la Cuenta 2 para configurar el entorno de pruebas.","warn");return;}
  $("accountEmail").textContent="Usuario: "+(user.email||"Cuenta registrada");
