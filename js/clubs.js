@@ -50,7 +50,8 @@ const ClubSpace = (() => {
       '<div class="row gap wrap">'+btn("Copiar código","clubCopyCode",{id:t.id},"primary small")+
       btn("Cambiar código","clubRotateCode",{id:t.id},"ghost small")+
       btn(t.enabled?"Desactivar":"Activar","clubToggleCode",{id:t.id},"ghost small")+
-      btn("Abrir equipo","clubOpenTeam",{id:t.id},"ghost small")+'</div></article>').join("");
+      btn("Abrir equipo","clubOpenTeam",{id:t.id},"ghost small")+
+      btn("Gestionar entrenadores","clubManageCoaches",{id:t.id},"ghost small")+'</div></article>').join("");
     return '<section class="club-section"><div class="club-section-head"><div><h2>Equipos del club</h2><p class="muted small">Crea solo el nombre y asigna la modalidad. El entrenador hará el resto cuando reciba su código.</p></div>'+
       btn("Añadir equipo","clubAddTeamAsk",{},"primary","plus")+'</div>'+
       '<div class="club-team-grid">'+(items||'<p class="muted">Aún no hay equipos. Añade el primero.</p>')+'</div></section>';
@@ -128,6 +129,46 @@ const ClubSpace = (() => {
     '<div class="codebox">'+e(fmtCode(sh.code))+'</div><p class="muted small">El entrenador entra en Banquillo, se registra y confirma su correo. También puede añadir este código después desde su cuenta.</p>'+
     '<div class="row end gap foot">'+btn("Cerrar","closeSheet",{},"primary")+'</div>';
   const teamOf=id=>current()?.teams?.find(t=>t.id===id);
+
+  ACT.clubManageCoaches=async el=>{
+    const c=current(),t=teamOf(el.dataset.id);if(!c||!t)return;
+    const sh={type:"clubTeamCoaches",wide:true,name:t.name,teamId:t.id,clubId:c.id,loading:true,coachList:[],busy:false,error:""};
+    UI.sheet=sh;render(true);
+    try{
+      const items=await Cloud.rpc("bq_team_coaches",{p_club:c.id,p_season:t.id});
+      if(UI.sheet===sh){sh.coachList=Array.isArray(items)?items:[];sh.loading=false;render(true);}
+    }catch(_){
+      if(UI.sheet===sh){sh.loading=false;sh.error="No se ha podido cargar la lista de entrenadores.";render(true);}
+    }
+  };
+  V.sheet.clubTeamCoaches=sh=>'<h2>Entrenadores · '+e(sh.name)+'</h2>'+
+    '<p class="muted small">Los directores pueden retirar únicamente el acceso de este equipo. La cuenta personal del entrenador no se elimina.</p>'+
+    (sh.loading?'<p>Cargando entrenadores…</p>':sh.error?'<p class="err">'+e(sh.error)+'</p>':
+      sh.coachList.length?'<div class="club-coaches-list">'+sh.coachList.map(coach=>
+        '<article class="club-coach-row"><div><b>'+e(coach.display_name)+'</b><p class="muted small">'+
+        (coach.role==="editor"?"Entrenador":"Solo lectura")+'</p></div>'+
+        btn("Retirar acceso","clubKickCoach",{id:coach.user_id},"ghost small")+'</article>'
+      ).join("")+'</div>':'<p class="muted">Este equipo todavía no tiene entrenadores vinculados mediante un código.</p>')+
+    '<p class="muted small">Al retirar un entrenador, su membresía se elimina en Supabase y se genera un código nuevo para este equipo. El código anterior deja de servir. Sus datos deportivos permanecen asociados a la temporada.</p>'+
+    '<div class="row end gap foot">'+btn("Cerrar","closeSheet",{},"primary")+'</div>';
+  ACT.clubKickCoach=async el=>{
+    const sh=UI.sheet,c=current();
+    if(!sh||sh.type!=="clubTeamCoaches"||sh.busy||c?.id!==sh.clubId)return;
+    const coach=sh.coachList.find(x=>x.user_id===el.dataset.id);
+    if(!coach)return;
+    if(!confirm("¿Retirar a "+coach.display_name+" de "+sh.name+"? Se invalidará el código de acceso anterior. No se borrará su cuenta."))return;
+    sh.busy=true;render(true);
+    try{
+      const result=await Cloud.rpc("bq_remove_team_coach",{p_club:sh.clubId,p_season:sh.teamId,p_user:coach.user_id});
+      if(!result?.ok)throw Error("Rechazado");
+      sh.coachList=sh.coachList.filter(x=>x.user_id!==coach.user_id);
+      await refresh();
+      toast("Entrenador retirado. Código del equipo renovado.","ok");
+    }catch(_){
+      toast("No se pudo retirar. Comprueba que el usuario es entrenador y tienes permisos de dirección.","err");
+    }finally{sh.busy=false;if(UI.sheet===sh)render(true);}
+  };
+
   ACT.clubCopyCode=async el=>{
     const t=teamOf(el.dataset.id);if(!t)return;
     try{await navigator.clipboard.writeText(fmtCode(t.code));toast("Código de "+t.name+" copiado.","ok");}
