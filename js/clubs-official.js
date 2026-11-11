@@ -313,8 +313,8 @@ function seasonsPage(){
  '<button type="button" class="bq-period-item bq-period-select" data-action="switchClub" data-id="'+esc(p.club_id||c?.id||"")+'">'+
  '<span class="ux-pill '+(p.status==="active"?"good":"")+'">'+
  (p.status==="active"?"En curso":"Cerrada")+'</span><b>'+esc(p.season_label)+'</b>'+
- '<small>'+esc(c?.name||"Club")+'</small><p class="muted">'+(p.status==="active"?
- "Abrir gestión del club":"Temporada cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></button>').join("")+
+ '<small>'+esc(c?.name||"Club")+'</small><span class="muted">'+(p.status==="active"?
+ "Abrir gestión del club":"Temporada cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</span></button>').join("")+
  (state.periods.length?"":'<p class="muted">No hay una temporada de club seleccionada.</p>')+
  '</div></section>'+
  '<section class="panel"><h3>¿Quieres empezar la siguiente temporada?</h3>'+
