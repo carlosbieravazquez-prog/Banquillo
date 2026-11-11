@@ -11,7 +11,7 @@ const DemoDialog=(()=>{
      const field=root.querySelector("input,textarea,select");
      if(field){field.focus();field.select?.();}
      root.querySelector("[data-dd-cancel]").addEventListener("click",()=>finish(null));
-     root.querySelector("[data-dd-submit]").addEventListener("click",()=>finish(field?String(field.value||""):true));
+     root.querySelector("[data-dd-submit]").addEventListener("click",()=>{const many=[...root.querySelectorAll("[data-dd-field]")];if(many.length)finish(Object.fromEntries(many.map(x=>[x.dataset.ddField,String(x.value||"")])));else finish(field?String(field.value||""):true);});
      root.querySelector(".dd-overlay").addEventListener("click",e=>{if(e.target.classList.contains("dd-overlay"))finish(null);});
      root.querySelector(".dd-card").addEventListener("keydown",e=>{if(e.key==="Escape")finish(null);if(e.key==="Enter"&&field?.tagName!=="TEXTAREA"){e.preventDefault();root.querySelector("[data-dd-submit]").click();}});
    });
@@ -23,10 +23,7 @@ const DemoDialog=(()=>{
    try{await navigator.clipboard.writeText(String(content));await alert("Copiado al portapapeles.");}
    catch(e){await show(title,'<p>Selecciona y copia el contenido:</p><textarea readonly rows="7">'+esc(content)+'</textarea>',{submit:"Cerrar",cancel:"Volver"});}
  }
- async function team(){const name=await prompt("Nombre del nuevo equipo");if(name===null||!name.trim())return null;
-   const selected=await show("Modalidad de fútbol",'<label class="dd-field">Modalidad<select><option value="F7">Fútbol 7</option><option value="F11">Fútbol 11</option></select></label>',{submit:"Crear equipo"});
-   if(!selected)return null;
-   return {name:name.trim().slice(0,60),modality:selected};
+ async function team(){const values=await show("Añadir equipo",'<label class="dd-field">Nombre del equipo<input data-dd-field="name" required maxlength="60" placeholder="Ej. Benjamín A"></label><label class="dd-field" style="margin-top:14px">Modalidad<select data-dd-field="modality"><option value="F7">Fútbol 7</option><option value="F11">Fútbol 11</option></select></label>',{submit:"Crear equipo"});if(!values||!values.name?.trim())return null;return {name:values.name.trim().slice(0,60),modality:values.modality==="F11"?"F11":"F7"};
  }
  return {prompt,confirm,alert,copy,team};
 })();
