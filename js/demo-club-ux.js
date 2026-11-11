@@ -87,18 +87,18 @@ const DemoClubUX=(()=>{
    const won=Number(r.won)||0,draw=Number(r.draw)||0,lost=Number(r.lost)||0,gf=Number(r.gf)||0,ga=Number(r.ga)||0;
    const count=won+draw+lost;
    const matchList=leagueMatches(t).filter(m=>!m.played).slice(0,4);
-   return '<div class="ux-demo-hint">Vista demostrativa: las cifras deportivas son de ejemplo hasta conectar actas y convocatorias reales.</div>'+
+   return '<div class="ux-demo-hint">Vista demostrativa: liga ficticia de 18 jornadas, ida y vuelta. Los resultados están rellenados hasta la fecha actual.</div>'+
      '<section class="ux-sport-strip">'+badges([["Partidos",count],["Victorias",won,"success"],["Empates",draw],["Derrotas",lost,"warning"],["Goles a favor",gf],["Goles en contra",ga],["Diferencia", (gf-ga>0?"+":"")+(gf-ga),gf>=ga?"success":"warning"]])+'</section>'+
      '<div class="ux-two-col">'+rankings(d,"goals","Máximos goleadores"," goles")+rankings(d,"minutes","Jugadores con más minutos"," min")+'</div>'+
-     '<div class="ux-two-col">'+rankings(d,"calls","Más convocatorias"," /8")+
+     '<div class="ux-two-col">'+rankings(d,"calls","Más convocatorias"," /"+count)+
       '<section class="ux-box"><div class="ux-box-title"><h3>Próximos partidos</h3><span>Calendario</span></div>'+
       (matchList.length?matchList.map(m=>'<div class="ux-fixture"><span>'+escape(m.date)+'</span><b>'+escape(m.opponent)+'</b><small>'+(m.home?"🏠 Casa":"✈️ Fuera")+' · '+escape(m.time||"Hora por asignar")+'</small></div>').join(""):'<p class="muted">Todavía no hay partidos asociados a este equipo.</p>')+
       '</section></div>';
  }
  function playerTable(state,t){
-   const d=details(state,t);
+   const d=details(state,t),count=leagueMatches(t).filter(x=>x.played).length;
    return '<section class="ux-box"><div class="ux-box-title"><h3>Comparativa de plantilla</h3><span>Ejemplo editable en una futura conexión con actas reales</span></div><div class="ux-table-wrap"><table class="ux-data-table"><thead><tr><th>Jugador</th><th>Dorsal</th><th>Goles</th><th>Minutos</th><th>Convocatorias</th></tr></thead><tbody>'+
-    d.players.map(p=>'<tr><td>'+escape(p.name)+'</td><td>'+p.dorsal+'</td><td>'+p.goals+'</td><td>'+p.minutes+'</td><td>'+p.calls+' /8</td></tr>').join("")+
+    d.players.map(p=>'<tr><td>'+escape(p.name)+'</td><td>'+p.dorsal+'</td><td>'+p.goals+'</td><td>'+p.minutes+'</td><td>'+p.calls+' /'+count+'</td></tr>').join("")+
     '</tbody></table></div></section>';
  }
  function codePanel(state,t){
