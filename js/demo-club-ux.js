@@ -13,14 +13,24 @@ const DemoClubUX=(()=>{
    for(const b of bytes)out.push(alphabet[b%alphabet.length]);
    return out.slice(0,4).join("")+"-"+out.slice(4).join("");
  };
- const sampleNames=["Álex García","Leo Martín","Hugo Ruiz","Dani Romero","Marcos Vega","Pablo León","Iván Díaz","Adrián Torres","Nico Sánchez","Javi Moreno","Mateo Ortiz"];
+ const sampleNames=["Álex García","Leo Martín","Hugo Ruiz","Dani Romero","Marcos Vega","Pablo León","Iván Díaz","Adrián Torres","Nico Sánchez","Javi Moreno","Mateo Ortiz","Rubén Torres","Héctor Cano","Santiago Medina","Manuel Gómez","José Ruiz","Víctor Flores","Luis Pérez","Miguel Fernández","Enzo Romero","Daniel Díaz"];
+ const leagueMatches=t=>Array.from({length:18},(_,i)=>{
+   const seed=Number(String(t.id).replace(/\D/g,""))||1,day=new Date(2026,8,5+14*i);
+   const date=dateKey(day),played=date<dateKey(new Date()),home=(i+seed)%2===0;
+   const rivals=["CD Estrella","UD Bellavista","San Roque","Atlético Sur","Náutico Sevilla","CD Libertad","Dos Hermanas CF","CD Portaceli","Deportivo Triana"];
+   const gf=played?(i*3+seed)%7:null,ga=played?(i*2+seed+3)%5:null;
+   return {n:i+1,date,home,opponent:rivals[i%9],time:"11:30",played,gf,ga};
+ });
  const makePlayers=t=>{
-   const seed=Number(String(t.id).replace(/\D/g,""))||1;
-   return Array.from({length:Math.min(11,Math.max(6,Number(t.players)||8))},(_,i)=>({
-     id:"p"+i,name:sampleNames[(i+seed)%sampleNames.length],dorsal:i+1,
-     goals:Math.max(0,10-i*2+seed%3),minutes:Math.max(90,610-i*33+(seed%4)*12),
-     calls:Math.max(2,8-Math.floor(i/2)),games:8
-   }));
+   const seed=Number(String(t.id).replace(/\D/g,""))||1,count=leagueMatches(t).filter(x=>x.played).length;
+   const minutes=t.modality==="F11"?90:50;
+   return Array.from({length:Math.min(22,Math.max(6,Number(t.players)||8))},(_,i)=>{
+     const calls=Math.max(0,count-(i%6===0?1:0)-(i%9===0?1:0));
+     const games=Math.max(0,calls-(i%7===0?1:0));
+     return{id:"p"+i,name:sampleNames[(i+seed)%sampleNames.length],dorsal:i+1,
+       goals:Math.max(0,Math.floor(games*(11+(i*3)%12)/35)),minutes:games*(minutes-i%4*5),
+       calls,games};
+   });
  };
  function init(state){
    if(!state.teamDemo||typeof state.teamDemo!=="object")state.teamDemo={};
@@ -31,6 +41,15 @@ const DemoClubUX=(()=>{
        results:{won:4+(Number(t.id.replace(/\D/g,""))||1)%3,draw:1,lost:2,gf:22,ga:12}
      };
      if(!state.teamDemo[t.id].code)state.teamDemo[t.id].code=randomCode();
+     const d=state.teamDemo[t.id],played=leagueMatches(t).filter(m=>m.played);
+     const key=dateKey(new Date());
+     if(d.statsCalculatedAt!==key){
+       d.players=makePlayers(t);
+       d.results={won:played.filter(m=>m.gf>m.ga).length,draw:played.filter(m=>m.gf===m.ga).length,
+         lost:played.filter(m=>m.gf<m.ga).length,gf:played.reduce((n,m)=>n+m.gf,0),
+         ga:played.reduce((n,m)=>n+m.ga,0)};
+       d.statsCalculatedAt=key;
+     }
    }
    if(!Array.isArray(state.notifications))state.notifications=[];
    if(!state.demoNoticesV2){
@@ -67,7 +86,7 @@ const DemoClubUX=(()=>{
    const d=details(state,t),r=d.results;
    const won=Number(r.won)||0,draw=Number(r.draw)||0,lost=Number(r.lost)||0,gf=Number(r.gf)||0,ga=Number(r.ga)||0;
    const count=won+draw+lost;
-   const matchList=(state.schedule||[]).filter(m=>m.teamId===t.id).slice(0,4);
+   const matchList=leagueMatches(t).filter(m=>!m.played).slice(0,4);
    return '<div class="ux-demo-hint">Vista demostrativa: las cifras deportivas son de ejemplo hasta conectar actas y convocatorias reales.</div>'+
      '<section class="ux-sport-strip">'+badges([["Partidos",count],["Victorias",won,"success"],["Empates",draw],["Derrotas",lost,"warning"],["Goles a favor",gf],["Goles en contra",ga],["Diferencia", (gf-ga>0?"+":"")+(gf-ga),gf>=ga?"success":"warning"]])+'</section>'+
      '<div class="ux-two-col">'+rankings(d,"goals","Máximos goleadores"," goles")+rankings(d,"minutes","Jugadores con más minutos"," min")+'</div>'+
