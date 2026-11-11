@@ -254,24 +254,71 @@ function renderWorkspaceMenu(){
 }
 
 function seasonsPage(){
- const c=active(),isOwner=owner(),period=currentPeriod();
+ const c=active(),isOwner=owner();
  const actions=c?
    (isOwner?button("Cerrar temporada","closeClubSeason","","ghost")+
     button("Eliminar club","deleteClub","","ghost"):
     button("Abandonar club","leaveClub","","ghost")):
    button("Crear club","newClub");
- return head("Temporadas del club","Gestión ordenada del club, sus temporadas y sus equipos. Solo el titular puede eliminar el club.",actions)+
- '<section class="panel bq-director-session"><div class="bq-director-session-top"><span>CUENTA AUTENTICADA</span><strong>'+esc(state.accountEmail||state.profileName||"Mi cuenta")+'</strong></div>'+
- '<p>Estás gestionando <b>'+esc(c?.name||"ningún club")+'</b> como '+(isOwner?"director titular":"segundo director")+'. Para cambiar de persona, cierra sesión en tu cuenta: no es posible asumir la identidad de otro director desde esta web.</p>'+
- '<a class="btn ghost" href="index.html">Ver mi cuenta y mis equipos</a></section>'+
- '<div class="bq-seasons-grid">'+state.periods.map(p=>'<article class="panel bq-season-card"><span class="ux-pill '+(p.status==="active"?"good":"")+'">'+(p.status==="active"?"En curso":"Cerrada")+'</span><h3>'+esc(p.season_label)+'</h3><p>'+esc(c?.name||"Club")+'</p><p class="muted">'+(p.status==="active"?"Activa desde su creación":"Cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></article>').join("")+'</div>'+
- (c?'<section class="panel"><div class="ux-box-title"><h3>Equipos de esta temporada</h3><span>'+state.teams.length+' equipos activos</span></div>'+
- '<p class="muted">Para eliminar un equipo sin perder datos, utiliza «Eliminar equipo (recuperable)». El equipo se archivará y podrás recuperarlo desde Equipos.</p>'+
- '<div class="bq-season-team-actions">'+state.teams.map(t=>'<div class="bq-season-team-line"><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"")+" · "+esc(t.modality)+'</small></span>'+
- '<div class="ux-actions">'+button("Abrir","openTeam",t.id,"ghost")+button("Eliminar equipo","archiveTeam",t.id,"ghost")+'</div></div>').join("")+'</div>'+
- '</section>':"")+
- '<section class="panel"><h3>Inicio de una nueva temporada</h3><p>Para cambiar de club, cierra la temporada activa desde la cuenta titular. Al eliminar el club se conserva su historial para poder recuperarlo; abandonarlo solo retira tus permisos personales.</p>'+
- (c?'<div class="ux-actions">'+(isOwner?button("Eliminar club","deleteClub","","ghost"):"")+button("Abandonar club","leaveClub","","ghost")+'</div>':"")+'</section>'+deletedSection();
+ const groups=state.clubs.map(club=>{
+   const itsTeams=state.workspaceTeams.filter(t=>t.club_id===club.id);
+   const isCurrent=club.id===state.clubId;
+   return '<article class="panel bq-workspace-section">'+
+     '<div class="bq-workspace-section-head"><div><span class="bq-workspace-kind">DIRECCIÓN DEPORTIVA</span>'+
+     '<h3>🏟 '+esc(club.name)+'</h3><p>Club vinculado a tu cuenta · '+itsTeams.length+' equipo(s) activos</p></div>'+
+     (isCurrent?'<span class="ux-pill good">Club seleccionado</span>':
+       button("Abrir club","switchClub",club.id,"ghost"))+'</div>'+
+     '<div class="bq-workspace-team-list">'+itsTeams.map(t=>
+       '<button type="button" class="bq-workspace-team-row" data-action="openWorkspaceTeam" data-id="'+esc(t.id)+'">'+
+       '<span class="bq-workspace-team-icon">⚽</span><span><b>'+esc(t.name)+'</b>'+
+       '<small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</small></span>'+
+       '<span class="bq-workspace-arrow">Abrir gestión ↗</span></button>').join("")+
+     (itsTeams.length?"":'<p class="muted">Todavía no hay equipos activos en este club.</p>')+
+     '</div></article>';
+ }).join("");
+ const solo=state.workspaceIndependent.map(x=>
+   '<a class="bq-workspace-solo-card" href="'+esc(seasonHref(x.id))+'">'+
+   '<span class="bq-workspace-team-icon">⚽</span><span><b>'+esc(x.name)+'</b>'+
+   '<small>'+esc(x.club||"Equipo independiente")+' · '+esc(x.category||"Sin categoría")+'</small>'+
+   '<span class="bq-workspace-access">'+(x.role==="owner"?"Responsable":x.role==="editor"?"Entrenador":"Solo lectura")+'</span></span>'+
+   '<span class="bq-workspace-arrow">Abrir equipo ↗</span></a>').join("");
+ const coach=state.workspaceCoachTeams.map(x=>
+   '<a class="bq-workspace-solo-card" href="'+esc(seasonHref(x.season_id))+'">'+
+   '<span class="bq-workspace-team-icon">👥</span><span><b>'+esc(x.team_name)+'</b>'+
+   '<small>'+esc(x.club_name)+' · '+esc(x.role==="editor"?"Entrenador":"Miembro")+'</small></span>'+
+   '<span class="bq-workspace-arrow">Abrir equipo ↗</span></a>').join("");
+ return head("Todas mis temporadas y equipos",
+   "Abre cualquier gestión vinculada a tu cuenta: clubes, equipos independientes y equipos donde entrenas.",actions)+
+ '<section class="panel bq-director-session"><div class="bq-director-session-top"><span>CUENTA CONECTADA</span>'+
+ '<strong>'+esc(state.accountEmail||state.profileName||"Mi cuenta")+'</strong></div>'+
+ '<p>Solo se muestran equipos autorizados de esta cuenta. Entrar en otro equipo no cambia tu identidad ni sus permisos.</p>'+
+ '<a class="btn ghost" href="index.html#temporadas">Ver temporadas en mi área personal</a></section>'+
+ (groups?'<div class="bq-workspace-section-title"><h3>Clubes que gestionas</h3><span>'+state.clubs.length+' club(es)</span></div>'+groups:"")+
+ '<section class="panel bq-workspace-section"><div class="bq-workspace-section-head"><div>'+
+ '<span class="bq-workspace-kind">EQUIPOS INDEPENDIENTES</span><h3>Mis temporadas individuales</h3>'+
+ '<p>Se gestionan desde el área de entrenador, con la misma cuenta. No necesitan pertenecer a un club.</p></div>'+
+ '<a class="btn primary" href="index.html#temporadas">+ Crear equipo independiente</a></div>'+
+ '<div class="bq-workspace-team-list">'+
+ (solo||'<div class="bq-workspace-empty-large">Aún no tienes ningún equipo independiente en esta cuenta. Puedes crearlo sin abandonar tu club.</div>')+
+ '</div></section>'+
+ (coach?'<section class="panel bq-workspace-section"><div class="bq-workspace-section-head"><div>'+
+ '<span class="bq-workspace-kind">CUERPO TÉCNICO</span><h3>Equipos donde participas</h3>'+
+ '<p>Acceso según los permisos que te haya concedido cada director.</p></div></div>'+
+ '<div class="bq-workspace-team-list">'+coach+'</div></section>':"")+
+ (state.workspaceError?'<section class="panel"><p class="muted">'+esc(state.workspaceError)+'</p>'+
+ button("Actualizar equipos","refreshWorkspaces","","ghost")+'</section>':"")+
+ '<section class="panel"><div class="ux-box-title"><h3>Temporadas del club seleccionado</h3></div>'+
+ '<div class="bq-seasons-grid">'+state.periods.map(p=>
+ '<article class="bq-period-item"><span class="ux-pill '+(p.status==="active"?"good":"")+'">'+
+ (p.status==="active"?"En curso":"Cerrada")+'</span><b>'+esc(p.season_label)+'</b>'+
+ '<small>'+esc(c?.name||"Club")+'</small><p class="muted">'+(p.status==="active"?
+ "Temporada activa":"Cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></article>').join("")+
+ (state.periods.length?"":'<p class="muted">No hay una temporada de club seleccionada.</p>')+
+ '</div></section>'+
+ '<section class="panel"><h3>¿Quieres empezar la siguiente temporada?</h3>'+
+ '<p>Puedes mantener equipos independientes mientras gestionas un club. Para crear un club distinto, primero cierra la temporada activa del anterior; los datos históricos se conservan.</p>'+
+ (c?'<div class="ux-actions">'+(isOwner?button("Eliminar club","deleteClub","","ghost"):"")+
+ button("Abandonar club","leaveClub","","ghost")+'</div>':"")+'</section>'+deletedSection();
 }
 function facilitiesPage(){const v=state.settings;return head("Instalaciones","Configura el número de campos que dispone el club.",button("Editar instalaciones","editClub"))+
  '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+(v.fields_f11||0)+'</div></article><article class="stat"><div class="stat-label">Campos independientes F7</div><div class="stat-value">'+(v.fields_f7||0)+'</div></article><article class="stat"><div class="stat-label">Capacidad F7 si F11 divisible</div><div class="stat-value">'+((v.fields_f11||0)*2+(v.fields_f7||0))+'</div></article></div>'+
@@ -465,6 +512,7 @@ async function action(name,id,sourceEl){try{
    return changeView("equipo");
  }
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
+ if(name==="refreshWorkspaces"){await loadWorkspaces();render();notify("Gestiones actualizadas.");return;}
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
  if(name==="restoreBackup")return openBackupForm();
