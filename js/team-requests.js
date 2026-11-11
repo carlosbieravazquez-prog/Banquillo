@@ -15,7 +15,21 @@ const TeamRequests=(()=>{
      if(Store.user?.uid!==uid)return;
      const previous=cache,changed=JSON.stringify(rows)!==JSON.stringify(cache)||uid!==lastUid;
      cache=rows||[];lastFetch=Date.now();lastUid=uid;
+     const revoked=previous.filter(old=>old.status==="active"&&!cache.some(item=>
+       item.team_id===old.team_id&&item.status==="active"));
+     if(revoked.length){
+       for(const old of revoked)approvedSeen.delete(old.team_id);
+       await Store.loadRoles();
+       for(const old of revoked){
+         if(Store.sid===old.season_id&&!Store.roles[old.season_id]){
+           Store.subscribeSeason(null);
+           try{await Store.db.refreshNow("seasons");}catch(e){}
+           toast("Dirección Deportiva ha retirado tu acceso al equipo. Los datos protegidos se han cerrado.","err");
+         }
+       }
+     }
      for(const item of cache){
+       if(item.status!=="active")approvedSeen.delete(item.team_id);
        const wasPending=previous.some(x=>x.team_id===item.team_id&&x.status==="pending");
        if(item.status==="active"&&item.season_id&&!approvedSeen.has(item.team_id)){
          approvedSeen.add(item.team_id);
