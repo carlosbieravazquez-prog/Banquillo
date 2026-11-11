@@ -457,6 +457,54 @@ function calendarPage(monthly=false){
   button("Configurar campos","viewFacilities","","ghost")+'</aside></div>'+
   '<p class="bq-hint">Banquillo bloquea en Supabase los solapamientos entre partidos del mismo equipo o instalaciones. Los horarios se comparten entre directores del club.</p>';
 }
+function plannerRange(monthly){
+ const d=state.plannerDate||new Date().toISOString().slice(0,10);
+ const key=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+ if(monthly)return [state.year+"-"+String(state.month+1).padStart(2,"0")+"-01",key(new Date(state.year,state.month+1,0))];
+ const monday=new Date(d+"T12:00:00");monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
+ const end=new Date(monday);end.setDate(monday.getDate()+6);
+ return [key(monday),key(end)];
+}
+function plannerMessageText(monthly=false){
+ const [from,to]=plannerRange(monthly),rows=plannerRows().filter(x=>x.m.date>=from&&x.m.date<=to);
+ const name=active()?.name||"Banquillo";
+ const lines=["📅 "+name+(monthly?" · Plan mensual":" · Plan semanal"),from+" al "+to,""];
+ for(const r of rows){
+  const slot=r.slot;
+  lines.push((r.m.home?"🏠":"✈️")+" "+showDate(r.m.date)+" · Jornada "+(r.m.n||"—"));
+  lines.push(r.t.name+" vs "+(r.m.rival||"Rival por definir"));
+  if(r.m.home)lines.push(slot?"⏰ "+String(slot.kickoff).slice(0,5)+" · "+plannerFieldLabel(slot.resource):"🟡 Horario y campo pendientes");
+  lines.push("");
+ }
+ if(!rows.length)lines.push("Todavía no hay partidos registrados para este período.");
+ lines.push("— Dirección Deportiva · Banquillo");
+ return lines.join("\n");
+}
+function plannerImage(monthly=false){
+ const [from,to]=plannerRange(monthly);
+ const rows=plannerRows().filter(x=>x.m.date>=from&&x.m.date<=to);
+ const w=1150,h=215+Math.max(1,rows.length)*94+80;
+ const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+ const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo generar la imagen en este navegador.");
+ ctx.fillStyle="#f2f6f8";ctx.fillRect(0,0,w,h);
+ ctx.fillStyle="#173b54";ctx.fillRect(0,0,w,175);
+ ctx.fillStyle="#fff";ctx.font="bold 39px Arial";ctx.fillText((active()?.name||"Banquillo").slice(0,42),48,70);
+ ctx.fillStyle="#c5dedf";ctx.font="21px Arial";ctx.fillText("PLANIFICACIÓN "+(monthly?"MENSUAL":"SEMANAL")+" · "+from+" / "+to,48,120);
+ const short=(v,n)=>String(v||"").length>n?String(v).slice(0,n-1)+"…":String(v||"");
+ for(const [i,r] of rows.entries()){
+  const y=195+i*94,slot=r.slot;
+  ctx.fillStyle="#fff";ctx.fillRect(28,y,w-56,85);
+  ctx.fillStyle="#17475d";ctx.font="bold 21px Arial";
+  ctx.fillText(short(r.t.name+" — "+(r.m.rival||"Rival por definir"),53),48,y+33);
+  ctx.fillStyle="#668393";ctx.font="17px Arial";
+  ctx.fillText(short(showDate(r.m.date)+" · J"+(r.m.n||"?")+" · "+(r.m.home?"LOCAL":"VISITANTE"),65),48,y+64);
+  ctx.fillStyle=slot?"#147956":"#a17634";ctx.font="bold 17px Arial";
+  ctx.fillText(short(r.m.home?(slot?String(slot.kickoff).slice(0,5)+" · "+plannerFieldLabel(slot.resource):"Hora y campo pendientes"):"Fuera",35),770,y+49);
+ }
+ ctx.fillStyle="#607f8f";ctx.font="15px Arial";ctx.fillText("Banquillo · Calendario actualizado desde Dirección Deportiva",46,h-38);
+ const a=document.createElement("a");a.download="banquillo-"+(monthly?"mes-":"semana-")+from+".png";
+ a.href=canvas.toDataURL("image/png");document.body.appendChild(a);a.click();a.remove();
+}
 function openMessageForm(teamId,kind="manual",matchN=null){
  const available=state.teams.filter(t=>t.season_id&&!t.archived_at);
  if(!available.length)return notify("Primero vincula un equipo a su temporada y añade al entrenador autorizado.","error");
@@ -680,7 +728,7 @@ async function action(name,id,sourceEl){try{
  if(name==="openTeam"){state.teamId=id;state.teamTab="overview";state.staff=[];state.teamRoster=[];state.teamCode=null;return changeView("equipo");}
  if(name==="joinClub")return formModal("Entrar como segundo director","joinClubForm",input("code","Código de 8 caracteres para ser segundo director","","text",true,'maxlength="40" minlength="8" placeholder="ABCD-EFGH"'),"Unirme");
  if(name==="copyTeamCode"||name==="copyClubCode"||name==="copyFixtures"){
-  const txt=name==="copyTeamCode"?state.teamCode:name==="copyClubCode"?state.clubCode:messageText();
+  const txt=name==="copyTeamCode"?state.teamCode:name==="copyClubCode"?state.clubCode:plannerMessageText(state.view==="calendarioMes");
   if(!txt)return notify("No hay contenido para copiar.","error");
   try{
     await navigator.clipboard.writeText(txt);
