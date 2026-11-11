@@ -24,7 +24,7 @@ create policy "club_seasons_read" on public.banquillo_club_seasons
  for select to authenticated using (
   owner_id=(select auth.uid()) or exists(
    select 1 from public.banquillo_club_directors d
-   where d.club_id=club_id and d.user_id=(select auth.uid()))
+   where d.club_id=banquillo_club_seasons.club_id and d.user_id=(select auth.uid()))
  );
 
 -- Se conserva el club preexistente y se vincula a 2026/2027.
