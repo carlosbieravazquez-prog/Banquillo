@@ -100,3 +100,39 @@
 .bq-switcher-clickable:hover{background:rgba(255,255,255,.12)}
 .bq-club-picker{display:flex;flex-direction:column;gap:10px;margin-top:15px}
 .bq-club-picker .btn{text-align:left;justify-content:flex-start;width:100%}
+
+/* Identidad de dirección, códigos de corta duración y mensajería privada. */
+.bq-current-director{border:1px solid #b6daca!important;background:#f3fbf7!important}
+.bq-current-director h3 small{font-weight:600;color:#2d8c65;font-size:11px}
+.bq-director-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:18px}
+.bq-director-actions .btn{border:1px solid #cbdde5}
+.bq-invite .ux-team-code strong{font-size:21px;letter-spacing:.04em;word-break:break-all}
+.bq-wallet{margin-top:18px}
+.bq-wallet-head{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(115deg,#163951,#2d657a);border-radius:12px;color:#fff;padding:18px 22px;margin-bottom:16px}
+.bq-wallet-head span,.bq-wallet-head strong{display:block}
+.bq-wallet-head span{font-size:10px;letter-spacing:.13em;opacity:.8;font-weight:800}
+.bq-wallet-head strong{font-size:35px;font-weight:800;line-height:1.4}
+.bq-wallet-head strong small{font-size:16px;opacity:.7}
+.bq-wallet-head>div:last-child{font-size:28px}
+.bq-wallet p{font-size:13px;line-height:1.7;color:#567186}
+.bq-info-note{border:1px solid #cae5de;background:#f0f9f6;color:#2d6655;border-radius:11px;padding:15px 17px;font-size:13px;line-height:1.6;margin:15px 0}
+.bq-message-list{margin-top:18px}
+.bq-message-item{border-bottom:1px solid #e4ebee;display:flex;align-items:center;gap:15px;justify-content:space-between;padding:16px 3px}
+.bq-message-item:last-child{border-bottom:0}
+.bq-message-item>div{flex:1;min-width:0}
+.bq-message-item b,.bq-message-item small{display:block}
+.bq-message-item b{font-size:14px;color:#24455b}
+.bq-message-item small{font-size:11px;color:#718ba0;margin-top:5px}
+.bq-message-item p{font-size:12px;color:#516f83;white-space:pre-wrap;margin:7px 0 0}
+.bq-message-state{padding:6px 12px;white-space:nowrap;border-radius:20px;font-size:11px;font-weight:800;background:#fff3e4;color:#977241}
+.bq-message-state.read{background:#e7f2fa;color:#3d7895}
+.bq-message-state.done{background:#e9f8ed;color:#23804c}
+.bq-alert{padding:14px 0;border-bottom:1px solid #e8edf0;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.bq-alert:last-child{border-bottom:0}
+.bq-alert b{font-size:14px;color:#265067}
+.bq-alert p{font-size:12px;color:#7b8e9f;margin:6px 0 0}
+.bq-event{display:flex;flex-direction:column;border-bottom:1px solid #e7edf1;gap:5px;padding:13px 2px;font-size:13px}
+.bq-event:last-child{border-bottom:0}
+.bq-event small{color:#7790a0}
+.bq-dialog .bq-form textarea{width:100%;background:#f9fbfd;color:#193b51;border:1px solid #cddbe4;border-radius:10px;padding:12px 14px;font:inherit;min-height:120px;resize:vertical}
+@media(max-width:650px){.bq-message-item,.bq-alert{align-items:flex-start;flex-direction:column}.bq-message-state{align-self:flex-start}}
