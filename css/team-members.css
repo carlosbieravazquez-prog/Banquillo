@@ -1,0 +1,22 @@
+/* Cuerpo técnico: personas verificadas, solicitudes y aprobación por Dirección Deportiva. */
+.bq-request-status{margin:20px 0;border:1px solid #d6e7df!important}
+.bq-request-row{display:flex;align-items:flex-start;gap:13px;padding:14px 0;border-bottom:1px solid #e1e9ec}
+.bq-request-row:last-child{border-bottom:0}
+.bq-request-row>div{flex:1;min-width:0}
+.bq-request-icon{font-size:22px;width:38px;height:38px;display:grid;place-items:center;background:#e8f2ed;border-radius:11px}
+.bq-request-row b,.bq-request-row small{display:block}
+.bq-request-row b{font-size:14px;color:#1d435b}
+.bq-request-row small{font-size:12px;color:#698496;margin-top:6px;line-height:1.5}
+.bq-staff-heading{font-size:13px;letter-spacing:.02em;color:#28526c;margin:20px 0 13px}
+.bq-real-person{flex-wrap:wrap;gap:11px;min-width:0}
+.bq-real-person>div:nth-child(2){flex:1;min-width:140px}
+.bq-real-person .bq-person-actions{display:flex;flex-wrap:wrap;gap:8px}
+.bq-real-person .ux-pill:not(.good){background:#fff4e3;color:#996a31}
+.bq-verified-account{padding:15px;border:1px solid #cfe6dc;background:#f1faf6;border-radius:12px;display:flex;flex-direction:column;gap:5px}
+.bq-verified-account span{font-size:10px;letter-spacing:.11em;font-weight:800;color:#36805f}
+.bq-verified-account strong{font-size:17px;color:#173f53}
+.bq-verified-account small{font-size:12px;color:#5f7b8b}
+.bq-manual-link{margin-top:22px;padding:15px;border:1px solid #dce6ec;border-radius:10px}
+.bq-manual-link summary{cursor:pointer;font-weight:700;color:#355e77}
+.bq-manual-link form{margin-top:15px}
+@media(max-width:650px){.bq-real-person .bq-person-actions{width:100%;margin-left:0}.bq-real-person .ux-pill{margin-left:auto}}
