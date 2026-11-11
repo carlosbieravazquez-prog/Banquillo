@@ -32,3 +32,14 @@
 .auth-join-guide{border-left:3px solid var(--accent);background:var(--surface-2);color:var(--ink-2);padding:10px 12px;font-size:13px;border-radius:0 9px 9px 0;margin:5px 0 14px}
 .auth-card .auth-tabs{flex-wrap:wrap;gap:3px}
 @media(max-width:620px){.club-overview{align-items:flex-start}.club-code-row{align-items:flex-start}.club-team-code{font-size:22px}.club-section-head .btn{width:100%}.club-facility-readout{gap:5px}.club-facility-readout span{padding:11px 4px}.club-facility-readout strong{font-size:23px}}
+
+/* Buzón y gestión de avisos reales para dirección deportiva y entrenadores */
+.club-coaches-list{display:grid;gap:12px;margin:15px 0}
+.club-coach-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.club-coach-row b{font-size:14px}.club-coach-row p{margin:4px 0 0}
+.club-live-notice{position:relative;overflow:hidden;display:grid;gap:10px;padding:18px;border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--surface);border-radius:13px}
+.club-live-notice h3{font-size:15px}.club-live-notice p{font-size:12px;line-height:1.6;margin:0}
+.club-live-notice.bq-resolved::after{content:"✓ Aviso corregido";display:grid;place-items:center;position:absolute;inset:0;background:#1b995e;color:white;font-weight:850;font-size:18px;transform:translateX(-101%);animation:bq-resolved-sweep 1s ease-out forwards}
+@keyframes bq-resolved-sweep{to{transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.club-live-notice.bq-resolved::after{animation-duration:.01ms}}
+@media(max-width:640px){.club-coach-row{align-items:flex-start}.club-live-notice{padding:13px}}
