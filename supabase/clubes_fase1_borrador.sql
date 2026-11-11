@@ -1,4 +1,4 @@
--- BORRADOR REVISABLE. NO EJECUTAR EN PRODUCCIÓN SIN BACKUP, PRUEBAS RLS Y MIGRACIÓN VERSIONADA.
+-- Historial: esquema desplegado en Supabase mediante la migración banquillo_clubes_fase1_base_20261111. No ejecutar de nuevo manualmente.
 -- Fase 1: clubes, directores y equipos. No modifica las tablas ni los documentos existentes.
 begin;
 
