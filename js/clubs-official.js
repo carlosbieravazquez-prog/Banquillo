@@ -5,7 +5,7 @@ const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo entrenador"],["third_coach","Tercer entrenador"],["delegate","Delegado"],["other","Otro"]];
 const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
-const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],
+const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],
   members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
   clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
@@ -37,10 +37,22 @@ function openTeamForm(){if(!active())return;formModal("Añadir equipo","teamForm
  input("competition","Competición (opcional)","","text",false,'maxlength="100"')+
  input("coach","Entrenador principal (opcional)","","text",false,'maxlength="90"')+
  '<p class="bq-hint">Al crear el equipo podrás vincular su temporada y generar un código de acceso exclusivo para sus entrenadores.</p>',"Crear equipo");}
-function openStaffForm(row){const t=team();if(!t)return;const taken=new Set(state.staff.filter(p=>p.id!==row?.id&&p.position!=="other").map(x=>x.position));const available=POS.filter(([key])=>key==="other"||!taken.has(key));formModal(row?"Editar cuerpo técnico":"Agregar integrante","staffForm",input("display_name","Nombre y apellidos",row?.display_name||"","text",true,'minlength="2" maxlength="90"')+
- sel("position","Cargo",available,row?.position||available[0]?.[0])+
- input("role_detail","Especifica el cargo (solo si eliges Otro)",row?.role_detail||"","text",false,'maxlength="70"')+
- '<input type="hidden" name="staff_id" value="'+esc(row?.id||"")+'"><p class="bq-hint">Esta asignación es organizativa. El permiso para consultar fichas y actas se concede mediante el código del equipo.</p>',row?"Guardar cambios":"Añadir integrante");}
+function openStaffForm(row){
+ const t=team();if(!t||!row)return;
+ if(!["pending","active"].includes(row.status))return notify("Esta cuenta no tiene una solicitud válida.","error");
+ const taken=new Set(state.teamRoster.filter(m=>m.user_id!==row.user_id&&m.status==="active"&&m.position!=="other").map(m=>m.position));
+ const allowed=POS.filter(([p])=>p==="other"||!taken.has(p));
+ formModal((row.status==="pending"?"Aprobar solicitud":"Asignar o cambiar cargo")+
+ " · "+t.name,"staffForm",
+ '<div class="bq-verified-account"><span>CUENTA REGISTRADA</span><strong>'+esc(row.display_name)+'</strong><small>'+esc(row.email_masked||"Correo confirmado")+
+ ' · '+(row.email_verified?"✓ Correo verificado":"Correo sin verificar")+'</small></div>'+
+ '<p class="muted">Solo puedes asignar cargos a personas que hayan solicitado incorporarse con el código de este equipo. No se pueden crear personas escribiendo nombres.</p>'+
+ sel("position","Cargo",allowed,row.position||allowed[0]?.[0])+
+ input("role_detail","Descripción del puesto (solo si eliges Otro)",row.role_detail||"","text",false,'maxlength="70"')+
+ '<input type="hidden" name="user_id" value="'+esc(row.user_id)+'">',
+ row.status==="pending"?"Aprobar y dar acceso":"Guardar cargo");
+}
+
 function openSettingsForm(){const t=team();if(!t)return;formModal("Configuración · "+t.name,"teamSettingsForm",
  input("name","Nombre del equipo",t.name,"text",true,'minlength="2" maxlength="100"')+
  '<div class="bq-form-grid">'+sel("modality","Modalidad",[["F7","Fútbol 7"],["F11","Fútbol 11"]],t.modality)+
@@ -106,9 +118,28 @@ function teamsPage(){return head("Equipos del club","Selecciona un equipo para c
  '<div class="team-grid">'+state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality).map(t=>
  '<article class="team-card"><div class="team-card-top"><span class="team-badge">⚽</span><div><h3>'+esc(t.name)+'</h3><p>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</p></div></div><div class="team-meta"><span>'+esc(t.competition||"Pendiente")+'</span><b>'+esc(t.season_id?"Temporada vinculada":"Sin temporada")+'</b></div><button type="button" class="btn ghost team-config" data-action="openTeam" data-id="'+esc(t.id)+'">Configurar equipo →</button></article>').join("")+'</div>'+
  (state.allTeams.some(t=>t.archived_at)?'<details class="panel bq-archived"><summary>Equipos archivados ('+state.allTeams.filter(t=>t.archived_at).length+')</summary>'+state.allTeams.filter(t=>t.archived_at).map(t=>'<div class="bq-team-line"><span>'+esc(t.name)+'</span>'+button("Restaurar","restoreTeam",t.id,"ghost")+'</div>').join("")+'</details>':"");}
-function staffTab(){const assigned=state.staff;return '<section class="ux-box"><div class="ux-box-title"><h3>Cuerpo técnico</h3><span>'+esc(team()?.name||"")+'</span></div>'+
- (assigned.length?assigned.map(s=>'<div class="ux-person"><span class="ux-person-avatar">'+esc(s.position==="head_coach"?"DT":s.position==="assistant_coach"?"2º":s.position==="third_coach"?"3º":s.position==="delegate"?"DG":"+")+'</span><div><strong>'+esc(s.display_name)+'</strong><small>'+esc(s.position==="other"?(s.role_detail||"Otro"):labelPos(s.position))+'</small></div><span class="ux-pill good">Asignado</span><div class="bq-person-actions">'+button("Editar","editStaff",s.id,"ghost")+button("Quitar","removeStaff",s.id,"ghost")+'</div></div>').join(""):'<div class="bq-empty-staff"><strong>Sin integrantes asignados</strong><p class="muted">Añade el entrenador principal o el primer miembro del cuerpo técnico.</p></div>')+
- '<div class="ux-actions">'+button("＋ Agregar entrenador o delegado","addStaff")+'</div><p class="ux-caution">El cargo es organizativo. Las cuentas reciben acceso a los datos del equipo únicamente cuando se unen con su código personal de equipo.</p></section>';}
+function staffTab(){
+ const t=team();if(!t)return"";
+ const all=state.teamRoster;
+ const pending=all.filter(m=>m.status==="pending");
+ const active=all.filter(m=>m.status==="active");
+ const rowCard=(m,pendingStatus)=>'<div class="ux-person bq-real-person">'+
+ '<span class="ux-person-avatar">'+(pendingStatus?"⏳":m.position==="head_coach"?"DT":m.position==="assistant_coach"?"2º":m.position==="third_coach"?"3º":m.position==="delegate"?"DG":"✓")+'</span>'+
+ '<div><strong>'+esc(m.display_name||"Cuenta registrada")+'</strong><small>'+
+ esc(m.email_masked||"Correo verificado")+' · '+(pendingStatus?"Solicita entrar":
+ m.position==="other"?(m.role_detail||"Otro cargo"):m.position?labelPos(m.position):"Cargo por asignar")+
+ '</small></div><span class="ux-pill '+(pendingStatus?"":"good")+'">'+(pendingStatus?"Pendiente":"Activo")+'</span>'+
+ '<div class="bq-person-actions">'+button(pendingStatus?"Aprobar y asignar":"Cambiar cargo","editStaff",m.user_id,"ghost")+
+ button(pendingStatus?"Rechazar":"Expulsar","removeStaff",m.user_id,"ghost")+'</div></div>';
+ return '<section class="ux-box"><div class="ux-box-title"><h3>Personal técnico verificado</h3><span>'+esc(t.name)+'</span></div>'+
+ '<p class="bq-hint">Todas las personas de esta lista se han identificado con una cuenta real y el código de este equipo. Solo Dirección Deportiva aprueba, designa el cargo, cambia permisos o expulsa.</p>'+
+ (pending.length?'<h4 class="bq-staff-heading">Solicitudes pendientes ('+pending.length+')</h4>'+pending.map(m=>rowCard(m,true)).join(""):"")+
+ '<h4 class="bq-staff-heading">Cuerpo técnico ('+active.length+')</h4>'+
+ (active.length?active.map(m=>rowCard(m,false)).join(""):
+ '<div class="bq-empty-staff"><strong>Todavía no hay entrenadores autorizados</strong><p class="muted">Comparte el código individual del equipo; las cuentas que lo introduzcan aparecerán aquí para que puedas aprobarlas y asignarles el cargo.</p></div>')+
+ '<div class="ux-actions">'+button("Ver código del equipo","showTeamCode","","ghost")+button("Actualizar solicitudes","refreshRoster","","ghost")+'</div></section>';
+}
+
 const docsOf=id=>state.docs.filter(x=>x.team?.id===id);
 function statsFor(t){const items=docsOf(t.id);const matches=items.filter(x=>x.type==="match").map(x=>x.data);const players=items.filter(x=>x.type==="player").map(x=>({id:x.id,...x.data})).filter(p=>p.active!==false);return {matches,players,r:Calc.record(matches),tops:players.map(p=>({p,st:Calc.playerStats(p.id,matches)}))};}
 function ranking(data,key,title,suffix=""){const ordered=[...data].sort((a,b)=>b.st[key]-a.st[key]).slice(0,5);const max=Math.max(1,...ordered.map(p=>p.st[key]));return '<section class="ux-box"><div class="ux-box-title"><h3>'+esc(title)+'</h3></div><div class="ux-rank">'+(ordered.map((p,i)=>'<div class="ux-rank-line"><span class="ux-rank-index">'+(i+1)+'</span><span class="ux-rank-name">'+esc(p.p.name)+'</span><span class="ux-rank-track"><i style="width:'+Math.round(100*p.st[key]/max)+'%"></i></span><b>'+p.st[key]+esc(suffix)+'</b></div>').join("")||'<p class="muted">Sin estadísticas todavía.</p>')+'</div></section>';}
@@ -120,9 +151,19 @@ return '<section class="ux-sport-strip">'+[["Partidos",r.pj],["Victorias",r.v],[
 function playersTab(t){const {tops}=statsFor(t);return '<section class="ux-box"><div class="ux-box-title"><h3>Estadísticas individuales</h3><span>Datos de actas reales</span></div><div class="ux-table-wrap"><table class="ux-data-table"><thead><tr><th>Jugador</th><th>Goles</th><th>Minutos</th><th>Convocatorias</th><th>Partidos</th></tr></thead><tbody>'+tops.map(x=>'<tr><td>'+esc(x.p.name)+'</td><td>'+x.st.goals+'</td><td>'+x.st.min+'</td><td>'+x.st.conv+'</td><td>'+x.st.played+'</td></tr>').join("")+'</tbody></table></div></section>';}
 function settingsTab(t){return '<section class="ux-box"><div class="ux-box-title"><h3>Configuración de '+esc(t.name)+'</h3></div><div class="bq-detail-grid"><div><span>Modalidad</span><b>'+esc(t.modality)+'</b></div><div><span>Categoría</span><b>'+esc(t.category||"Pendiente")+'</b></div><div><span>Competición</span><b>'+esc(t.competition||"Pendiente")+'</b></div><div><span>Temporada vinculada</span><b>'+esc(t.season_id||"Sin asignar")+'</b></div></div><div class="ux-actions">'+button("Editar equipo","editTeam")+
  button("Archivar equipo","archiveTeam",t.id,"ghost")+'</div><p class="muted">Archivar conserva plantilla, actas, estadísticas e historial. Podrás restaurar el equipo después.</p></section>';}
-function codeTab(t){const hasSeason=!!t.season_id;const choices=state.members.filter(m=>m.role==="owner"&&!state.allTeams.some(a=>a.season_id===m.season_id&&a.id!==t.id));return '<section class="ux-box"><div class="ux-box-title"><h3>Código individual de equipo</h3><span>'+esc(t.name)+'</span></div>'+
- (hasSeason?'<p>Comparte este código solamente con las personas autorizadas para trabajar en <b>'+esc(t.name)+'</b>. Cada equipo tiene uno distinto.</p><div class="ux-team-code"><span>CÓDIGO DEL EQUIPO</span><strong>'+esc(state.teamCode||"Cargando…")+'</strong></div><div class="ux-actions">'+button("Copiar código","copyTeamCode")+button("Renovar código","rotateTeamCode","","ghost")+'</div><p class="ux-caution">Renovar el código impide nuevas incorporaciones con el anterior. Los usuarios que ya estaban autorizados conservan su acceso hasta que se revoque en Compartir temporada.</p>':
- '<p>Antes de generar el código debes vincular a este equipo una temporada de la que seas propietario.</p>'+ (choices.length?'<form id="linkTeamForm" class="bq-inline-form"><label>Temporada disponible <select name="season_id">'+choices.map(x=>'<option value="'+esc(x.season_id)+'">'+esc(x.season_id)+'</option>').join("")+'</select></label><button class="btn primary" type="submit">Vincular temporada</button></form>':'<p class="muted">No hay temporadas propias disponibles. Créala primero en la aplicación de entrenador.</p><a class="btn ghost" href="index.html#temporadas">Crear una temporada</a>'))+'</section>';}
+function codeTab(t){
+ const hasSeason=!!t.season_id;
+ const choices=state.members.filter(m=>m.role==="owner"&&!state.allTeams.some(a=>a.season_id===m.season_id&&a.id!==t.id));
+ return '<section class="ux-box"><div class="ux-box-title"><h3>Código de incorporación al equipo</h3><span>'+esc(t.name)+'</span></div>'+
+ (hasSeason?'<p>Este código pertenece exclusivamente a <b>'+esc(t.name)+'</b>. No sirve para otros equipos ni da permiso inmediato sobre la plantilla.</p>'+
+ '<div class="ux-team-code"><span>CÓDIGO INDIVIDUAL DEL EQUIPO</span><strong>'+esc(state.teamCode||"Cargando…")+'</strong></div>'+
+ '<div class="ux-actions">'+button("Copiar código","copyTeamCode")+button("Renovar código","rotateTeamCode","","ghost")+'</div>'+
+ '<div class="bq-info-note"><b>Cómo funciona:</b> 1. El entrenador inicia sesión en su cuenta; 2. escribe este código en «Unirme a mi equipo»; 3. aparece como pendiente en «Entrenadores»; 4. Dirección Deportiva valida su identidad y le asigna el puesto. Solo entonces obtiene acceso deportivo. Expulsarlo revoca ese acceso.</div>':
+ '<p>Este equipo todavía no tiene temporada preparada. Puedes activarla automáticamente, sin crear otra cuenta ni gastar más silbatos.</p>'+
+ button("Preparar temporada y habilitar código","provisionTeamSeason")+
+ (choices.length?'<details class="bq-manual-link"><summary>Vincular una temporada deportiva ya creada</summary><form id="linkTeamForm" class="bq-inline-form"><label>Temporada disponible <select name="season_id">'+choices.map(x=>'<option value="'+esc(x.season_id)+'">'+esc(x.season_id)+'</option>').join("")+'</select></label><button class="btn ghost" type="submit">Vincular temporada</button></form></details>':""))+'</section>';
+}
+
 function teamPage(){const t=team();if(!t)return teamsPage();return head(t.name,(t.category||"Categoría por definir")+' · '+t.modality+' · '+(t.competition||"Competición por definir"),button("← Volver a equipos","viewTeams","","ghost"))+
  '<div class="ux-tabs" role="navigation">'+[["overview","Resumen deportivo"],["players","Estadísticas"],["coaches","Entrenadores"],["settings","Configuración"],["code","Código del equipo"]].map(([k,v])=>'<button type="button" data-tab="'+k+'" class="'+(state.teamTab===k?"on":"")+'">'+v+'</button>').join("")+'</div>'+
  (!t.season_id&&["overview","players"].includes(state.teamTab)?'<div class="bq-note">Todavía no has vinculado una temporada deportiva. Puedes hacerlo en «Código del equipo».</div>':'')+
