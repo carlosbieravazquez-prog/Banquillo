@@ -155,7 +155,7 @@ V.temporadas = () => {
     let controls = "";
     if (!accessReady) controls = '<span class="muted small">Comprobando permisos…</span>';
     else if (link?.manager) {
-      controls = btn("Gestionar club","openClubPanel",{id:link.club_id},"ghost small");
+      controls = btn("Gestionar este equipo","openClubPanel",{id:link.club_id,team:link.team_id},"ghost small");
       if(!link.archived){
         controls += btn("Retirar equipo","archiveTeamFromSeasonAsk",{id:link.team_id},"ghost danger-t small");
         if(isOwner) controls += btn("Eliminar club","deleteClubFromSeasonAsk",{id:link.club_id},"ghost danger-t small");
@@ -212,7 +212,14 @@ V.temporadas = () => {
     '<a class="btn ghost" href="clubes.html">Ir a Dirección Deportiva</a></div></section>';
 };
 ACT.openSeason = el => { const id=el?.dataset?.id;if(!Store.seasons.some(x=>x.id===id)){toast("Este equipo no está disponible en tu cuenta.","err");return;} Store.selectSeason(id); go("inicio"); toast("Has abierto la temporada seleccionada.","ok"); };
-ACT.openClubPanel = () => { location.href = "clubes.html"; };
+ACT.openClubPanel = el => {
+  const clubId=el?.dataset?.id,teamId=el?.dataset?.team;
+  const permitted=(Store.clubLinks||[]).some(x=>x.club_id===clubId&&x.manager&&(!teamId||x.team_id===teamId));
+  if(!permitted){toast("Esta cuenta no tiene permiso para gestionar ese equipo.","err");return;}
+  const query=new URLSearchParams({club:clubId});
+  if(teamId)query.set("team",teamId);
+  location.href="clubes.html?"+query.toString();
+};
 ACT.refreshSeasonLinks = async () => {
   await Store.loadRoles();
   await Store.loadClubLinks();
