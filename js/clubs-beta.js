@@ -39,9 +39,19 @@ if(selectedTeam!==t.id)return;
 const matches=rows.filter(r=>r.path.startsWith('seasons/'+t.season_id+'/matches/')).map(r=>r.data);
 const players=rows.filter(r=>r.path.startsWith('seasons/'+t.season_id+'/players/')).map(r=>({...r.data,id:r.path.split('/').pop()})).filter(p=>p.active!==false);
 const r=Calc.record(matches);
+const now=Date.now();
+const delayed=matches.filter(m=>!m.rest&&/^\\d{4}-\\d\\d-\\d\\d$/.test(m.date||'')&&!Calc.matchInfo(m).played&&
+   new Date(m.date+'T23:59:59').getTime()+48*3600000<now);
+const pendingCall=matches.filter(m=>!m.rest&&/^\\d{4}-\\d\\d-\\d\\d$/.test(m.date||'')&&
+   !m.callDone&&(!Array.isArray(m.noCall)||!m.noCall.length)&&new Date(m.date+'T12:00:00').getTime()>now&&
+   new Date(m.date+'T12:00:00').getTime()<now+7*86400000);
+const noticeBox=(delayed.length||pendingCall.length)?'<section class="panel"><h3>Avisos pendientes del equipo</h3>'+
+ delayed.map(m=>'<div class="notice">Acta pendiente · jornada '+E(m.n||'')+' · '+E(m.rival||'Rival')+' · '+E(m.date)+'</div>').join('')+
+ pendingCall.map(m=>'<div class="notice">Revisar convocatoria · jornada '+E(m.n||'')+' · '+E(m.date)+'</div>').join('')+
+ '<p class="muted">Avisos calculados al abrir el panel; todavía no se envían notificaciones automáticas.</p></section>':'';
 const tiles=[['Partidos',r.pj],['Ganados',r.v],['Empatados',r.e],['Perdidos',r.d],['Goles a favor',r.gf],['Goles en contra',r.gc],['Diferencia',r.dg]];
 const rank=(label,key,suffix)=>'<div class="panel"><h3>'+label+'</h3>'+players.map(p=>({p,s:Calc.playerStats(p.id,matches)})).sort((a,b)=>b.s[key]-a.s[key]).slice(0,5).map(z=>'<div class="rank"><span>'+E(z.p.name)+'</span><strong>'+fmt(z.s[key])+suffix+'</strong></div>').join('')+'</div>';
-el.innerHTML='<div class="metric-grid">'+tiles.map(([k,v])=>'<div class="metric">'+E(k)+'<strong>'+fmt(v)+'</strong></div>').join('')+'</div><h3>Estadísticas de plantilla</h3><div class="cards">'+rank('Máximos goleadores','goals','')+rank('Más minutos','min',' min')+rank('Más convocatorias','conv','')+'</div><p class="muted">Resultados calculados de las actas guardadas. Los partidos futuros no cuentan.</p>';
+el.innerHTML='<div class="metric-grid">'+tiles.map(([k,v])=>'<div class="metric">'+E(k)+'<strong>'+fmt(v)+'</strong></div>').join('')+'</div>'+noticeBox+'<h3>Estadísticas de plantilla</h3><div class="cards">'+rank('Máximos goleadores','goals','')+rank('Más minutos','min',' min')+rank('Más convocatorias','conv','')+'</div><p class="muted">Resultados calculados de las actas guardadas. Los partidos futuros no cuentan.</p>';
 }
 document.addEventListener('click',async e=>{
  const copy=e.target.closest('[data-copy-code]');if(copy){try{await navigator.clipboard.writeText(copy.dataset.copyCode);msg('Código copiado.','ok')}catch(err){msg('Selecciona el código para copiarlo.','error')}return}
