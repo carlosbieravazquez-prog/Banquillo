@@ -154,7 +154,7 @@ const FORM = {};
     const slot = $("#authSlot"); if (slot) slot.dataset.h = "";
     render(true);
   };
-  ACT.signOut = async () => { UI.sheet = null; await Cloud.sb.auth.signOut(); A.leave(); };
+  ACT.signOut = async () => { UI.sheet = null; await Cloud.sb.auth.signOut({scope:"local"}); A.leave(); };
 
   /* ---------- Mi cuenta y Silbatos ---------- */
   const fmtD = iso => { try { return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return ""; } };
