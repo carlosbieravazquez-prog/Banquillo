@@ -146,6 +146,8 @@ const FORM = {};
     render(true);
   };
   A.leave = () => {
+    if(typeof CoachInbox!=="undefined")CoachInbox.reset();
+    if(typeof TeamRequests!=="undefined")TeamRequests.reset();
     A.uid = null; A.state = "out"; Cloud.profile = null; Store.reset(); Store.connecting = false;
     UI.sheet = null; UI.wiz = null; UI.ai = {};
     A.ui = { mode: "login", busy: false, msg: null, email: "", name: "" };
