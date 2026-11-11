@@ -42,7 +42,7 @@ function seedRows(sid,t){
    dorsal:i+1,order:i,active:true,notes:"Jugador ficticio para la demostración de Banquillo."
  }));
  const docs=roster.map(p=>({season_id:sid,path:"seasons/"+sid+"/players/"+p.id,
-   parent:"seasons/"+sid+"/players",data:{name:p.name,dorsal:p.dorsal,order:p.order,active:true,notes:p.notes}}));
+   data:{name:p.name,dorsal:p.dorsal,order:p.order,active:true,notes:p.notes}}));
  for(let i=0;i<18;i++){
    const played=dateKey(asDate(i))<today;
    const home=i<9?i%2===t.shift:i%2!==t.shift;
@@ -60,9 +60,9 @@ function seedRows(sid,t){
      noCall:played?roster.filter(p=>!used.includes(p)).map(p=>({p:p.id,m:"DT"})):[],
      players:line,scorers};
    if(played){data.ourGoals=gf;data.rivalGoals=ga;}
-   docs.push({season_id:sid,path:"seasons/"+sid+"/matches/m"+(i+1),parent:"seasons/"+sid+"/matches",data});
+   docs.push({season_id:sid,path:"seasons/"+sid+"/matches/m"+(i+1),data});
  }
- docs.push({season_id:sid,path:"seasons/"+sid+"/training/main",parent:"seasons/"+sid+"/training",data:{
+ docs.push({season_id:sid,path:"seasons/"+sid+"/training/main",data:{
   absences:{},skipped:[],extra:[],notes:"Entrenamientos de lunes y miércoles. Datos de presentación."
  }});
  return docs;
