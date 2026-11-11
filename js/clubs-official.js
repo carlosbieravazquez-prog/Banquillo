@@ -109,7 +109,7 @@ return head("Resumen del club","Organización deportiva de "+c.name,button("+ A�
  '<div class="two-col"><section class="panel"><div class="panel-head"><h3>Equipos del club</h3>'+button("Ver todos","viewTeams","","ghost")+'</div>'+teamRows()+'</section><section class="panel"><div class="panel-head"><h3>Plan de trabajo</h3></div><p class="muted">Personaliza el cuerpo técnico, vincula las temporadas de cada equipo y comparte su código de acceso. Puedes completar las instalaciones cuando lo necesites.</p><div class="bq-inline-actions">'+button("Temporadas","viewSeasons","","ghost")+button("Instalaciones","viewFacilities","","ghost")+'</div></section></div>';}
 function emptyClub(){return head("Bienvenido a Banquillo","Empieza desde el club o incorpora un equipo a tu cuenta.")+'<div class="bq-choice-grid">'+
  '<article class="panel"><h3>Crear un club</h3><p>Configúralo progresivamente: equipos, campos, cuerpo técnico y temporadas.</p>'+button("Crear club","newClub")+'</article>'+
- '<article class="panel"><h3>Unirme a un club</h3><p>Usa el código que te facilite su director deportivo.</p>'+button("Introducir código","joinClub","","ghost")+'</article>'+
+ '<article class="panel"><h3>Entrar como segundo director</h3><p>Introduce la invitación de 8 caracteres que te facilita el director actual. Para entrenar un equipo utiliza su código desde «Temporadas».</p>'+button("Introducir código","joinClub","","ghost")+'</article>'+
  '<article class="panel"><h3>Dirigir un equipo</h3><p>Crea una temporada individual en la aplicación del entrenador.</p><a class="btn ghost" href="index.html">Ir a mi equipo</a></article></div>'+deletedSection();}
 function teamRows(){const list=state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality);return list.map(t=>'<button type="button" class="bq-team-line" data-action="openTeam" data-id="'+esc(t.id)+'"><span>⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+' · '+esc(t.competition||"Competición por definir")+'</small></span><span>'+(state.pendingByTeam[t.id]?'<span class="bq-pending-pill">'+state.pendingByTeam[t.id]+' solicitud(es) </span>':'')+'Configurar →</span></button>').join("")||'<p class="muted">Aún no hay equipos en esta modalidad.</p>';}
 function teamsPage(){return head("Equipos del club","Selecciona un equipo para consultar sus estadísticas, entrenadores y configuración.",button("+ Añadir equipo","newTeam"))+
@@ -342,7 +342,7 @@ async function refreshInvitation(rotate=false){
  '<p>Entrega este código solo a la persona que quieras incorporar. El código es de un único uso y caduca a las <b>'+esc(expires)+'</b>.</p>'+
  '<div class="ux-team-code"><span>CÓDIGO DE SEGUNDO DIRECTOR · 8 CARACTERES · 10 MINUTOS</span><strong data-invite-code>'+esc(prettyCode(info.code))+'</strong></div>'+
  '<div class="ux-actions">'+button("Copiar código","copyClubCode")+button("Renovar ahora","rotateInvite","","ghost")+'</div>'+
- '<p class="bq-hint">El otro director debe iniciar sesión en su propia cuenta, abrir Dirección Deportiva y elegir «Unirme a un club». Nunca compartas tu contraseña.</p>');
+ '<p class="bq-hint">El otro director debe iniciar sesión en su propia cuenta, abrir Dirección Deportiva y elegir «Entrar como segundo director». Nunca compartas tu contraseña.</p>');
 }
 
 async function loadTeamCode(){const t=team();if(!t?.season_id)return;try{state.teamCode=await rpc("banquillo_team_code",{p_team_id:t.id,p_rotate:false});if(state.teamTab==="code")render();}catch(e){notify(errText(e),"error");}}
