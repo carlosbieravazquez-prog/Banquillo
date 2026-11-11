@@ -5,7 +5,7 @@ const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo entrenador"],["third_coach","Tercer entrenador"],["delegate","Delegado"],["other","Otro"]];
 const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
-const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],
+const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],pendingByTeam:{},
   members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
   clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
@@ -110,10 +110,10 @@ function emptyClub(){return head("Bienvenido a Banquillo","Empieza desde el club
  '<article class="panel"><h3>Crear un club</h3><p>Configúralo progresivamente: equipos, campos, cuerpo técnico y temporadas.</p>'+button("Crear club","newClub")+'</article>'+
  '<article class="panel"><h3>Unirme a un club</h3><p>Usa el código que te facilite su director deportivo.</p>'+button("Introducir código","joinClub","","ghost")+'</article>'+
  '<article class="panel"><h3>Dirigir un equipo</h3><p>Crea una temporada individual en la aplicación del entrenador.</p><a class="btn ghost" href="index.html">Ir a mi equipo</a></article></div>'+deletedSection();}
-function teamRows(){const list=state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality);return list.map(t=>'<button type="button" class="bq-team-line" data-action="openTeam" data-id="'+esc(t.id)+'"><span>⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+' · '+esc(t.competition||"Competición por definir")+'</small></span><span>Configurar →</span></button>').join("")||'<p class="muted">Aún no hay equipos en esta modalidad.</p>';}
+function teamRows(){const list=state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality);return list.map(t=>'<button type="button" class="bq-team-line" data-action="openTeam" data-id="'+esc(t.id)+'"><span>⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+' · '+esc(t.competition||"Competición por definir")+'</small></span><span>'+(state.pendingByTeam[t.id]?'<span class="bq-pending-pill">'+state.pendingByTeam[t.id]+' solicitud(es) </span>':'')+'Configurar →</span></button>').join("")||'<p class="muted">Aún no hay equipos en esta modalidad.</p>';}
 function teamsPage(){return head("Equipos del club","Selecciona un equipo para consultar sus estadísticas, entrenadores y configuración.",button("+ Añadir equipo","newTeam"))+
  '<div class="team-grid">'+state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality).map(t=>
- '<article class="team-card"><div class="team-card-top"><span class="team-badge">⚽</span><div><h3>'+esc(t.name)+'</h3><p>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</p></div></div><div class="team-meta"><span>'+esc(t.competition||"Pendiente")+'</span><b>'+esc(t.season_id?"Temporada vinculada":"Sin temporada")+'</b></div><button type="button" class="btn ghost team-config" data-action="openTeam" data-id="'+esc(t.id)+'">Configurar equipo →</button></article>').join("")+'</div>'+
+ '<article class="team-card"><div class="team-card-top"><span class="team-badge">⚽</span><div><h3>'+esc(t.name)+'</h3><p>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</p></div></div><div class="team-meta"><span>'+esc(t.competition||"Pendiente")+'</span><b>'+esc(t.season_id?"Temporada vinculada":"Sin temporada")+'</b></div>'+(state.pendingByTeam[t.id]?'<div class="bq-card-pending">⏳ '+state.pendingByTeam[t.id]+' solicitud(es) esperando aprobación</div>':'')+'<button type="button" class="btn ghost team-config" data-action="openTeam" data-id="'+esc(t.id)+'">Configurar equipo →</button></article>').join("")+'</div>'+
  (state.allTeams.some(t=>t.archived_at)?'<details class="panel bq-archived"><summary>Equipos archivados ('+state.allTeams.filter(t=>t.archived_at).length+')</summary>'+state.allTeams.filter(t=>t.archived_at).map(t=>'<div class="bq-team-line"><span>'+esc(t.name)+'</span>'+button("Restaurar","restoreTeam",t.id,"ghost")+'</div>').join("")+'</details>':"");}
 function staffTab(){
  const t=team();if(!t)return"";
@@ -281,7 +281,13 @@ async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs"
   ]);
   state.allTeams=ts||[];state.teams=state.allTeams.filter(x=>!x.archived_at);state.periods=periods||[];state.settings=settings||{};state.members=members||[];
  }else{state.teams=[];state.allTeams=[];state.periods=[];state.settings={};state.members=[];}
- if(!state.teams.some(t=>t.id===state.teamId))state.teamId=state.teams[0]?.id||null;
+ if(!state.teams.some(t=>t.id===state.teamId)){state.teamId=state.teams[0]?.id||null;state.staff=[];state.teamRoster=[];}
+ state.pendingByTeam={};
+ if(state.teams.length){
+  const requests=await calls(state.sb.from("banquillo_team_members")
+  .select("team_id").in("team_id",state.teams.map(x=>x.id)).eq("status","pending"));
+  for(const m of requests||[])state.pendingByTeam[m.team_id]=(state.pendingByTeam[m.team_id]||0)+1;
+ }
  state.loaded=true;render();
  if(state.view==="directores")await loadDirectors();
  if(state.view==="equipo")await loadTeamData();
@@ -346,7 +352,7 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
@@ -365,7 +371,7 @@ async function action(name,id){try{
  if(name==="editTeam")return openSettingsForm();
  if(name==="editClub")return openClubSettings();
  if(name==="showTeamCode"){state.teamTab="code";render();return loadTeamCode();}
- if(name==="refreshRoster")return loadTeamData();
+ if(name==="refreshRoster"){await refresh();return loadTeamData();}
  if(name==="provisionTeamSeason"){
   const t=team();if(!t)return;
   await rpc("banquillo_provision_team_season",{p_team_id:t.id});
@@ -376,7 +382,7 @@ async function action(name,id){try{
  if(name==="viewTeams")return changeView("equipos");
  if(name==="viewSeasons")return changeView("temporadas");
  if(name==="viewFacilities")return changeView("instalaciones");
- if(name==="openTeam"){state.teamId=id;state.teamTab="overview";return changeView("equipo");}
+ if(name==="openTeam"){state.teamId=id;state.teamTab="overview";state.staff=[];state.teamRoster=[];state.teamCode=null;return changeView("equipo");}
  if(name==="joinClub")return formModal("Unirme a un club","joinClubForm",input("code","Código de invitación al club","","text",true,'maxlength="32" minlength="32"'),"Unirme");
  if(name==="copyTeamCode"||name==="copyClubCode"||name==="copyFixtures"){const txt=name==="copyTeamCode"?state.teamCode:name==="copyClubCode"?state.clubCode:messageText();if(!txt)return notify("No hay contenido para copiar.","error");try{await navigator.clipboard.writeText(txt);notify("Copiado al portapapeles.");}catch(e){modal("Copiar texto",'<textarea class="bq-copy-area" readonly>'+esc(txt)+'</textarea>');}return;}
  if(name==="archiveTeam")return ask("Archivar equipo","El equipo desaparecerá de los activos. Su temporada, actas e historial se conservarán.","acceptArchive",id,"Archivar equipo");
