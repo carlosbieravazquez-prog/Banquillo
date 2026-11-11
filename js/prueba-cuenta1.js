@@ -44,7 +44,7 @@ async function join(e,type){
  e.preventDefault();const btn=e.currentTarget.querySelector("button");btn.disabled=true;
  const code=normalize(new FormData(e.currentTarget).get("code"));
  try{
- if(!/^(?:[abcdefghjkmnpqrstuvwxyz23456789]{8}|[a-f0-9]{32})$/.test(code))throw Error("Introduce los 8 caracteres del código. Puedes separar los bloques con un guion.");
+ if(!/^(?:[abcdefghjklmnpqrstuvwxyz23456789]{8}|[a-f0-9]{32})$/.test(code))throw Error("Introduce los 8 caracteres del código. Puedes separar los bloques con un guion.");
  const answer=type==="director"?await rpc("banquillo_join_club",{p_code:code}):
  await rpc("banquillo_join_team",{p_code:code});
  if(!answer?.ok){const msg={too_many_attempts:"Se han introducido varios códigos incorrectos de este tipo. Espera 10 minutos y vuelve a probar.",invalid_or_expired_code:"El código ha caducado o ya ha sido usado.",director_limit:"El club ya tiene dos directores.",email_not_verified:"Primero verifica tu correo electrónico.",invalid_or_inactive_code:"Código de equipo incorrecto o inactivo.",invalid_code:"Código incorrecto."}[answer?.error]||"No se pudo realizar la solicitud ("+(answer?.error||"sin detalle")+").";throw Error(msg);}
