@@ -326,6 +326,71 @@ function facilitiesPage(){const v=state.settings;return head("Instalaciones","Co
  '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+(v.fields_f11||0)+'</div></article><article class="stat"><div class="stat-label">Campos independientes F7</div><div class="stat-value">'+(v.fields_f7||0)+'</div></article><article class="stat"><div class="stat-label">Capacidad F7 si F11 divisible</div><div class="stat-value">'+((v.fields_f11||0)*2+(v.fields_f7||0))+'</div></article></div>'+
  '<section class="panel"><h3>Organización de partidos</h3><p class="muted">La planificación detallada de campos, horarios y conflictos sigue disponible en la demostración de club mientras se prepara su integración segura con calendarios reales.</p><a href="demo-club.html#instalaciones" class="btn ghost">Ver planificador demostrativo</a></section>';}
 function fixtures(){return state.docs.filter(x=>x.type==="match"&&!x.data?.rest).map(x=>({t:x.team,m:x.data})).sort((a,b)=>String(a.m.date||"9999").localeCompare(String(b.m.date||"9999")));}
+// Planificador oficial: utiliza exclusivamente partidos visibles bajo RLS.
+function plannerFacilities(){
+ const f11=Math.max(0,Math.min(12,Number(state.settings.fields_f11)||0));
+ const f7=Math.max(0,Math.min(12,Number(state.settings.fields_f7)||0));
+ const div=Array.isArray(state.settings.divisible)?state.settings.divisible:[];
+ return {f11,f7,divisible:Array.from({length:f11},(_,i)=>div[i]!==false)};
+}
+function plannerRows(){
+ const slots=new Map(state.schedules.map(v=>[v.team_id+"|"+v.match_path,v]));
+ return state.docs.filter(x=>x.type==="match"&&x.team&&x.data&&!x.data.rest&&
+   /^\d{4}-\d{2}-\d{2}$/.test(x.data.date||""))
+  .map(x=>{
+   const path="seasons/"+x.team.season_id+"/matches/"+x.id;
+   return {t:x.team,m:x.data,path,key:x.team.id+"|"+path,
+    slot:slots.get(x.team.id+"|"+path)||null};
+  }).sort((a,b)=>(a.m.date+(a.slot?.kickoff||"")).localeCompare(b.m.date+(b.slot?.kickoff||"")));
+}
+function plannerFieldLabel(resource){
+ const settings=plannerFacilities();
+ return [...ClubPlanner.resourceList(settings,"F11"),...ClubPlanner.resourceList(settings,"F7")]
+   .find(x=>x.id===resource)?.label||resource||"Sin asignar";
+}
+function plannerExisting(){
+ return state.schedules.map(x=>({id:x.team_id+"|"+x.match_path,
+ teamId:x.team_id,date:x.match_date,time:String(x.kickoff||"").slice(0,5),
+ duration:Number(x.duration_minutes),home:true,resource:x.resource}));
+}
+function plannerSuggestions(row,limit=3){
+ const slots=plannerExisting(),fields=ClubPlanner.resourceList(plannerFacilities(),row.t.modality);
+ const mins=Number(row.t.settings?.matchMinutes)||(row.t.modality==="F11"?90:60);
+ const options=[];
+ for(let h=9;h<=19;h++)for(const mm of [0,30])for(const resource of fields){
+  const time=String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+  const candidate={id:row.key,teamId:row.t.id,date:row.m.date,
+   time,duration:mins,home:true,resource:resource.id,modality:row.t.modality};
+  if(!ClubPlanner.validate(candidate,slots,plannerFacilities(),row.key)){
+    options.push({time,resource:resource.id,label:resource.label});
+    if(options.length>=limit)return options;
+  }
+ }
+ return options;
+}
+function openPlannerForm(key){
+ const row=plannerRows().find(x=>x.key===key&&x.m.home);
+ if(!row)return notify("No se encuentra este partido local entre las actas autorizadas.","error");
+ const fields=ClubPlanner.resourceList(plannerFacilities(),row.t.modality);
+ if(!fields.length)return notify("Primero configura los campos F7/F11 del club en Instalaciones.","error");
+ const tips=plannerSuggestions(row),slot=row.slot,first=tips[0];
+ const values=fields.map(v=>[v.id,v.label]);
+ const help=tips.length?'<div class="bq-planner-suggestions"><b>Horarios recomendados (sin conflictos)</b>'+
+  tips.map(t=>'<button type="button" class="btn ghost" data-action="suggestSchedule" data-id="'+esc(t.time+"|"+t.resource)+'">'+
+   esc(t.time+" · "+t.label)+'</button>').join("")+'</div>':
+  '<p class="bq-hint">No se ha encontrado un hueco libre entre las 9:00 y las 19:30. Revisa las instalaciones y los horarios existentes.</p>';
+ const duration=Number(slot?.duration_minutes)||Number(row.t.settings?.matchMinutes)||(row.t.modality==="F11"?90:60);
+ formModal("Asignar partido · "+row.t.name,"scheduleMatchForm",
+  '<p class="muted">🏠 Jornada '+esc(row.m.n||"—")+' · '+esc(showDate(row.m.date))+
+  ' · contra '+esc(row.m.rival||"Rival por confirmar")+'</p>'+
+  '<input type="hidden" name="match_key" value="'+esc(row.key)+'">'+
+  input("time","Hora de inicio",String(slot?.kickoff||first?.time||"10:00").slice(0,5),"time",true,'step="300"')+
+  sel("resource","Campo de juego",values,slot?.resource||first?.resource||fields[0].id)+
+  input("duration","Duración en minutos",duration,"number",true,'min="30" max="180"')+
+  '<p class="bq-hint">El horario se guarda en Supabase. Si otro director ocupa el mismo campo, el servidor rechazará el solapamiento.</p>'+
+  help+(slot?'<div class="bq-planner-remove">'+button("Quitar horario asignado","removeSchedule",row.key,"ghost")+'</div>':""),
+  "Guardar horario y campo");
+}
 function calendarPage(monthly=false){const list=fixtures().filter(x=>!monthly||String(x.m.date||"").startsWith(state.year+"-"+String(state.month+1).padStart(2,"0")));return head(monthly?"Planificador mensual":"Calendario del club","Jornadas visibles según los permisos de las temporadas vinculadas.",monthly?button("Mes anterior","prevMonth","","ghost")+button("Mes siguiente","nextMonth","","ghost"):"")+
  (monthly?'<h3 class="bq-month-title">'+new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(new Date(state.year,state.month,1))+'</h3>':"")+
  '<section class="panel"><div class="bq-fixtures">'+(list.map(x=>'<div class="bq-fixture"><span>'+esc(showDate(x.m.date))+'</span><span><b>'+esc(x.t.name)+'</b><small>Jornada '+esc(x.m.n||"—")+' · '+(x.m.home?"🏠 Local":"✈️ Visitante")+'</small></span><b>'+esc(x.m.rival||"Rival por definir")+'</b></div>').join("")||'<p class="muted">No hay encuentros registrados en las temporadas a las que tienes acceso.</p>')+'</div></section><p class="bq-hint">Este calendario utiliza las jornadas reales de cada temporada. La asignación de instalaciones aún se realiza en el planificador demostrativo.</p>';}
