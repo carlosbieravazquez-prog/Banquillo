@@ -5,7 +5,7 @@ const V = {};      // vistas
 const ACT = {};    // acciones (clic)
 const CHG = {};    // cambios (change)
 const INP = {};    // entrada de texto (sin re-render)
-const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "toggleSkip0", "openMatch", "openCoachNotice", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode"]);
+const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "toggleSkip0", "openMatch", "openCoachNotice", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "openTeamJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode"]);
 const inWizard = a => !!UI.wiz && /^(w[A-Z]|wiz)/.test(a);
 const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"]];
 const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas" };
@@ -63,6 +63,7 @@ function bodyView() {
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">⚽</div><h2>Crear equipo</h2><p>Configura categoría, plantilla, calendario y entrenadores desde tu primera temporada.</p>'+btn("Crear mi equipo","wizStart",{first:1},"primary","plus")+'</article>'+
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">🏟️</div><h2>Crear club</h2><p>Organiza equipos, temporadas y dirección deportiva. Completa la configuración poco a poco.</p><a class="btn primary" href="clubes.html">Gestionar mi club →</a></article>'+
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">◈</div><h2>Mostrar prueba</h2><p>Explora una demostración profesional con jornadas, estadísticas y datos ficticios.</p>'+btn("Ver demostraciones","openDemoChooser",{},"ghost")+'</article></div>'+
+      (typeof TeamRequests!=="undefined"?TeamRequests.panel():"")+
       '<div class="bq-onboard-join"><span>¿Te han invitado a un equipo?</span>'+btn("Introducir código de equipo","openTeamJoin",{},"ghost")+btn("Código antiguo de temporada","openJoin",{},"ghost")+'</div></div>';
   }
   const fn = V[UI.route.name] || V.inicio;

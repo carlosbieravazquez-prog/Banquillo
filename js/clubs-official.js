@@ -5,7 +5,7 @@ const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo entrenador"],["third_coach","Tercer entrenador"],["delegate","Delegado"],["other","Otro"]];
 const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
-const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],
+const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],pendingByTeam:{},
   members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
   clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
@@ -18,7 +18,7 @@ const currentPeriod=()=>state.periods.find(x=>x.status==="active");
 const nowLabel=()=>new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
 const seasonDefault=()=>{const d=new Date(),y=d.getMonth()>=6?d.getFullYear():d.getFullYear()-1;return y+"/"+(y+1)};
 const showDate=s=>{if(!s)return"Por definir";const d=new Date(s+"T12:00:00");return Number.isNaN(d.getTime())?String(s):new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"short",year:"numeric"}).format(d)};
-const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/insufficient_management_whistles/.test(m))return"No te quedan suficientes silbatos de gestión para crear esto.";if(/invalid_or_expired_code/.test(m))return"El código ha caducado o ya se ha utilizado. Solicita uno nuevo al director.";if(/owner_must_close_or_delete/.test(m))return"Antes de abandonar debes incorporar a un segundo director o cerrar el club.";if(/not_club_director|not_club_owner/.test(m))return"No tienes permisos de dirección en este club.";if(/team_requires_linked_season/.test(m))return"Primero vincula el equipo a una temporada.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
+const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/season_owner_transfer_required/.test(m))return"Este usuario es propietario de la temporada deportiva. Transfiere antes esa titularidad.";if(/team_name_exists/.test(m))return"Ya hay un equipo activo con ese nombre en este club.";if(/no_verified_request/.test(m))return"La cuenta aún no ha solicitado unirse mediante el código correcto.";if(/team_has_members_unlink_first/.test(m))return"No se puede cambiar la temporada de un equipo que ya tiene personas vinculadas.";if(/insufficient_management_whistles/.test(m))return"No te quedan suficientes silbatos de gestión para crear esto.";if(/invalid_or_expired_code/.test(m))return"El código ha caducado o ya se ha utilizado. Solicita uno nuevo al director.";if(/owner_must_close_or_delete/.test(m))return"Antes de abandonar debes incorporar a un segundo director o cerrar el club.";if(/not_club_director|not_club_owner/.test(m))return"No tienes permisos de dirección en este club.";if(/team_requires_linked_season/.test(m))return"Primero vincula el equipo a una temporada.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
 function notify(txt,tone="ok"){const e=$("#messageBar");e.textContent=txt;e.className="bq-status "+tone;}
 const rview=()=>$("#viewRoot");
 const head=(title,desc,btns="")=>'<div class="page-head"><div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p></div>'+btns+'</div>';
@@ -35,12 +35,23 @@ function openTeamForm(){if(!active())return;formModal("Añadir equipo","teamForm
  '<div class="bq-form-grid">'+sel("modality","Modalidad",[["F7","Fútbol 7"],["F11","Fútbol 11"]],"F7")+
  sel("category","Categoría",[["Prebenjamín","Prebenjamín"],["Benjamín","Benjamín"],["Alevín","Alevín"],["Infantil","Infantil"],["Cadete","Cadete"],["Juvenil","Juvenil"],["Sénior","Sénior"]],"Benjamín")+'</div>'+
  input("competition","Competición (opcional)","","text",false,'maxlength="100"')+
- input("coach","Entrenador principal (opcional)","","text",false,'maxlength="90"')+
- '<p class="bq-hint">Al crear el equipo podrás vincular su temporada y generar un código de acceso exclusivo para sus entrenadores.</p>',"Crear equipo");}
-function openStaffForm(row){const t=team();if(!t)return;const taken=new Set(state.staff.filter(p=>p.id!==row?.id&&p.position!=="other").map(x=>x.position));const available=POS.filter(([key])=>key==="other"||!taken.has(key));formModal(row?"Editar cuerpo técnico":"Agregar integrante","staffForm",input("display_name","Nombre y apellidos",row?.display_name||"","text",true,'minlength="2" maxlength="90"')+
- sel("position","Cargo",available,row?.position||available[0]?.[0])+
- input("role_detail","Especifica el cargo (solo si eliges Otro)",row?.role_detail||"","text",false,'maxlength="70"')+
- '<input type="hidden" name="staff_id" value="'+esc(row?.id||"")+'"><p class="bq-hint">Esta asignación es organizativa. El permiso para consultar fichas y actas se concede mediante el código del equipo.</p>',row?"Guardar cambios":"Añadir integrante");}
+ '<p class="bq-hint">La temporada y el código del equipo se preparan automáticamente. Para incorporar entrenadores necesitarán iniciar sesión y usar ese código; no se añaden nombres manualmente.</p>',"Crear equipo");}
+function openStaffForm(row){
+ const t=team();if(!t||!row)return;
+ if(!["pending","active"].includes(row.status))return notify("Esta cuenta no tiene una solicitud válida.","error");
+ const taken=new Set(state.teamRoster.filter(m=>m.user_id!==row.user_id&&m.status==="active"&&m.position!=="other").map(m=>m.position));
+ const allowed=POS.filter(([p])=>p==="other"||!taken.has(p));
+ formModal((row.status==="pending"?"Aprobar solicitud":"Asignar o cambiar cargo")+
+ " · "+t.name,"staffForm",
+ '<div class="bq-verified-account"><span>CUENTA REGISTRADA</span><strong>'+esc(row.display_name)+'</strong><small>'+esc(row.email_masked||"Correo confirmado")+
+ ' · '+(row.email_verified?"✓ Correo verificado":"Correo sin verificar")+'</small></div>'+
+ '<p class="muted">Solo puedes asignar cargos a personas que hayan solicitado incorporarse con el código de este equipo. No se pueden crear personas escribiendo nombres.</p>'+
+ sel("position","Cargo",allowed,row.position||allowed[0]?.[0])+
+ input("role_detail","Descripción del puesto (solo si eliges Otro)",row.role_detail||"","text",false,'maxlength="70"')+
+ '<input type="hidden" name="user_id" value="'+esc(row.user_id)+'">',
+ row.status==="pending"?"Aprobar y dar acceso":"Guardar cargo");
+}
+
 function openSettingsForm(){const t=team();if(!t)return;formModal("Configuración · "+t.name,"teamSettingsForm",
  input("name","Nombre del equipo",t.name,"text",true,'minlength="2" maxlength="100"')+
  '<div class="bq-form-grid">'+sel("modality","Modalidad",[["F7","Fútbol 7"],["F11","Fútbol 11"]],t.modality)+
@@ -57,28 +68,26 @@ function openDeleteClubForm(){
 function openBackupForm(){
  if(!active())return;
  formModal("Restaurar copia de configuración","restoreConfigForm",
- '<p>Selecciona un archivo JSON exportado anteriormente desde <b>este mismo club</b>. Restauraremos los datos de configuración y los cargos del cuerpo técnico, no las actas ni las cuentas.</p>'+
+ '<p>Selecciona un archivo JSON exportado anteriormente desde <b>este mismo club</b>. Restauraremos solo la configuración y las categorías. Los entrenadores y sus permisos provienen de cuentas reales y no pueden restaurarse mediante nombres escritos en un archivo.</p>'+
  '<label class="field"><span>Archivo de copia de seguridad (.json)</span><input type="file" name="backup" accept=".json,application/json" required></label>'+
  input("confirm_name","Confirma el nombre del club",active().name,"text",true,'maxlength="120"')+
- '<p class="bq-danger-note">Esta operación reemplazará nombres, categorías, ajustes y cargos de los equipos incluidos en la copia. No creará ni eliminará equipos.</p>',"Restaurar configuración");
+ '<p class="bq-danger-note">Esta operación reemplazará nombres, categorías y ajustes de los equipos incluidos. No modificará entrenadores ni permisos de cuentas, y no creará ni eliminará equipos.</p>',"Restaurar configuración");
 }
 async function saveBackup(){
  const c=active();if(!c)throw Error("No hay club seleccionado.");
  const all=state.allTeams;
- const ids=all.map(x=>x.id);
- const staff=ids.length?await calls(state.sb.from("banquillo_team_staff").select("team_id,display_name,position,role_detail").in("team_id",ids)):[];
- const backup={format:"banquillo-club-configuration",version:1,
+ // El respaldo nunca incluye personas ni cargos: se vinculan exclusivamente por cuenta.
+ const backup={format:"banquillo-club-configuration",version:2,
    club_id:c.id,club_name:c.name,exported_at:new Date().toISOString(),
    settings:{town:state.settings.town||"",province:state.settings.province||"",
    community:state.settings.community||"",fields_f11:state.settings.fields_f11||0,
    fields_f7:state.settings.fields_f7||0},
-   teams:all.map(({id,name,modality,category,competition,settings})=>({id,name,modality,category,competition,settings})),
-   staff:(staff||[]).map(({team_id,display_name,position,role_detail})=>({team_id,display_name,position,role_detail}))};
+   teams:all.map(({id,name,modality,category,competition,settings})=>({id,name,modality,category,competition,settings}))};
  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json;charset=utf-8"});
  const url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download="banquillo-"+c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").slice(0,35)+"-config-"+new Date().toISOString().slice(0,10)+".json";
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
- notify("Copia de configuración guardada. No incluye actas ni cuentas.");
+ notify("Copia de configuración guardada. No incluye actas, personas ni permisos.");
 }
 function deletedSection(){
  if(!state.deletedClubs.length)return "";
@@ -101,14 +110,33 @@ function emptyClub(){return head("Bienvenido a Banquillo","Empieza desde el club
  '<article class="panel"><h3>Crear un club</h3><p>Configúralo progresivamente: equipos, campos, cuerpo técnico y temporadas.</p>'+button("Crear club","newClub")+'</article>'+
  '<article class="panel"><h3>Unirme a un club</h3><p>Usa el código que te facilite su director deportivo.</p>'+button("Introducir código","joinClub","","ghost")+'</article>'+
  '<article class="panel"><h3>Dirigir un equipo</h3><p>Crea una temporada individual en la aplicación del entrenador.</p><a class="btn ghost" href="index.html">Ir a mi equipo</a></article></div>'+deletedSection();}
-function teamRows(){const list=state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality);return list.map(t=>'<button type="button" class="bq-team-line" data-action="openTeam" data-id="'+esc(t.id)+'"><span>⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+' · '+esc(t.competition||"Competición por definir")+'</small></span><span>Configurar →</span></button>').join("")||'<p class="muted">Aún no hay equipos en esta modalidad.</p>';}
+function teamRows(){const list=state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality);return list.map(t=>'<button type="button" class="bq-team-line" data-action="openTeam" data-id="'+esc(t.id)+'"><span>⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+' · '+esc(t.competition||"Competición por definir")+'</small></span><span>'+(state.pendingByTeam[t.id]?'<span class="bq-pending-pill">'+state.pendingByTeam[t.id]+' solicitud(es) </span>':'')+'Configurar →</span></button>').join("")||'<p class="muted">Aún no hay equipos en esta modalidad.</p>';}
 function teamsPage(){return head("Equipos del club","Selecciona un equipo para consultar sus estadísticas, entrenadores y configuración.",button("+ Añadir equipo","newTeam"))+
  '<div class="team-grid">'+state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality).map(t=>
- '<article class="team-card"><div class="team-card-top"><span class="team-badge">⚽</span><div><h3>'+esc(t.name)+'</h3><p>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</p></div></div><div class="team-meta"><span>'+esc(t.competition||"Pendiente")+'</span><b>'+esc(t.season_id?"Temporada vinculada":"Sin temporada")+'</b></div><button type="button" class="btn ghost team-config" data-action="openTeam" data-id="'+esc(t.id)+'">Configurar equipo →</button></article>').join("")+'</div>'+
+ '<article class="team-card"><div class="team-card-top"><span class="team-badge">⚽</span><div><h3>'+esc(t.name)+'</h3><p>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</p></div></div><div class="team-meta"><span>'+esc(t.competition||"Pendiente")+'</span><b>'+esc(t.season_id?"Temporada vinculada":"Sin temporada")+'</b></div>'+(state.pendingByTeam[t.id]?'<div class="bq-card-pending">⏳ '+state.pendingByTeam[t.id]+' solicitud(es) esperando aprobación</div>':'')+'<button type="button" class="btn ghost team-config" data-action="openTeam" data-id="'+esc(t.id)+'">Configurar equipo →</button></article>').join("")+'</div>'+
  (state.allTeams.some(t=>t.archived_at)?'<details class="panel bq-archived"><summary>Equipos archivados ('+state.allTeams.filter(t=>t.archived_at).length+')</summary>'+state.allTeams.filter(t=>t.archived_at).map(t=>'<div class="bq-team-line"><span>'+esc(t.name)+'</span>'+button("Restaurar","restoreTeam",t.id,"ghost")+'</div>').join("")+'</details>':"");}
-function staffTab(){const assigned=state.staff;return '<section class="ux-box"><div class="ux-box-title"><h3>Cuerpo técnico</h3><span>'+esc(team()?.name||"")+'</span></div>'+
- (assigned.length?assigned.map(s=>'<div class="ux-person"><span class="ux-person-avatar">'+esc(s.position==="head_coach"?"DT":s.position==="assistant_coach"?"2º":s.position==="third_coach"?"3º":s.position==="delegate"?"DG":"+")+'</span><div><strong>'+esc(s.display_name)+'</strong><small>'+esc(s.position==="other"?(s.role_detail||"Otro"):labelPos(s.position))+'</small></div><span class="ux-pill good">Asignado</span><div class="bq-person-actions">'+button("Editar","editStaff",s.id,"ghost")+button("Quitar","removeStaff",s.id,"ghost")+'</div></div>').join(""):'<div class="bq-empty-staff"><strong>Sin integrantes asignados</strong><p class="muted">Añade el entrenador principal o el primer miembro del cuerpo técnico.</p></div>')+
- '<div class="ux-actions">'+button("＋ Agregar entrenador o delegado","addStaff")+'</div><p class="ux-caution">El cargo es organizativo. Las cuentas reciben acceso a los datos del equipo únicamente cuando se unen con su código personal de equipo.</p></section>';}
+function staffTab(){
+ const t=team();if(!t)return"";
+ const all=state.teamRoster;
+ const pending=all.filter(m=>m.status==="pending");
+ const active=all.filter(m=>m.status==="active");
+ const rowCard=(m,pendingStatus)=>'<div class="ux-person bq-real-person">'+
+ '<span class="ux-person-avatar">'+(pendingStatus?"⏳":m.position==="head_coach"?"DT":m.position==="assistant_coach"?"2º":m.position==="third_coach"?"3º":m.position==="delegate"?"DG":"✓")+'</span>'+
+ '<div><strong>'+esc(m.display_name||"Cuenta registrada")+'</strong><small>'+
+ esc(m.email_masked||"Correo verificado")+' · '+(pendingStatus?"Solicita entrar":
+ m.position==="other"?(m.role_detail||"Otro cargo"):m.position?labelPos(m.position):"Cargo por asignar")+
+ '</small></div><span class="ux-pill '+(pendingStatus?"":"good")+'">'+(pendingStatus?"Pendiente":"Activo")+'</span>'+
+ '<div class="bq-person-actions">'+button(pendingStatus?"Aprobar y asignar":"Cambiar cargo","editStaff",m.user_id,"ghost")+
+ button(pendingStatus?"Rechazar":"Expulsar","removeStaff",m.user_id,"ghost")+'</div></div>';
+ return '<section class="ux-box"><div class="ux-box-title"><h3>Personal técnico verificado</h3><span>'+esc(t.name)+'</span></div>'+
+ '<p class="bq-hint">Todas las personas de esta lista se han identificado con una cuenta real y el código de este equipo. Solo Dirección Deportiva aprueba, designa el cargo, cambia permisos o expulsa.</p>'+
+ (pending.length?'<h4 class="bq-staff-heading">Solicitudes pendientes ('+pending.length+')</h4>'+pending.map(m=>rowCard(m,true)).join(""):"")+
+ '<h4 class="bq-staff-heading">Cuerpo técnico ('+active.length+')</h4>'+
+ (active.length?active.map(m=>rowCard(m,false)).join(""):
+ '<div class="bq-empty-staff"><strong>Todavía no hay entrenadores autorizados</strong><p class="muted">Comparte el código individual del equipo; las cuentas que lo introduzcan aparecerán aquí para que puedas aprobarlas y asignarles el cargo.</p></div>')+
+ '<div class="ux-actions">'+button("Ver código del equipo","showTeamCode","","ghost")+button("Actualizar solicitudes","refreshRoster","","ghost")+'</div></section>';
+}
+
 const docsOf=id=>state.docs.filter(x=>x.team?.id===id);
 function statsFor(t){const items=docsOf(t.id);const matches=items.filter(x=>x.type==="match").map(x=>x.data);const players=items.filter(x=>x.type==="player").map(x=>({id:x.id,...x.data})).filter(p=>p.active!==false);return {matches,players,r:Calc.record(matches),tops:players.map(p=>({p,st:Calc.playerStats(p.id,matches)}))};}
 function ranking(data,key,title,suffix=""){const ordered=[...data].sort((a,b)=>b.st[key]-a.st[key]).slice(0,5);const max=Math.max(1,...ordered.map(p=>p.st[key]));return '<section class="ux-box"><div class="ux-box-title"><h3>'+esc(title)+'</h3></div><div class="ux-rank">'+(ordered.map((p,i)=>'<div class="ux-rank-line"><span class="ux-rank-index">'+(i+1)+'</span><span class="ux-rank-name">'+esc(p.p.name)+'</span><span class="ux-rank-track"><i style="width:'+Math.round(100*p.st[key]/max)+'%"></i></span><b>'+p.st[key]+esc(suffix)+'</b></div>').join("")||'<p class="muted">Sin estadísticas todavía.</p>')+'</div></section>';}
@@ -120,9 +148,19 @@ return '<section class="ux-sport-strip">'+[["Partidos",r.pj],["Victorias",r.v],[
 function playersTab(t){const {tops}=statsFor(t);return '<section class="ux-box"><div class="ux-box-title"><h3>Estadísticas individuales</h3><span>Datos de actas reales</span></div><div class="ux-table-wrap"><table class="ux-data-table"><thead><tr><th>Jugador</th><th>Goles</th><th>Minutos</th><th>Convocatorias</th><th>Partidos</th></tr></thead><tbody>'+tops.map(x=>'<tr><td>'+esc(x.p.name)+'</td><td>'+x.st.goals+'</td><td>'+x.st.min+'</td><td>'+x.st.conv+'</td><td>'+x.st.played+'</td></tr>').join("")+'</tbody></table></div></section>';}
 function settingsTab(t){return '<section class="ux-box"><div class="ux-box-title"><h3>Configuración de '+esc(t.name)+'</h3></div><div class="bq-detail-grid"><div><span>Modalidad</span><b>'+esc(t.modality)+'</b></div><div><span>Categoría</span><b>'+esc(t.category||"Pendiente")+'</b></div><div><span>Competición</span><b>'+esc(t.competition||"Pendiente")+'</b></div><div><span>Temporada vinculada</span><b>'+esc(t.season_id||"Sin asignar")+'</b></div></div><div class="ux-actions">'+button("Editar equipo","editTeam")+
  button("Archivar equipo","archiveTeam",t.id,"ghost")+'</div><p class="muted">Archivar conserva plantilla, actas, estadísticas e historial. Podrás restaurar el equipo después.</p></section>';}
-function codeTab(t){const hasSeason=!!t.season_id;const choices=state.members.filter(m=>m.role==="owner"&&!state.allTeams.some(a=>a.season_id===m.season_id&&a.id!==t.id));return '<section class="ux-box"><div class="ux-box-title"><h3>Código individual de equipo</h3><span>'+esc(t.name)+'</span></div>'+
- (hasSeason?'<p>Comparte este código solamente con las personas autorizadas para trabajar en <b>'+esc(t.name)+'</b>. Cada equipo tiene uno distinto.</p><div class="ux-team-code"><span>CÓDIGO DEL EQUIPO</span><strong>'+esc(state.teamCode||"Cargando…")+'</strong></div><div class="ux-actions">'+button("Copiar código","copyTeamCode")+button("Renovar código","rotateTeamCode","","ghost")+'</div><p class="ux-caution">Renovar el código impide nuevas incorporaciones con el anterior. Los usuarios que ya estaban autorizados conservan su acceso hasta que se revoque en Compartir temporada.</p>':
- '<p>Antes de generar el código debes vincular a este equipo una temporada de la que seas propietario.</p>'+ (choices.length?'<form id="linkTeamForm" class="bq-inline-form"><label>Temporada disponible <select name="season_id">'+choices.map(x=>'<option value="'+esc(x.season_id)+'">'+esc(x.season_id)+'</option>').join("")+'</select></label><button class="btn primary" type="submit">Vincular temporada</button></form>':'<p class="muted">No hay temporadas propias disponibles. Créala primero en la aplicación de entrenador.</p><a class="btn ghost" href="index.html#temporadas">Crear una temporada</a>'))+'</section>';}
+function codeTab(t){
+ const hasSeason=!!t.season_id;
+ const choices=state.members.filter(m=>m.role==="owner"&&!state.allTeams.some(a=>a.season_id===m.season_id&&a.id!==t.id));
+ return '<section class="ux-box"><div class="ux-box-title"><h3>Código de incorporación al equipo</h3><span>'+esc(t.name)+'</span></div>'+
+ (hasSeason?'<p>Este código pertenece exclusivamente a <b>'+esc(t.name)+'</b>. No sirve para otros equipos ni da permiso inmediato sobre la plantilla.</p>'+
+ '<div class="ux-team-code"><span>CÓDIGO INDIVIDUAL DEL EQUIPO</span><strong>'+esc(state.teamCode||"Cargando…")+'</strong></div>'+
+ '<div class="ux-actions">'+button("Copiar código","copyTeamCode")+button("Renovar código","rotateTeamCode","","ghost")+'</div>'+
+ '<div class="bq-info-note"><b>Cómo funciona:</b> 1. El entrenador inicia sesión en su cuenta; 2. escribe este código en «Unirme a mi equipo»; 3. aparece como pendiente en «Entrenadores»; 4. Dirección Deportiva valida su identidad y le asigna el puesto. Solo entonces obtiene acceso deportivo. Expulsarlo revoca ese acceso.</div>':
+ '<p>Este equipo todavía no tiene temporada preparada. Puedes activarla automáticamente, sin crear otra cuenta ni gastar más silbatos.</p>'+
+ button("Preparar temporada y habilitar código","provisionTeamSeason")+
+ (choices.length?'<details class="bq-manual-link"><summary>Vincular una temporada deportiva ya creada</summary><form id="linkTeamForm" class="bq-inline-form"><label>Temporada disponible <select name="season_id">'+choices.map(x=>'<option value="'+esc(x.season_id)+'">'+esc(x.season_id)+'</option>').join("")+'</select></label><button class="btn ghost" type="submit">Vincular temporada</button></form></details>':""))+'</section>';
+}
+
 function teamPage(){const t=team();if(!t)return teamsPage();return head(t.name,(t.category||"Categoría por definir")+' · '+t.modality+' · '+(t.competition||"Competición por definir"),button("← Volver a equipos","viewTeams","","ghost"))+
  '<div class="ux-tabs" role="navigation">'+[["overview","Resumen deportivo"],["players","Estadísticas"],["coaches","Entrenadores"],["settings","Configuración"],["code","Código del equipo"]].map(([k,v])=>'<button type="button" data-tab="'+k+'" class="'+(state.teamTab===k?"on":"")+'">'+v+'</button>').join("")+'</div>'+
  (!t.season_id&&["overview","players"].includes(state.teamTab)?'<div class="bq-note">Todavía no has vinculado una temporada deportiva. Puedes hacerlo en «Código del equipo».</div>':'')+
@@ -243,22 +281,43 @@ async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs"
   ]);
   state.allTeams=ts||[];state.teams=state.allTeams.filter(x=>!x.archived_at);state.periods=periods||[];state.settings=settings||{};state.members=members||[];
  }else{state.teams=[];state.allTeams=[];state.periods=[];state.settings={};state.members=[];}
- if(!state.teams.some(t=>t.id===state.teamId))state.teamId=state.teams[0]?.id||null;
+ if(!state.teams.some(t=>t.id===state.teamId)){state.teamId=state.teams[0]?.id||null;state.staff=[];state.teamRoster=[];}
+ state.pendingByTeam={};
+ if(state.teams.length){
+  const requests=await calls(state.sb.from("banquillo_team_members")
+  .select("team_id").in("team_id",state.teams.map(x=>x.id)).eq("status","pending"));
+  for(const m of requests||[])state.pendingByTeam[m.team_id]=(state.pendingByTeam[m.team_id]||0)+1;
+ }
  state.loaded=true;render();
  if(state.view==="directores")await loadDirectors();
  if(state.view==="equipo")await loadTeamData();
  if(["calendario","calendarioMes","avisos","comunicaciones"].includes(state.view))await loadAllData();
  if(["avisos","comunicaciones","resumen"].includes(state.view))await loadMessaging();
 }
-async function loadTeamData(){const t=team();if(!t)return;const tid=t.id;try{
- const results=await Promise.all([calls(state.sb.from("banquillo_team_staff").select("id,display_name,position,role_detail").eq("team_id",tid)),
- t.season_id&&state.members.some(x=>x.season_id===t.season_id)?calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id)):Promise.resolve([])]);
- if(state.teamId!==tid)return;
- state.staff=results[0]||[];state.docs=state.docs.filter(x=>x.team?.id!==tid);
- state.docs.push(...(results[1]||[]).map(x=>{const p=x.path.split("/");return {team:t,type:p[2],id:p[3],data:x.data}}).filter(x=>["matches","players"].includes(x.type)).map(x=>({...x,type:x.type==="matches"?"match":"player"})));
- if(state.teamTab==="code"&&t.season_id)await loadTeamCode();
- render();
-}catch(e){notify(errText(e),"error");}}
+async function loadTeamData(){
+ const t=team();if(!t)return;
+ const tid=t.id;
+ try{
+  const result=await Promise.all([
+    rpc("banquillo_team_roster",{p_team_id:tid}),
+    t.season_id&&state.members.some(x=>x.season_id===t.season_id)?
+      calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id)):Promise.resolve([])
+  ]);
+  if(state.teamId!==tid)return;
+  state.teamRoster=result[0]||[];
+  state.staff=state.teamRoster.filter(x=>x.status==="active");
+  state.docs=state.docs.filter(x=>x.team?.id!==tid);
+  state.docs.push(...(result[1]||[]).map(x=>{
+   const p=x.path.split("/");
+   return {team:t,type:p[2],id:p[3],data:x.data};
+  }).filter(x=>["matches","players"].includes(x.type)).map(x=>({
+   ...x,type:x.type==="matches"?"match":"player"
+  })));
+  if(state.teamTab==="code"&&t.season_id)await loadTeamCode();
+  render();
+ }catch(e){notify(errText(e),"error");}
+}
+
 async function loadAllData(){const teams=state.teams.filter(t=>t.season_id&&state.members.some(m=>m.season_id===t.season_id));let all=[];
  for(const t of teams){try{const rows=await calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id));all.push(...(rows||[]).map(x=>{const p=x.path.split("/");return{team:t,type:p[2]==="matches"?"match":p[2]==="players"?"player":"other",id:p[3],data:x.data}}).filter(x=>x.type!=="other"));}catch(e){/* no access */}}
  state.docs=all;render();}
@@ -293,7 +352,7 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
@@ -307,19 +366,32 @@ async function action(name,id){try{
  if(name==="sendActa"){const [tid,n]=id.split("|");return openMessageForm(tid,"acta",Number(n));}
  if(name==="restoreClub")return ask("Recuperar club","Se recuperará la temporada original si no tienes otro club activo. Los códigos anteriores seguirán invalidados.","acceptRestoreClub",id,"Recuperar club");
  if(name==="newTeam")return openTeamForm();
- if(name==="addStaff")return openStaffForm();
- if(name==="editStaff")return openStaffForm(state.staff.find(x=>x.id===id));
+ if(name==="addStaff")return changeView("equipo");
+ if(name==="editStaff")return openStaffForm(state.teamRoster.find(x=>x.user_id===id));
  if(name==="editTeam")return openSettingsForm();
  if(name==="editClub")return openClubSettings();
+ if(name==="showTeamCode"){state.teamTab="code";render();return loadTeamCode();}
+ if(name==="refreshRoster"){await refresh();return loadTeamData();}
+ if(name==="provisionTeamSeason"){
+  const t=team();if(!t)return;
+  await rpc("banquillo_provision_team_season",{p_team_id:t.id});
+  state.teamTab="code";await refresh();await loadTeamData();
+  notify("Temporada preparada. El código del equipo ya está disponible.");
+  return;
+ }
  if(name==="viewTeams")return changeView("equipos");
  if(name==="viewSeasons")return changeView("temporadas");
  if(name==="viewFacilities")return changeView("instalaciones");
- if(name==="openTeam"){state.teamId=id;state.teamTab="overview";return changeView("equipo");}
+ if(name==="openTeam"){state.teamId=id;state.teamTab="overview";state.staff=[];state.teamRoster=[];state.teamCode=null;return changeView("equipo");}
  if(name==="joinClub")return formModal("Unirme a un club","joinClubForm",input("code","Código de invitación al club","","text",true,'maxlength="32" minlength="32"'),"Unirme");
  if(name==="copyTeamCode"||name==="copyClubCode"||name==="copyFixtures"){const txt=name==="copyTeamCode"?state.teamCode:name==="copyClubCode"?state.clubCode:messageText();if(!txt)return notify("No hay contenido para copiar.","error");try{await navigator.clipboard.writeText(txt);notify("Copiado al portapapeles.");}catch(e){modal("Copiar texto",'<textarea class="bq-copy-area" readonly>'+esc(txt)+'</textarea>');}return;}
  if(name==="archiveTeam")return ask("Archivar equipo","El equipo desaparecerá de los activos. Su temporada, actas e historial se conservarán.","acceptArchive",id,"Archivar equipo");
  if(name==="restoreTeam")return ask("Restaurar equipo","El equipo volverá a la lista de activos si no se supera el límite de 12.","acceptRestore",id,"Restaurar equipo");
- if(name==="removeStaff")return ask("Quitar integrante","Se retirará el cargo organizativo. Sus permisos de cuenta no cambiarán.","acceptRemoveStaff",id,"Quitar del cargo");
+ if(name==="removeStaff"){const row=state.teamRoster.find(x=>x.user_id===id);
+ if(!row)return;
+ return ask(row.status==="pending"?"Rechazar solicitud":"Expulsar entrenador",
+ row.status==="pending"?"Esta cuenta no podrá acceder a la temporada. Podrá volver a solicitarlo con un nuevo código.":"Se revocará su acceso al equipo, sus actas y su plantilla. Los datos deportivos se conservarán.",
+ "acceptRemoveStaff",id,row.status==="pending"?"Rechazar solicitud":"Expulsar entrenador");}
  if(name==="removeDirector")return ask("Revocar director","Esta persona dejará de gestionar el club, pero sus permisos independientes en temporadas no se alteran.","acceptRemoveDirector",id,"Revocar");
  if(name==="rotateTeamCode")return ask("Renovar código","El anterior ya no permitirá nuevas incorporaciones. Los miembros existentes mantienen su acceso.","acceptRotateTeam",team()?.id,"Renovar código");
  if(name==="rotateClubCode")return ask("Renovar código de club","Los códigos anteriores dejarán de admitir nuevos directores.","acceptRotateClub",state.clubId,"Renovar código");
@@ -328,7 +400,14 @@ async function action(name,id){try{
  }catch(e){notify(errText(e),"error");}}
 async function accept(name,id){closeModal();try{
  if(name==="acceptArchive"||name==="acceptRestore"){const {data,error}=await state.sb.from("banquillo_teams").update({archived_at:name==="acceptArchive"?new Date().toISOString():null}).eq("id",id).eq("club_id",state.clubId).select("id");if(error)throw error;if(!data?.length)throw Error("Operación denegada");await refresh();state.view="equipos";render();}
- if(name==="acceptRemoveStaff"){const {data,error}=await state.sb.from("banquillo_team_staff").delete().eq("id",id).eq("team_id",state.teamId).select("id");if(error)throw error;if(!data?.length)throw Error("No se ha encontrado el cargo.");await loadTeamData();}
+ if(name==="acceptRemoveStaff"){
+  const row=state.teamRoster.find(x=>x.user_id===id);
+  if(!row)throw Error("No se ha encontrado la cuenta del equipo.");
+  const result=await rpc("banquillo_remove_team_member",{
+   p_team_id:state.teamId,p_user_id:id,p_reject:row.status==="pending"});
+  if(!result?.ok)throw Error("No se ha podido revocar la cuenta.");
+  await loadTeamData();
+}
  if(name==="acceptRemoveDirector"){await rpc("banquillo_eject_director",{p_club_id:state.clubId,p_target_id:id});state.directorInvite=null;await refresh();await loadDirectors();}
  if(name==="acceptEjectDirector"){await rpc("banquillo_eject_director",{p_club_id:state.clubId,p_target_id:id});state.directorInvite=null;await refresh();await loadDirectors();}
  if(name==="acceptLeaveClub"){await rpc("banquillo_leave_club",{p_club_id:id});state.clubId=null;state.messages=[];state.events=[];state.directorInvite=null;state.view="resumen";await refresh();}
@@ -348,9 +427,9 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
   const c=active();if(!c||get("confirm_name")!==c.name)throw Error("club_name_mismatch");
   const file=f.get("backup");if(!(file instanceof File)||!file.size||file.size>180000)throw Error("Selecciona un archivo JSON de menos de 180 KB.");
   let payload;try{payload=JSON.parse(await file.text());}catch(e){throw Error("El archivo no es un JSON válido.");}
-  if(payload.format!=="banquillo-club-configuration"||payload.version!==1||payload.club_id!==c.id||!Array.isArray(payload.teams)||!Array.isArray(payload.staff))throw Error("invalid_backup");
+  if(payload.format!=="banquillo-club-configuration"||![1,2].includes(payload.version)||payload.club_id!==c.id||!Array.isArray(payload.teams))throw Error("invalid_backup");
   const res=await rpc("banquillo_restore_club_config",{p_club_id:c.id,p_snapshot:payload});if(!res?.ok)throw Error("No se pudo restaurar la configuración.");
-  closeModal();state.staff=[];state.docs=[];await refresh();notify("Restaurada la configuración de "+res.teams+" equipos y "+res.staff+" cargos. Las actas no se han modificado.");return;
+  closeModal();state.staff=[];state.docs=[];await refresh();notify("Restaurada la configuración de "+res.teams+" equipos. Los entrenadores y sus permisos siguen vinculados exclusivamente a sus cuentas.");return;
  }
  if(form.id==="teamMessageForm"){
   const tid=get("team_id"),kind=get("kind"),n=get("match_n"),title=get("title"),body=get("body");
@@ -362,8 +441,27 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
   closeModal();await loadMessaging();notify("Mensaje enviado dentro de Banquillo a "+sent.sent+" entrenador(es) del equipo indicado.");return;
  }
  if(form.id==="clubForm"){const id=await rpc("banquillo_create_club",{p_name:get("name"),p_season:get("season")});state.clubId=id;state.view="resumen";closeModal();await refresh();notify("Club creado. Puedes completar su configuración cuando quieras.");return;}
- if(form.id==="teamForm"){const rec={club_id:state.clubId,name:get("name"),modality:get("modality"),category:get("category"),competition:get("competition"),settings:{matchMinutes:get("modality")==="F11"?90:50}};const x=await calls(state.sb.from("banquillo_teams").insert(rec).select("id").single());if(get("coach"))await calls(state.sb.from("banquillo_team_staff").insert({team_id:x.id,display_name:get("coach"),position:"head_coach"}));state.teamId=x.id;state.teamTab="overview";state.view="equipo";closeModal();await refresh();notify("Equipo creado. La configuración se puede ampliar más adelante.");return;}
- if(form.id==="staffForm"){const rec={display_name:get("display_name"),position:get("position"),role_detail:get("position")==="other"?get("role_detail"):""};if(get("staff_id"))await calls(state.sb.from("banquillo_team_staff").update(rec).eq("id",get("staff_id")).eq("team_id",state.teamId).select("id"));else await calls(state.sb.from("banquillo_team_staff").insert({...rec,team_id:state.teamId}).select("id"));closeModal();await loadTeamData();notify("Cuerpo técnico actualizado.");return;}
+ if(form.id==="teamForm"){
+   const result=await rpc("banquillo_create_club_team",{p_club_id:state.clubId,
+   p_name:get("name"),p_modality:get("modality"),
+   p_category:get("category"),p_competition:get("competition")});
+   if(!result?.ok||!result.team_id)throw Error("No se pudo crear el equipo y su temporada.");
+   state.teamId=result.team_id;state.teamTab="code";state.view="equipo";
+   closeModal();await refresh();await loadTeamData();
+   notify("Equipo creado con su temporada y código. Comparte el código para recibir solicitudes de entrenadores.");
+   return;
+ }
+ if(form.id==="staffForm"){
+  const userId=get("user_id");
+  const member=state.teamRoster.find(x=>x.user_id===userId&&["pending","active"].includes(x.status));
+  if(!member||!member.email_verified)throw Error("La cuenta no está verificada o no pertenece a las solicitudes del equipo.");
+  const result=await rpc("banquillo_assign_team_member",{p_team_id:state.teamId,
+   p_user_id:userId,p_position:get("position"),p_role_detail:get("role_detail")});
+  if(!result?.ok)throw Error("No se pudo aprobar o modificar el cargo.");
+  closeModal();await loadTeamData();
+  notify("Cuenta autorizada como "+labelPos(result.position)+". Su permiso está activo.");
+  return;
+ }
  if(form.id==="teamSettingsForm"){const rec={name:get("name"),modality:get("modality"),category:get("category"),competition:get("competition"),settings:{...team()?.settings,matchMinutes:Number(get("matchMinutes"))}};const {error}=await state.sb.from("banquillo_teams").update(rec).eq("id",state.teamId);if(error)throw error;closeModal();await refresh();notify("Configuración del equipo guardada.");return;}
  if(form.id==="clubSettingsForm"){const rec={club_id:state.clubId,town:get("town"),province:get("province"),community:get("community"),fields_f11:Number(get("fields_f11")),fields_f7:Number(get("fields_f7"))};const {error}=await state.sb.from("banquillo_club_settings").upsert(rec,{onConflict:"club_id"});if(error)throw error;closeModal();await refresh();notify("Datos del club guardados.");return;}
  if(form.id==="joinClubForm"){const r=await rpc("banquillo_join_club",{p_code:get("code").toLowerCase()});if(!r?.ok)throw Error(r?.error==="invalid_or_expired_code"?"invalid_or_expired_code":r?.error==="director_limit"?"director_limit":"Código no válido.");state.clubId=r.club_id;state.view="resumen";state.directorInvite=null;closeModal();await refresh();notify("Has entrado al club con tu propia cuenta de director deportivo.");return;}
@@ -382,7 +480,7 @@ document.addEventListener("submit",e=>{if(!e.target.closest("form"))return;e.pre
 async function start(){try{const cfg=window.BQ_CONFIG||{};if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||!window.supabase)throw Error("Falta configurar Supabase.");
  state.sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
  const {data:{user},error}=await state.sb.auth.getUser();if(error||!user){notify("Inicia sesión desde Banquillo antes de entrar al club.","error");rview().innerHTML='<div class="panel"><h2>Accede a tu cuenta</h2><a href="index.html" class="btn primary">Entrar o registrarme</a></div>';return;}
- state.uid=user.id;state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});},20000);
+ state.uid=user.id;state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});if(state.teamId&&state.view==="equipo"&&state.teamTab==="coaches")loadTeamData().catch(()=>{});},20000);
 }catch(e){notify(errText(e),"error");}}
 start();
 })();
