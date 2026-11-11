@@ -13,6 +13,17 @@ V.inicio = () => {
   const rec = Calc.record(ms), nx = nextMatchOf(), ts = trainStats();
   const scorers = Calc.scorersTable(ps, ms).slice(0, 5), og = Calc.ownGoals(ms);
   const played = ms.filter(m => Calc.matchInfo(m).played).slice(-5);
+  const leadersFor=key=>ps.map(p=>({p,s:Calc.playerStats(p.id,ms)}))
+    .filter(x=>Number(x.s[key])>0).sort((a,b)=>Number(b.s[key])-Number(a.s[key])).slice(0,5);
+  const leaderboard=(key,title,suffix)=>{
+    const leaders=leadersFor(key),max=Math.max(1,...leaders.map(x=>Number(x.s[key])||0));
+    return `<section class="card"><div class="card-h"><h3>${title}</h3></div>${
+      leaders.length ? `<ul class="bars">${leaders.map(x=>`<li><span class="bn">${esc(x.p.name)}</span>
+        <span class="bt"><i style="width:${Math.max(6,Number(x.s[key])/max*100)}%"></i></span>
+        <b>${Number(x.s[key])}${suffix}</b></li>`).join("")}</ul>`
+      : '<p class="muted">Todavía no hay datos suficientes.</p>'
+    }</section>`;
+  };
   const form = played.length ? `<div class="fdots" title="Últimos partidos">${played.map(m => `<span class="dot dot-${Calc.matchInfo(m).res}" title="J${m.n} · ${esc(matchLabel(m))} ${matchScore(m)}">${Calc.matchInfo(m).res}</span>`).join("")}</div>` : "";
   const noDorsal = ps.filter(p => p.dorsal == null || p.dorsal === "");
   const overdue = ms.filter(m => !m.rest && m.date && m.date < today && !Calc.matchInfo(m).played);
@@ -54,6 +65,7 @@ V.inicio = () => {
       <div class="tile loss"><b>${rec.d}</b><span>Derrotas</span></div>
       <div class="tile"><b>${rec.gf}</b><span>Goles a favor</span></div>
       <div class="tile"><b>${rec.gc}</b><span>Goles en contra</span></div>
+      <div class="tile"><b>${rec.gf-rec.gc>0?"+":""}${rec.gf-rec.gc}</b><span>Diferencia</span></div>
     </section>
     ${form}
     <div class="grid2">
@@ -65,6 +77,10 @@ V.inicio = () => {
         <p class="muted small">${ts.done} sesiones realizadas de ${ts.planned} previstas · ${ts.totalF} faltas</p>
         ${sessToday ? `<div class="row gap">${btn("Pasar lista de hoy", "trainToday", {}, "primary", "check")}</div>` : ""}
       </section>
+    </div>
+    <div class="grid2">
+      ${leaderboard("min","Jugadores con más minutos"," min")}
+      ${leaderboard("conv","Jugadores con más convocatorias","")}
     </div>
     ${avisos.length ? `<section class="card"><div class="card-h"><h3>Pendiente</h3></div><ul class="todo">${avisos.join("")}</ul></section>` : ""}`;
 };
