@@ -1,0 +1,110 @@
+/* Banquillo · Dirección Deportiva · renovación de paneles y calendario (demo) */
+.ux-demo-hint{padding:12px 16px;border:1px solid #c9dfd4;border-radius:12px;background:#edf8f2;color:#315b48;font-size:12px;line-height:1.6;margin:0 0 15px}
+.ux-team-context{margin-bottom:17px;min-width:0}
+.ux-team-context[hidden]{display:none}
+.ux-team-header{display:flex;align-items:center;gap:15px;background:linear-gradient(125deg,#18364c,#285576);color:#fff;border-radius:17px;padding:16px 21px;box-shadow:0 9px 26px #14344d22}
+.ux-team-symbol{display:grid;place-items:center;flex:none;width:50px;height:50px;background:#ffffff25;border:1px solid #ffffff33;border-radius:13px;font-size:23px}
+.ux-team-header>div:nth-child(2){display:grid;gap:5px;min-width:0}
+.ux-team-header>div:nth-child(2)>strong{font:800 20px Manrope,sans-serif}
+.ux-team-header>div:nth-child(2)>span{font-size:12px;color:#cfdfeb}
+.ux-team-coaches{display:grid;gap:3px;margin-left:auto;padding-left:22px;border-left:1px solid #ffffff40;min-width:190px}
+.ux-team-coaches>span{font-size:9px;letter-spacing:.12em;color:#b9d6e9}
+.ux-team-coaches>b{font-size:15px}
+.ux-team-coaches>small{color:#cee4ed;font-size:11px}
+.main.ux-team-mode .role-chip{display:none}
+.main.ux-hide-scope .modality-bar{display:none}
+.ux-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:17px}
+.ux-tabs button{padding:11px 15px;border:1px solid #dce7eb;background:#fff;border-radius:10px;font-size:12px;font-weight:700;color:#496176}
+.ux-tabs button.on{background:#213e55;border-color:#213e55;color:#fff;box-shadow:0 3px 7px #213e551d}
+.ux-sport-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:17px}
+.ux-metric{background:#fff;border:1px solid #e0e8ed;box-shadow:0 6px 18px #152c3a09;border-radius:13px;padding:15px 11px;display:flex;flex-direction:column;gap:7px}
+.ux-metric>span{font-size:11px;color:#657c8b}
+.ux-metric>b{font:800 23px Manrope,sans-serif;letter-spacing:-.5px;color:#233d53}
+.ux-metric.success>b{color:#16845b}.ux-metric.warning>b{color:#a56a23}
+.ux-two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:0 0 15px}
+.ux-box{min-width:0;background:#fff;border:1px solid #e2e9ed;border-radius:15px;padding:19px;box-shadow:0 6px 23px #12334b09;margin-bottom:15px}
+.ux-box>h3,.ux-box-title h3{font:800 15px Manrope,sans-serif}
+.ux-box>p{font-size:12px;line-height:1.7;color:#5e7080}
+.ux-box-title{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:19px;flex-wrap:wrap}
+.ux-box-title>span{font-size:11px;color:#6c8598}
+.ux-rank{display:grid;gap:14px}
+.ux-rank-line{display:grid;grid-template-columns:21px minmax(76px,1fr) minmax(45px,1.2fr) 63px;gap:10px;align-items:center;font-size:11px}
+.ux-rank-index{display:grid;place-items:center;width:21px;height:21px;border-radius:7px;background:#edf2f5;color:#456074;font-weight:800}
+.ux-rank-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.ux-rank-track{height:8px;background:#ecf2f5;border-radius:99px;overflow:hidden}
+.ux-rank-track i{display:block;height:100%;background:linear-gradient(90deg,#18845b,#4bad88);border-radius:99px}
+.ux-rank-line>b{text-align:right;color:#214861;font-size:11px}
+.ux-fixture{display:grid;grid-template-columns:80px minmax(0,1fr) 125px;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid #eaf0f3;font-size:11px}
+.ux-fixture span,.ux-fixture small{color:#667d89}.ux-fixture b{font-size:12px}
+.ux-fixture:last-child{border:0}
+.ux-table-wrap{width:100%;overflow-x:auto}.ux-data-table{border-collapse:collapse;width:100%;font-size:12px}
+.ux-data-table th{text-align:left;white-space:nowrap;background:#f1f5f6;color:#456176;font-size:11px;padding:12px}
+.ux-data-table td{padding:12px;border-bottom:1px solid #edf1f4}.ux-data-table tr:last-child td{border:0}
+.ux-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ux-caution{background:#f5f7f9;border-left:3px solid #80a4b5;border-radius:8px;padding:12px;font-size:11px!important;color:#49616c!important;margin-top:16px}
+.ux-team-code{display:grid;gap:7px;border:1px dashed #9ec8b6;background:#f0faf4;border-radius:13px;padding:17px;margin:17px 0}
+.ux-team-code span{font-size:10px;letter-spacing:.1em;font-weight:750;color:#527365}
+.ux-team-code strong{font:800 30px Manrope,sans-serif;color:#183f30;letter-spacing:.16em}
+.ux-person{display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5ecf0;padding:13px 0}
+.ux-person-avatar{display:grid;place-items:center;width:39px;height:39px;border-radius:11px;background:#e7f0f5;color:#285169;font-weight:800;font-size:12px}
+.ux-person>div{display:grid;gap:4px}.ux-person>div small{color:#648194}
+.ux-person .ux-pill{margin-left:auto}.ux-pill{font-size:10px;border-radius:99px;padding:5px 9px;background:#edf0f4;color:#667a89;font-weight:750;white-space:nowrap}
+.ux-pill.good{background:#e4f5eb;color:#168458}.ux-pill.high{background:#fff0e6;color:#af561b}.ux-pill.low{background:#eaf2fb;color:#326999}
+.ux-actions .ux-danger{color:#a33737;background:#fbebeb}
+.ux-alert-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:17px}
+.ux-notice{position:relative;overflow:hidden;padding:18px 19px;border:1px solid #e2e9ed;border-left:4px solid #e6a65d;border-radius:13px;background:#fff;margin-bottom:11px}
+.ux-notice.low{border-left-color:#90adc6}
+.ux-notice-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.ux-notice-head small{color:#637a8a}.ux-notice h3{font-size:14px;margin-bottom:7px}
+.ux-notice p{font-size:12px;color:#5d7080;line-height:1.6;margin:0 0 14px}
+.ux-notice-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ux-notice-footer>small{font-size:11px;color:#7a8b95}
+.ux-notice .ux-actions .btn{font-size:10px;padding:9px 10px}
+.ux-reminder{background:#f6f1e7;padding:10px;border-radius:8px;margin-top:12px!important;color:#79552c!important}
+.ux-notice.is-resolved::after{content:"✓ Aviso corregido";display:grid;place-items:center;position:absolute;inset:0;background:#1c995d;color:white;font:800 20px Manrope,sans-serif;transform:translateX(-102%);animation:ux-fill-green .95s cubic-bezier(.3,.7,.2,1) forwards}
+@keyframes ux-fill-green{to{transform:translateX(0)}}
+.ux-empty{background:#f6f8fa;border-radius:10px;padding:20px;font-size:12px;color:#617e90}
+.ux-calendar-tools{background:#fff;border:1px solid #e2eaee;border-radius:14px;padding:15px 19px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.ux-calendar-tools h3{font-size:18px;text-transform:capitalize}.ux-calendar-tools p{margin:5px 0 0;font-size:11px;color:#658092}
+.ux-planner-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(290px,.8fr);gap:15px;align-items:start}
+.ux-month-box{padding:14px}
+.ux-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.ux-month-weekday{padding:9px 3px;text-align:center;color:#6a8293;font-size:10px;letter-spacing:.07em;text-transform:uppercase;font-weight:750}
+.ux-month-day{display:flex;flex-direction:column;align-items:flex-start;min-height:112px;gap:5px;border:1px solid #e0e9ed;border-radius:11px;background:#fff;text-align:left;padding:10px 8px;min-width:0;color:#28516a}
+button.ux-month-day:hover,button.ux-month-day:focus-visible{border-color:#258667;background:#f0faf5;outline:none}
+.ux-month-day.selected{border:2px solid #21835f;background:#e9f8ef}.ux-month-day.today{box-shadow:inset 0 0 0 1px #a4b9c9}
+.ux-month-day.muted-day{background:#f5f7f8;border:1px solid transparent}
+.ux-month-day>strong{font:800 13px Manrope,sans-serif}
+.ux-month-event{display:block;width:100%;min-width:0;border-radius:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;padding:4px 5px}
+.ux-month-event.home{background:#e6f4ed;color:#176446}.ux-month-event.away{background:#ebf1fb;color:#3b6695}
+.ux-month-day small{font-size:9px;color:#7b91a0}
+.ux-planner-side{min-width:0}.ux-planner-side .ux-box{padding:15px}
+.ux-planner-side h3{font-size:15px}.ux-planner-side p{font-size:11px}
+.ux-side-title{font-size:12px;font-weight:800;padding:10px 9px;margin:12px 0 4px;border-radius:8px;background:#eff5f4}
+.ux-week-team{display:grid;gap:3px;border-bottom:1px solid #e6edf1;padding:10px 4px;font-size:11px}
+.ux-week-team small{color:#657b8b}.ux-week-team span{color:#246c59;font-weight:750}
+.ux-planner-side .ux-box .btn{margin-top:12px}
+#printCalendar{display:none}
+@media(max-width:1150px){.ux-sport-strip{grid-template-columns:repeat(4,minmax(0,1fr))}.ux-planner-layout{grid-template-columns:1fr}.ux-planner-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media(max-width:720px){.ux-team-header{align-items:flex-start;flex-wrap:wrap}.ux-team-coaches{border:0;padding:9px 0 0;border-top:1px solid #ffffff40;margin:0;width:100%}.ux-two-col{grid-template-columns:1fr}.ux-sport-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.ux-alert-summary{grid-template-columns:1fr}.ux-planner-side{grid-template-columns:1fr}.ux-month-grid{gap:3px}.ux-month-day{padding:6px 3px;min-height:78px;border-radius:6px}.ux-month-event{font-size:8px;padding:3px}.ux-month-weekday{font-size:9px}.ux-rank-line{grid-template-columns:20px minmax(70px,1fr) minmax(40px,1fr) 58px}}
+@media(prefers-reduced-motion:reduce){.ux-notice.is-resolved::after{animation-duration:.01ms}}
+@page{size:A4 landscape;margin:9mm}
+@media print{
+  html,body{background:white!important;color:#183246}
+  body>.app-shell{display:none!important}
+  #printCalendar{display:block!important;position:static;padding:0;margin:0;background:white;width:100%}
+  .ux-print-content{font-family:Arial,sans-serif}
+  .ux-print-head{display:flex;gap:16px;align-items:center;border-bottom:3px solid #1e6c50;padding:0 0 12px;margin:0 0 12px}
+  .ux-print-head img{max-width:60px;max-height:60px;object-fit:contain}
+  .ux-print-mark{font-size:32px}
+  .ux-print-head h1{font-size:21px;margin:2px 0;color:#12354f}
+  .ux-print-head small{letter-spacing:.16em;font-size:9px;color:#568278}
+  .ux-print-head p{font-size:11px;color:#536c77;margin:0}
+  .ux-print-legend{display:flex;gap:15px;margin-bottom:10px;font-size:10px}
+  #printCalendar .ux-month-grid{gap:4px}
+  #printCalendar .ux-month-weekday{padding:4px;font-size:9px}
+  #printCalendar .ux-month-day{min-height:78px;padding:6px;border:1px solid #dbe4e8;break-inside:avoid}
+  #printCalendar .ux-month-event{white-space:normal;font-size:8px;line-height:1.2;max-height:28px}
+  .ux-print-foot{text-align:right;color:#697c8b;font-size:9px;margin-top:8px}
+  #printCalendar *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
