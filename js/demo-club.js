@@ -350,6 +350,44 @@
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
+ $("#importDemo").addEventListener("click",()=>$("#importDemoFile").click());
+ $("#importDemoFile").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  try{
+   if(file.size>3*1024*1024)throw Error("La copia supera el límite de 3 MB.");
+   const raw=JSON.parse(await file.text());
+   if(raw?.format!=="banquillo-club-demo"||raw?.version!==1||!raw.club||typeof raw.club!=="object")
+     throw Error("No es un respaldo de Banquillo Demo compatible.");
+   const data=raw.club;
+   if(typeof data.club?.name!=="string"||data.club.name.trim().length<2||
+      !Array.isArray(data.teams)||data.teams.length>30||
+      !Array.isArray(data.directors)||data.directors.length<1||data.directors.length>2||
+      !Array.isArray(data.schedule)||data.schedule.length>400||
+      !Array.isArray(data.notifications)||data.notifications.length>300)
+     throw Error("El archivo no tiene la estructura de una demostración válida.");
+   if(!data.teams.every(t=>typeof t.id==="string"&&typeof t.name==="string"&&
+      t.name.length<=75&&["F7","F11"].includes(t.modality)))
+     throw Error("Los equipos del respaldo contienen datos inválidos.");
+   if(!data.schedule.every(m=>typeof m.id==="string"&&typeof m.teamId==="string"&&
+      ClubPlanner.validDate(m.date)&&(!m.time||ClubPlanner.validTime(m.time))))
+     throw Error("El calendario del respaldo contiene fechas u horas inválidas.");
+   if(!confirm("¿Restaurar esta copia? Reemplazará la configuración local actual de la demostración."))return;
+   // Cargar solo datos de demo; nunca credenciales ni tokens de Supabase.
+   data.club.crest=ClubCrest.clean(data.club.crest);
+   data.uniforms=ClubTheme.normalizeKits(data.uniforms);
+   data.palette=ClubTheme.cleanPalette(data.palette);
+   data.modality=["todos","F7","F11"].includes(data.modality)?data.modality:"todos";
+   data.facilities=data.facilities||JSON.parse(JSON.stringify(seed.facilities));
+   data.facilities.f11=Math.max(0,Math.min(12,Number(data.facilities.f11)||0));
+   data.facilities.f7=Math.max(0,Math.min(12,Number(data.facilities.f7)||0));
+   data.facilities.divisible=Array.isArray(data.facilities.divisible)?data.facilities.divisible.slice(0,12):[];
+   state=data;
+   DemoClubUX.init(state);
+   UI.view="resumen";UI.teamId=null;UI.teamTab="overview";
+   save();render();alert("Respaldo restaurado en este navegador.");
+  }catch(err){alert(err.message||"No se ha podido abrir el respaldo. Comprueba el archivo.");}
+  finally{e.target.value="";}
+ });
  $("#resetDemo").addEventListener("click",()=>{if(!confirm("¿Restablecer todos los datos ficticios del club?"))return;localStorage.removeItem(KEY);state=JSON.parse(JSON.stringify(seed));save();render()});
  save();render();
 })();
