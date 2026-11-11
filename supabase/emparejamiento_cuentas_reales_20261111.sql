@@ -124,7 +124,7 @@ end $fn$;
 -- Datos de cuentas autenticadas, visibles SOLO al DD de este equipo.
 create or replace function public.banquillo_team_roster(p_team_id uuid)
 returns table(user_id uuid,display_name text,email_masked text,email_verified boolean,
- status text,position text,role_detail text,requested_at timestamptz,approved_at timestamptz)
+ status text,"position" text,role_detail text,requested_at timestamptz,approved_at timestamptz)
 language plpgsql security definer set search_path='' as $fn$
 begin
  if auth.uid() is null or not exists(
@@ -151,7 +151,7 @@ end $fn$;
 -- El entrenador puede consultar su propio estado incluso antes de ser editor.
 create or replace function public.banquillo_my_team_requests()
 returns table(team_id uuid,team_name text,club_name text,season_id text,
- status text,position text,role_detail text,requested_at timestamptz)
+ status text,"position" text,role_detail text,requested_at timestamptz)
 language sql stable security definer set search_path='' as $fn$
 select m.team_id,t.name,c.name,m.season_id,m.status,m.position,m.role_detail,m.requested_at
 from public.banquillo_team_members m
