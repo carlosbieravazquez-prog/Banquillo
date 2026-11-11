@@ -1,39 +1,61 @@
 <!doctype html>
-<html lang="es"><head>
+<html lang="es">
+<head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#102a43">
-<title>Dirección Deportiva | Banquillo</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; object-src 'none'; base-uri 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Banquillo | Dirección deportiva</title>
 <link rel="stylesheet" href="css/demo-club.css">
 <link rel="stylesheet" href="css/demo-club-ux.css">
 <link rel="stylesheet" href="css/clubs-beta.css">
-</head><body>
+<link rel="stylesheet" href="css/clubs-official.css">
+</head>
+<body>
 <div class="app-shell">
-  <aside class="sidebar" aria-label="Navegación de Dirección Deportiva">
-    <a href="index.html" class="brand"><span class="brand-mark">B</span><span><b>BANQUILLO</b><small>GESTIÓN DE CLUBES</small></span></a>
-    <div class="club-switch"><span class="club-crest">⚽</span><span><b id="sideClubName">Tu club</b><small>Temporada actual</small></span></div>
-    <div class="nav-label">DIRECCIÓN DEPORTIVA</div>
-    <nav class="bq-nav">
-      <a class="nav-item active" href="#resumen" data-nav="resumen"><span>▦</span> Resumen del club</a>
-      <a class="nav-item" href="#equipos" data-nav="equipos"><span>⚽</span> Equipos</a>
-      <a class="nav-item" href="#directores" data-nav="directores"><span>♙</span> Directores deportivos</a>
-      <div class="nav-label space-top">ORGANIZACIÓN</div>
-      <a class="nav-item" href="#avisos" data-nav="avisos"><span>⚑</span> Avisos deportivos</a>
-      <a class="nav-item" href="demo-club.html"><span>▤</span> Demo de planificación <small>Ejemplo</small></a>
+  <aside class="sidebar">
+    <a class="brand" href="index.html"><span class="brand-mark">B</span><span><b>BANQUILLO</b><small>GESTIÓN DE CLUBES</small></span></a>
+    <div class="club-switch" id="clubSwitcher"><span class="club-crest">⚽</span><span><b id="sideClubName">Tu club</b><small id="sideSeason">Temporada</small></span></div>
+    <div class="nav-label">CLUB</div>
+    <nav id="mainNav" aria-label="Dirección deportiva">
+      <button type="button" class="nav-item active" data-view="resumen"><span>▦</span> Resumen del club</button>
+      <button type="button" class="nav-item" data-view="equipos"><span>⚽</span> Equipos <i id="teamCount">0</i></button>
+      <button type="button" class="nav-item" data-view="directores"><span>♙</span> Directores deportivos</button>
+      <button type="button" class="nav-item" data-view="temporadas"><span>▤</span> Temporadas</button>
+      <button type="button" class="nav-item" data-view="instalaciones"><span>◫</span> Instalaciones</button>
+      <button type="button" class="nav-item" data-view="calendario"><span>▦</span> Calendario</button>
+      <button type="button" class="nav-item" data-view="calendarioMes"><span>▤</span> Planificador mensual</button>
+      <div class="nav-label space-top">COMUNICACIÓN</div>
+      <button type="button" class="nav-item" data-view="comunicaciones"><span>✉</span> Comunicaciones</button>
+      <button type="button" class="nav-item" data-view="avisos"><span>⚑</span> Avisos de actividad</button>
+      <button type="button" class="nav-item" data-view="ajustes"><span>⚙</span> Ajustes del club</button>
     </nav>
-    <div class="sidebar-bottom"><span class="demo-dot"></span> Datos conectados a Supabase<br><small>Las funciones de demostración se señalan como tales.</small></div>
+    <div class="sidebar-bottom"><span class="demo-dot"></span> Datos reales en Supabase<br><small>Tu club y tus equipos, sincronizados</small></div>
   </aside>
-  <main class="main bq-main">
+  <main class="main">
     <header class="topbar">
-      <div><div class="eyebrow">BANQUILLO <span class="demo-pill">BETA</span></div><h1 id="pageTitle">Resumen del club</h1></div>
-      <div class="top-actions"><div class="role-chip"><span class="avatar">DD</span><span><b>Dirección deportiva</b><small>Tu cuenta de Banquillo</small></span></div><a href="index.html" class="btn ghost">Volver al equipo</a></div>
+      <div><div class="eyebrow"><span id="topClubName">BANQUILLO</span> <span class="demo-pill">BETA</span></div><h1 id="pageTitle">Resumen del club</h1></div>
+      <div class="top-actions">
+        <div class="role-chip"><span class="avatar">DD</span><span><b id="activeDirectorName">Dirección deportiva</b><small>Gestión autorizada</small></span></div>
+        <a class="btn ghost" href="index.html">Mi equipo</a>
+      </div>
     </header>
-    <div id="status" class="bq-status" role="status" aria-live="polite">Comprobando sesión…</div>
-    <div id="root"></div>
-    <footer class="bq-footer">Las estadísticas proceden de los datos autorizados de la temporada. El planificador de ejemplo no modifica datos del club.</footer>
+    <div id="messageBar" class="bq-status" role="status" aria-live="polite">Comprobando tu sesión…</div>
+    <div id="topSituation" class="bq-top-situation"></div>
+    <div id="teamContextBar" class="ux-team-context" hidden></div>
+    <div id="modalityBar" class="modality-bar">
+      <span class="mod-label">MODALIDAD</span><div class="segmented" role="group" aria-label="Filtrar equipos">
+        <button type="button" class="selected" data-modality="todos">Todo el club</button>
+        <button type="button" data-modality="F7">Fútbol 7</button>
+        <button type="button" data-modality="F11">Fútbol 11</button>
+      </div><span class="mod-note" id="modalityNote">Todos los equipos</span>
+    </div>
+    <section id="viewRoot" aria-live="polite"></section>
+    <footer>Banquillo · Gestión segura de equipos y clubes. Las estadísticas se muestran según los permisos de cada temporada.</footer>
   </main>
 </div>
+<div id="bqModalRoot"></div>
+<div id="bqToastRoot" role="status" aria-live="polite"></div>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js"></script>
-<script src="js/calc.js"></script><script src="js/clubs-beta.js"></script>
+<script src="js/calc.js"></script><script src="js/club-planner.js"></script><script src="js/clubs-official.js"></script>
 </body></html>

@@ -205,6 +205,29 @@ const FORM = {};
     go("inicio"); toast("Te has unido a la temporada.", "ok");
   };
 
+  /* ---------- Código individual asignado por un director deportivo ---------- */
+  ACT.openTeamJoin = () => { UI.sheet = { type: "teamJoin", code: "", busy: false, err: null }; };
+  V.sheet.teamJoin = sh => '<h2>Unirme a mi equipo</h2>'+
+    '<p class="muted">Introduce el código específico de tu equipo, facilitado por Dirección Deportiva. No uses aquí el código del club.</p>'+
+    '<form data-form="teamJoinForm" class="form" novalidate><label class="fld"><span>Código del equipo</span>'+
+    '<input class="inp code-inp" type="text" name="code" maxlength="32" minlength="32" autocomplete="off" spellcheck="false" placeholder="32 caracteres" value="'+esc(sh.code||"")+'"></label>'+
+    (sh.err?'<p class="err small" role="alert">'+esc(sh.err)+'</p>':"")+
+    '<div class="row end gap foot">'+btn("Cancelar","closeSheet",{},"ghost")+'<button class="btn primary" type="submit" '+(sh.busy?"disabled":"")+'>'+(sh.busy?"Comprobando…":"Unirme al equipo")+'</button></div></form>';
+  FORM.teamJoinForm = async f => {
+    const sh = UI.sheet;if(!sh||sh.type!=="teamJoin"||sh.busy)return;
+    const code=String(f.elements.code.value||"").trim().toLowerCase();
+    sh.code=code;
+    if(!/^[a-f0-9]{32}$/.test(code)){sh.err="Este código debe tener 32 caracteres válidos.";return render(true);}
+    sh.busy=true;sh.err=null;render(true);
+    try {
+      const result=await Cloud.rpc("banquillo_join_team",{p_code:code});
+      sh.busy=false;
+      if(!result?.ok){sh.err=result?.error==="too_many_attempts"?"Demasiados intentos. Inténtalo más tarde.":"Código inválido, desactivado o equipo sin temporada vinculada.";return render(true);}
+      UI.sheet=null;await Store.afterJoin(result.season_id);
+      go("inicio");toast("Ya tienes acceso al equipo.","ok");
+    } catch(e){sh.busy=false;sh.err="No se ha podido comprobar el código. Revisa la conexión e inténtalo de nuevo.";render(true);}
+  };
+
   /* ---------- Compartir y miembros ---------- */
   const ROLE = { owner: "Responsable", editor: "Entrenador", viewer: "Solo lectura" };
   A.roleLabel = r => ROLE[r] || "";

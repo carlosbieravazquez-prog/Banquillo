@@ -191,7 +191,7 @@
   document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
  };
  const UI={view:["equipos","instalaciones","calendario","calendarioMes","ajustes","directores","avisos"].includes(location.hash.slice(1))?location.hash.slice(1):"resumen",teamId:null,teamTab:"overview",settingsTab:"data"};
- document.addEventListener("click",e=>{
+ document.addEventListener("click",async e=>{
   const kitAct=e.target.closest("[data-act]");
   if(kitAct){
     if(kitAct.dataset.act==="setToggleThird"){
@@ -216,19 +216,18 @@
   if(a.dataset.action==="demo-copy-code"){
     const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
     const code=DemoClubUX.details(state,t).code;
-    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(code).then(()=>alert("Código local copiado (no sirve para crear cuentas)."),()=>prompt("Copia el código de demostración:",code));
-    else prompt("Copia el código de demostración:",code);
+    await DemoDialog.copy("Código de demostración",code);
     return;
   }
   if(a.dataset.action==="demo-rotate-code"){
     const t=state.teams.find(t=>t.id===UI.teamId);
-    if(t&&confirm("¿Renovar el código de demostración de "+t.name+"? El anterior dejará de mostrarse.")){
+    if(t&&await DemoDialog.confirm("¿Renovar el código de demostración de "+t.name+"? El anterior dejará de mostrarse.")){
       DemoClubUX.details(state,t).code=DemoClubUX.randomCode();save();render();
     }return;
   }
   if(a.dataset.action==="demo-change-coach"){
     const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
-    const name=prompt("Nombre del nuevo entrenador (ficticio):",t.coach==="Por asignar"?"":t.coach);
+    const name=await DemoDialog.prompt("Nombre del nuevo entrenador (ficticio)",t.coach==="Por asignar"?"":t.coach);
     if(name===null)return;
     const n=name.trim().slice(0,60);if(!n)return;
     t.coach=n;const d=DemoClubUX.details(state,t);d.coachStatus="active";d.code=DemoClubUX.randomCode();
@@ -236,7 +235,7 @@
   }
   if(a.dataset.action==="demo-remove-coach"){
     const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
-    if(!confirm("¿Dar de baja a "+t.coach+" y renovar el código del "+t.name+"? Es una simulación local, no revoca cuentas reales."))return;
+    if(!await DemoDialog.confirm("¿Dar de baja a "+t.coach+" y renovar el código del "+t.name+"? Es una simulación local, no revoca cuentas reales."))return;
     t.coach="Por asignar";const d=DemoClubUX.details(state,t);d.coachStatus="vacant";d.code=DemoClubUX.randomCode();
     save();render();return;
   }
@@ -294,29 +293,29 @@
   if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}
   if(a.dataset.action==="switch-director"){state.activeDirector=id;state.modality=active().preferred;save();render()}
   if(a.dataset.action==="add-director"&&state.directors.length<2){state.directors.push({id:"d2",name:"Marta León",initials:"ML",preferred:"F11"});save();render()}
-  if(a.dataset.action==="new-team"){const name=prompt("Nombre del nuevo equipo (demo):");if(!name||!name.trim())return;const modality=confirm("Aceptar = Fútbol 7 · Cancelar = Fútbol 11")?"F7":"F11";state.teams.push({id:"t"+Date.now(),name:name.trim(),category:"Por definir",modality,competition:"Pendiente de asignar",players:0,coach:"Por asignar"});save();render()}
+  if(a.dataset.action==="new-team"){const newTeam=await DemoDialog.team();if(!newTeam)return;state.teams.push({id:"t"+Date.now(),name:newTeam.name,category:"Por definir",modality:newTeam.modality,competition:"Pendiente de asignar",players:0,coach:"Por asignar"});save();render()}
   if(a.dataset.action==="remove-club-crest"){state.club.crest="";save();render();return}
   if(a.dataset.action==="save-club"){["name","town","province","community","season"].forEach(k=>{const el=$("#club"+k[0].toUpperCase()+k.slice(1));if(el)state.club[k]=el.value.trim()});["first","second"].forEach(k=>["shirt","shorts","socks"].forEach(part=>{const el=$("#uniform-"+k+"-"+part);if(el)state.uniforms[k][part]=el.value}));save();render()}
   if(a.dataset.action==="week-prev"){state.calendarDate=dateKey(addDays(monday(parseDate(state.calendarDate)),-7));save();render()}
   if(a.dataset.action==="week-next"){state.calendarDate=dateKey(addDays(monday(parseDate(state.calendarDate)),7));save();render()}
   if(a.dataset.action==="week-today"){state.calendarDate=dateKey(new Date());save();render()}
-  if(a.dataset.action==="publish"){const m=state.schedule.find(x=>x.id===id);if(m){const problem=validate(m,id);if(problem){alert("No se puede publicar: "+problem);return}m.status="published";save();render()}}
-  if(a.dataset.action==="delete-match"){if(!confirm("¿Eliminar este partido de la demostración?"))return;state.schedule=state.schedule.filter(x=>x.id!==id);save();render()}
-  if(a.dataset.action==="copy-week"){const msg=weekMessage();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Mensaje copiado. Ya puedes pegarlo en WhatsApp."),()=>prompt("Copia el mensaje:",msg))}else prompt("Copia el mensaje:",msg)}
-  if(a.dataset.action==="copy-month"){const msg=monthMessage();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(()=>alert("Resumen mensual copiado."),()=>prompt("Copia el resumen mensual:",msg))}else prompt("Copia el resumen mensual:",msg)}
+  if(a.dataset.action==="publish"){const m=state.schedule.find(x=>x.id===id);if(m){const problem=validate(m,id);if(problem){await DemoDialog.alert("No se puede publicar: "+problem);return}m.status="published";save();render()}}
+  if(a.dataset.action==="delete-match"){if(!await DemoDialog.confirm("¿Eliminar este partido de la demostración?"))return;state.schedule=state.schedule.filter(x=>x.id!==id);save();render()}
+  if(a.dataset.action==="copy-week"){await DemoDialog.copy("Resumen semanal",weekMessage());}
+  if(a.dataset.action==="copy-month"){await DemoDialog.copy("Resumen mensual",monthMessage());}
   if(a.dataset.action==="print"){window.print()}
  });
- document.addEventListener("submit",e=>{
+ document.addEventListener("submit",async e=>{
   if(e.target.id==="teamEditor"){e.preventDefault();const f=new FormData(e.target),t=state.teams.find(x=>x.id===f.get("id"));if(!t)return;t.name=String(f.get("name")||"").trim();t.category=String(f.get("category")||"").trim();t.modality=String(f.get("modality")||"F7");t.competition=String(f.get("competition")||"").trim();t.players=Math.max(0,Math.min(40,Number(f.get("players")||0)));/* El entrenador se gestiona únicamente en la pestaña Entrenadores. */save();UI.view="equipos";render();return}
   const assignmentId=e.target.dataset.assignId;
-  if(assignmentId){e.preventDefault();const f=new FormData(e.target),m=state.schedule.find(x=>x.id===assignmentId);if(!m)return;const candidate={...m,date:f.get("date"),time:f.get("time"),resource:f.get("resource"),status:"proposed"};if(!candidate.date||!candidate.time||!candidate.resource){alert("Selecciona fecha, hora y campo.");return}const problem=validate(candidate,assignmentId);if(problem){alert(problem);return}Object.assign(m,candidate);state.calendarDate=m.date;save();render();return}
+  if(assignmentId){e.preventDefault();const f=new FormData(e.target),m=state.schedule.find(x=>x.id===assignmentId);if(!m)return;const candidate={...m,date:f.get("date"),time:f.get("time"),resource:f.get("resource"),status:"proposed"};if(!candidate.date||!candidate.time||!candidate.resource){await DemoDialog.alert("Selecciona fecha, hora y campo.");return}const problem=validate(candidate,assignmentId);if(problem){await DemoDialog.alert(problem);return}Object.assign(m,candidate);state.calendarDate=m.date;save();render();return}
   if(e.target.id!=="matchForm")return;e.preventDefault();
   const f=new FormData(e.target),team=teamOf(f.get("teamId")),home=f.get("home")==="1";
   const m={id:"m"+Date.now(),teamId:f.get("teamId"),opponent:String(f.get("opponent")||"").trim(),date:f.get("date"),time:f.get("time"),duration:Number(f.get("duration")||90),home,modality:team.modality,resource:home?String(f.get("resource")||""):"",status:"pending"};
-  if(!m.opponent||!m.date){alert("Completa el rival y la fecha.");return}
-  if(!ClubPlanner.validDate(m.date)){alert("Escribe una fecha válida.");return}
-   if(m.time&&!ClubPlanner.validTime(m.time)){alert("La hora indicada no es válida.");return}
-   if(m.time && (home ? !!m.resource : true)){const problem=validate(m);if(problem){alert(problem);return}}
+  if(!m.opponent||!m.date){await DemoDialog.alert("Completa el rival y la fecha.");return}
+  if(!ClubPlanner.validDate(m.date)){await DemoDialog.alert("Escribe una fecha válida.");return}
+   if(m.time&&!ClubPlanner.validTime(m.time)){await DemoDialog.alert("La hora indicada no es válida.");return}
+   if(m.time && (home ? !!m.resource : true)){const problem=validate(m);if(problem){await DemoDialog.alert(problem);return}}
   if(home&&(!m.resource||!m.time))m.status="pending";else m.status="proposed";
   state.schedule.push(m);state.calendarDate=m.date;save();render();
  });
@@ -332,7 +331,7 @@
   }
   if(e.target.id==="clubCrestUpload"&&e.target.files?.[0]){
     try{state.club.crest=await ClubCrest.upload(e.target.files[0]);save();render();}
-    catch(err){alert(err.message||"No se pudo cargar el escudo.");}
+    catch(err){await DemoDialog.alert(err.message||"No se pudo cargar el escudo.");}
     return;
   }
   const p=e.target.dataset.preferred;if(p){const d=state.directors.find(x=>x.id===p);if(d){d.preferred=e.target.value;save();render()}}
@@ -371,7 +370,7 @@
    if(!data.schedule.every(m=>typeof m.id==="string"&&typeof m.teamId==="string"&&
       ClubPlanner.validDate(m.date)&&(!m.time||ClubPlanner.validTime(m.time))))
      throw Error("El calendario del respaldo contiene fechas u horas inválidas.");
-   if(!confirm("¿Restaurar esta copia? Reemplazará la configuración local actual de la demostración."))return;
+   if(!await DemoDialog.confirm("¿Restaurar esta copia? Reemplazará la configuración local actual de la demostración."))return;
    // Cargar solo datos de demo; nunca credenciales ni tokens de Supabase.
    data.club.crest=ClubCrest.clean(data.club.crest);
    data.uniforms=ClubTheme.normalizeKits(data.uniforms);
@@ -384,10 +383,10 @@
    state=data;
    DemoClubUX.init(state);
    UI.view="resumen";UI.teamId=null;UI.teamTab="overview";
-   save();render();alert("Respaldo restaurado en este navegador.");
-  }catch(err){alert(err.message||"No se ha podido abrir el respaldo. Comprueba el archivo.");}
+   save();render();await DemoDialog.alert("Respaldo restaurado en este navegador.");
+  }catch(err){await DemoDialog.alert(err.message||"No se ha podido abrir el respaldo. Comprueba el archivo.");}
   finally{e.target.value="";}
  });
- $("#resetDemo").addEventListener("click",()=>{if(!confirm("¿Restablecer todos los datos ficticios del club?"))return;localStorage.removeItem(KEY);state=JSON.parse(JSON.stringify(seed));save();render()});
+ $("#resetDemo").addEventListener("click",async()=>{if(!await DemoDialog.confirm("¿Restablecer todos los datos ficticios del club?"))return;localStorage.removeItem(KEY);state=JSON.parse(JSON.stringify(seed));save();render()});
  save();render();
 })();

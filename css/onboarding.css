@@ -1,0 +1,35 @@
+/* Primera entrada sin temporadas: una pantalla y tres decisiones. */
+.bq-entry-shell{min-height:100vh;background:radial-gradient(ellipse at 85% -15%,#214f6c 0,#0f293f 37%,#eef4f7 37.1%,#eef4f7 100%)}
+.bq-entry-header{background:#102d44;display:flex;align-items:center;justify-content:space-between;padding:17px max(22px,calc((100vw - 1150px)/2));color:#fff}
+.bq-entry-brand{display:flex;gap:11px;align-items:center}
+.bq-entry-brand b{font-size:21px;letter-spacing:.06em}
+.bq-entry-brand small{opacity:.65;font-size:11px}
+.bq-entry-header .acc{background:#244960;color:#fff}
+.bq-entry-main{max-width:1150px;margin:0 auto;padding:50px 22px 70px}
+.bq-onboard-head{text-align:center;margin:0 auto 34px;max-width:730px}
+.bq-onboard-head>span{font-size:11px;font-weight:800;letter-spacing:.17em;color:#27805f}
+.bq-onboard-head h1{font-size:clamp(30px,4vw,48px);font-weight:800;letter-spacing:-.045em;color:#173950;line-height:1.12;margin:11px 0 16px}
+.bq-onboard-head p{font-size:15px;color:#6e8090;line-height:1.6}
+.bq-onboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.bq-onboard-card{display:flex;flex-direction:column;align-items:flex-start;min-height:305px;padding:30px;border-radius:20px;background:white;box-shadow:0 16px 45px #19395411;border:1px solid #dde9ee}
+.bq-onboard-card h2{font-size:21px;color:#183e58;margin:17px 0 7px}
+.bq-onboard-card p{color:#6a8497;line-height:1.6;font-size:14px;flex:1}
+.bq-onboard-icon{width:56px;height:56px;display:grid;place-items:center;font-size:27px;background:#eaf4ef;border-radius:16px}
+.bq-onboard-card .btn{margin-top:22px;text-decoration:none}
+.bq-onboard-join{background:#e7eff4;border:1px solid #d6e3ec;border-radius:14px;margin-top:24px;padding:17px 21px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bq-onboard-join span{font-weight:700;font-size:13px;margin-right:auto}
+.bq-demo-modes{display:grid;gap:12px;margin-top:20px}
+.bq-demo-option{border:1px solid #dbe6ed;border-radius:13px;padding:18px;text-decoration:none;background:#f5f9fb;display:flex;flex-direction:column;gap:6px;color:#1b4861}
+.bq-demo-option:hover{background:#eaf4f3;border-color:#b9d9cd}
+.bq-demo-option b{font-size:17px}
+.bq-demo-option span{font-size:12px;opacity:.7}
+@media(max-width:850px){.bq-onboard-grid{grid-template-columns:1fr}.bq-onboard-card{min-height:220px}.bq-onboard-card p{flex:unset}.bq-entry-header{padding:15px 18px}.bq-entry-brand small{display:none}}
+
+/* Inicio del entrenador: fecha y próximo rival en la misma línea visual. */
+.bq-coach-today{display:grid;grid-template-columns:1fr 1.2fr;gap:12px;margin:13px 0 16px}
+.bq-coach-today>div{background:linear-gradient(110deg,#e8f5f0,#f5fbfa);border:1px solid #d4e9e2;border-radius:13px;padding:16px 20px;display:flex;flex-direction:column;gap:5px}
+.bq-coach-today>div:last-child{background:linear-gradient(110deg,#163952,#255b72);color:white;border-color:#255b72}
+.bq-coach-today small{font-size:10px;letter-spacing:.11em;font-weight:800;opacity:.7}
+.bq-coach-today strong{font-size:15px;line-height:1.3}
+.bq-coach-today span{font-size:12px;opacity:.8}
+@media(max-width:600px){.bq-coach-today{grid-template-columns:1fr}}

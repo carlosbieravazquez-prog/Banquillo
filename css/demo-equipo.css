@@ -1,0 +1,48 @@
+/* Banquillo demo del entrenador: datos completos y coherentes con la fecha. */
+.demo-today{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 18px}
+.demo-today>div{background:linear-gradient(135deg,#e9f4f0,#f8fbfd);border:1px solid #dbe8e8;border-radius:13px;padding:16px 20px;display:flex;flex-direction:column;gap:7px}
+.demo-today>div:last-child{background:linear-gradient(135deg,#153953,#27607b);color:white;border-color:#27607b}
+.demo-today small{font-size:10px;letter-spacing:.1em;font-weight:800;opacity:.74}
+.demo-today b{font-size:16px}
+.demo-today span{font-size:11px;opacity:.76}
+.demo-team-toggle{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:25px;padding:12px 14px;border-radius:12px;border:1px solid #dce7ed;background:#fff}
+.demo-team-toggle span{font-size:11px;font-weight:800;color:#7d8f9e;margin-right:6px}
+.demo-team-toggle button{padding:10px 15px;border:1px solid #d9e4ea;border-radius:9px;color:#31536b;background:#f6f9fb;cursor:pointer;font-weight:700}
+.demo-team-toggle button.selected{background:#173f5b;color:white;border-color:#173f5b}
+.de-lead{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:15px;background:linear-gradient(130deg,#173951,#255974);color:white;padding:24px 27px;margin-bottom:20px}
+.de-lead h2{color:white;font-size:26px;margin:7px 0 6px}
+.de-lead div>span,.de-lead>span{font-size:10px;letter-spacing:.08em;font-weight:800;opacity:.78}
+.de-lead p{font-size:13px;opacity:.8;margin:0}
+.de-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin:0 0 17px}
+.de-metric{background:white;border:1px solid #e0e9ee;border-radius:12px;padding:18px}
+.de-metric small{display:block;color:#7e92a3;font-size:11px}
+.de-metric strong{display:block;font-size:27px;color:#194967;margin-top:6px;letter-spacing:-.03em}
+.de-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:17px 0}
+.de-panel{padding:21px;border-radius:14px;background:#fff;border:1px solid #dce6ea;box-shadow:0 6px 25px #1e4d5f08;margin:14px 0}
+.de-panel h3{margin:0 0 17px;color:#173c56;font-size:17px}
+.de-match{display:grid;grid-template-columns:120px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid #e8eef0;padding:14px 0}
+.de-match:last-child{border-bottom:0}
+.de-match b,.de-match small{display:block}
+.de-match b{font-size:13px;color:#19425c}
+.de-match small{font-size:11px;color:#8697a3;margin-top:5px}
+.de-match>strong{font-size:14px;white-space:nowrap;color:#346080}
+.de-muted{font-size:12px;color:#748e9e;line-height:1.6}
+.de-form{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.de-form span{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;color:#fff;font-weight:800}
+.de-form-V{background:#18855b}.de-form-E{background:#b28a42}.de-form-D{background:#b85454}
+.de-rank{display:grid;grid-template-columns:minmax(85px,1fr) minmax(35px,1fr) auto;gap:12px;align-items:center;font-size:13px;border-bottom:1px solid #ecf1f4;padding:10px 0}
+.de-rank:last-child{border:0}
+.de-rank span{color:#31586d;overflow-wrap:anywhere}
+.de-rank i{height:8px;background:#eef3f5;border-radius:9px;overflow:hidden}
+.de-rank i b{height:100%;display:block;background:linear-gradient(90deg,#18865e,#4fb99b);border-radius:9px}
+.de-rank strong{font-variant-numeric:tabular-nums;color:#153e56}
+.de-table-wrap{overflow:auto}
+.de-table{width:100%;border-collapse:collapse;font-size:13px}
+.de-table th,.de-table td{text-align:left;padding:13px;border-bottom:1px solid #e9eef1}
+.de-table th{background:#f2f7fa;color:#476577;font-size:11px}
+.de-work{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.de-work>div{padding:16px;border:1px solid #e0e9ed;border-radius:12px;background:#f8fbfc;display:grid;gap:9px}
+.de-work b{font-size:13px;color:#183e55}
+.de-work span{font-size:12px;color:#71879a;line-height:1.5}
+@media(max-width:820px){.de-columns{grid-template-columns:1fr}.de-work{grid-template-columns:1fr}}
+@media(max-width:650px){.demo-today{grid-template-columns:1fr}.de-lead{align-items:flex-start;flex-direction:column}.de-match{grid-template-columns:70px 1fr}.de-match>strong{grid-column:2}.de-metrics{grid-template-columns:1fr 1fr}}
