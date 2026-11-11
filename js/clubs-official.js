@@ -127,11 +127,20 @@ function teamPage(){const t=team();if(!t)return teamsPage();return head(t.name,(
  '<div class="ux-tabs" role="navigation">'+[["overview","Resumen deportivo"],["players","Estadísticas"],["coaches","Entrenadores"],["settings","Configuración"],["code","Código del equipo"]].map(([k,v])=>'<button type="button" data-tab="'+k+'" class="'+(state.teamTab===k?"on":"")+'">'+v+'</button>').join("")+'</div>'+
  (!t.season_id&&["overview","players"].includes(state.teamTab)?'<div class="bq-note">Todavía no has vinculado una temporada deportiva. Puedes hacerlo en «Código del equipo».</div>':'')+
  (state.teamTab==="overview"?overview(t):state.teamTab==="players"?playersTab(t):state.teamTab==="coaches"?staffTab():state.teamTab==="settings"?settingsTab(t):codeTab(t));}
-function directorsPage(){const c=active();if(!c)return emptyClub();return head("Directores deportivos","Los directores del club pueden coordinar los equipos. El propietario gestiona las invitaciones.")+
- '<section class="panel"><div class="director-grid">'+
- '<article class="director-card"><span class="avatar">DP</span><h3>Propietario del club</h3><p>Acceso principal de administración</p><div class="permission">✓ Control del club</div></article>'+
- state.clubDirectors.map(d=>'<article class="director-card"><span class="avatar">DD</span><h3>'+esc(d.display_name||"Director deportivo")+'</h3><p>Director deportivo</p><div class="permission">✓ Permisos de dirección</div>'+(owner()?'<div class="bq-cta-row">'+button("Revocar acceso","removeDirector",d.user_id,"ghost")+'</div>':"")+'</article>').join("")+'</div>'+
- (owner()?'<div class="bq-invite"><h3>Invitar al segundo director deportivo</h3><p class="muted">Puedes compartir este código con otra persona que tenga su propia cuenta. Tendrá permisos de Dirección Deportiva en el club, pero no acceso automático a las actas de cada temporada.</p><div class="ux-team-code"><span>CÓDIGO EXCLUSIVO PARA DIRECCIÓN DEPORTIVA</span><strong>'+esc(state.clubCode||"Cargando…")+'</strong></div><div class="ux-actions">'+button("Copiar código","copyClubCode")+button("Renovar código","rotateClubCode","","ghost")+'</div><p class="bq-hint">Pasos: el segundo director inicia sesión, entra en Dirección Deportiva, elige «Unirme a un club» e introduce este código. Solo se admite un director adicional.</p></div>':"")+'</section>';}
+function directorsPage(){
+ const roster=state.clubDirectors;
+ const me=roster.find(d=>d.user_id===state.uid);
+ const other=roster.find(d=>d.user_id!==state.uid);
+ return head("Dirección Deportiva","Cada director accede con su propia cuenta. No existe la posibilidad de cambiar de identidad.")+
+ '<section class="panel"><div class="director-grid">'+roster.map(d=>
+ '<article class="director-card '+(d.user_id===state.uid?'bq-current-director':'')+'"><span class="avatar">'+(d.kind==="owner"?"DP":"DD")+'</span><h3>'+esc(d.display_name||"Director deportivo")+(d.user_id===state.uid?' <small>· Eres tú</small>':'')+'</h3><p>'+(d.kind==="owner"?"Responsable titular":"Director deportivo")+'</p><div class="permission">✓ Acceso a la gestión del club</div>'+
+ (d.user_id!==state.uid?'<div class="bq-cta-row">'+button("Expulsar del club","ejectDirector",d.user_id,"ghost")+'</div>':'')+'</article>').join("")+
+ '</div><div class="bq-director-actions">'+button("Abandonar el club","leaveClub","","ghost")+'</div>'+
+ (!other?'<div class="bq-invite"><h3>Invitar a un director deportivo</h3><p class="muted">Solo se admite un segundo director. Pulsa el botón para generar un código de un solo uso válido durante 10 minutos.</p>'+button("Generar código temporal","inviteDirector")+'</div>':
+ '<p class="bq-hint">El club ya tiene dos directores. Si uno abandona o es expulsado, se podrá generar otro código temporal.</p>')+
+ '<p class="bq-hint">Expulsar a un director retira su permiso de dirección. Si el titular deja el club, el segundo director asume la titularidad. Los permisos independientes en temporadas deben revisarse aparte.</p></section>';
+}
+
 function seasonsPage(){return head("Temporadas","Solo puede haber un club activo por titular en una temporada. El historial permanece disponible.",owner()&&currentPeriod()?button("Cerrar temporada","closeClubSeason","","ghost"):button("Crear club","newClub"))+
  '<div class="bq-seasons-grid">'+state.periods.map(p=>'<article class="panel bq-season-card"><span class="ux-pill '+(p.status==="active"?"good":"")+'">'+(p.status==="active"?"En curso":"Cerrada")+'</span><h3>'+esc(p.season_label)+'</h3><p>'+esc(active()?.name||"Club")+'</p><p class="muted">'+(p.status==="active"?"Activa desde su creación":"Cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></article>').join("")+'</div>'+
  '<section class="panel"><h3>Inicio de nueva temporada</h3><p>Para crear un club diferente, cierra primero la temporada activa. Una vez cerrada podrás abrir la siguiente temporada sin borrar los datos anteriores.</p></section>'+deletedSection();}
@@ -197,8 +206,29 @@ async function loadTeamData(){const t=team();if(!t)return;const tid=t.id;try{
 async function loadAllData(){const teams=state.teams.filter(t=>t.season_id&&state.members.some(m=>m.season_id===t.season_id));let all=[];
  for(const t of teams){try{const rows=await calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id));all.push(...(rows||[]).map(x=>{const p=x.path.split("/");return{team:t,type:p[2]==="matches"?"match":p[2]==="players"?"player":"other",id:p[3],data:x.data}}).filter(x=>x.type!=="other"));}catch(e){/* no access */}}
  state.docs=all;render();}
-async function loadDirectors(){if(!active())return;try{state.clubDirectors=await rpc("banquillo_list_directors",{p_club_id:state.clubId})||[];
- state.clubCode=owner()?await rpc("banquillo_club_code",{p_club_id:state.clubId,p_rotate:false}):null;render();}catch(e){notify(errText(e),"error");}}
+async function loadDirectors(){if(!active())return;
+ try{
+ const clubId=state.clubId;
+ const roster=await rpc("banquillo_club_roster",{p_club_id:clubId})||[];
+ if(clubId!==state.clubId)return;
+ state.clubDirectors=roster;
+ state.clubCode=null;
+ render();
+ }catch(e){notify(errText(e),"error");}
+}
+async function refreshInvitation(rotate=false){
+ if(!active())return;
+ const info=await rpc("banquillo_director_invite",{p_club_id:state.clubId,p_rotate:rotate});
+ if(!info?.available){state.directorInvite=null;closeModal();await loadDirectors();notify("El club ya tiene dos directores.","error");return;}
+ state.directorInvite=info;state.clubCode=info.code;
+ const expires=new Date(info.expires_at).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+ modal("Código temporal para el segundo director",
+ '<p>Entrega este código solo a la persona que quieras incorporar. El código es de un único uso y caduca a las <b>'+esc(expires)+'</b>.</p>'+
+ '<div class="ux-team-code"><span>CÓDIGO DE DIRECCIÓN · 10 MINUTOS</span><strong data-invite-code>'+esc(info.code)+'</strong></div>'+
+ '<div class="ux-actions">'+button("Copiar código","copyClubCode")+button("Renovar ahora","rotateInvite","","ghost")+'</div>'+
+ '<p class="bq-hint">El otro director debe iniciar sesión en su propia cuenta, abrir Dirección Deportiva y elegir «Unirme a un club». Nunca compartas tu contraseña.</p>');
+}
+
 async function loadTeamCode(){const t=team();if(!t?.season_id)return;try{state.teamCode=await rpc("banquillo_team_code",{p_team_id:t.id,p_rotate:false});if(state.teamTab==="code")render();}catch(e){notify(errText(e),"error");}}
 async function changeView(v){state.view=v;state.teamCode=null;render();
  if(v==="directores")await loadDirectors();
