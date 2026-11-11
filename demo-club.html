@@ -6,6 +6,9 @@
 <meta name="theme-color" content="#102a43">
 <title>Atlético Monteverde CF · Banquillo</title>
 <link rel="stylesheet" href="css/demo-club.css">
+<link rel="stylesheet" href="css/demo-club-ux.css">
+<link rel="stylesheet" href="css/file-picker.css">
+<link rel="stylesheet" href="css/kit-editor.css">
 </head>
 <body>
 <div class="app-shell">
@@ -19,9 +22,10 @@
       <button class="nav-item" data-view="directores"><span>♙</span> Directores deportivos</button>
       <button class="nav-item" data-view="instalaciones"><span>▤</span> Instalaciones</button>
       <button class="nav-item" data-view="calendario"><span>▦</span> Calendario</button>
+      <button class="nav-item" data-view="calendarioMes"><span>▤</span> Planificador mensual</button>
       <div class="nav-label space-top">COMUNICACIÓN</div>
       <button class="nav-item" data-view="comunicaciones"><span>✉</span> Comunicaciones</button>
-      <button class="nav-item" data-view="avisos"><span>⚑</span> Avisos de actividad</button>
+      <button class="nav-item" data-view="avisos"><span>⚑</span> Avisos de actividad <i id="noticeCount">0</i></button>
       <button class="nav-item" data-view="ajustes"><span>⚙</span> Ajustes del club</button>
     </nav>
     <div class="sidebar-bottom"><span class="demo-dot"></span> Entorno de demostración<br><small>Datos ficticios · Solo este navegador</small></div>
@@ -29,13 +33,22 @@
   <main class="main">
     <header class="topbar">
       <div><div class="eyebrow">ATLÉTICO MONTEVERDE CF <span class="demo-pill">DEMO</span></div><h1 id="pageTitle">Resumen del club</h1></div>
-      <div class="top-actions"><div class="role-chip"><span class="avatar">DP</span><span><b id="activeDirectorName">Director deportivo</b><small>Dirección deportiva</small></span></div><button type="button" class="btn ghost" id="exportDemo" title="Descargar una copia local de esta demostración">Guardar copia JSON</button><button class="icon-btn" id="resetDemo" title="Restablecer demostración">↻</button></div>
+      <div class="top-actions"><div class="role-chip"><span class="avatar">DP</span><span><b id="activeDirectorName">Director deportivo</b><small>Dirección deportiva</small></span></div><button type="button" class="btn ghost" id="exportDemo" title="Descarga un archivo para guardar los equipos y ajustes de esta demo">Guardar respaldo</button><button type="button" class="btn ghost" id="importDemo" title="Recuperar los cambios de un respaldo anterior">Restaurar respaldo</button><input id="importDemoFile" type="file" accept=".json,application/json" hidden aria-label="Elegir archivo de respaldo de Banquillo"><button class="icon-btn" id="resetDemo" title="Restablecer demostración">↻</button></div>
     </header>
+    <div id="teamContextBar" class="ux-team-context" hidden></div>
     <div class="modality-bar"><span class="mod-label">ÁMBITO DE TRABAJO</span><div class="segmented" role="group" aria-label="Cambiar modalidad"><button class="selected" data-modality="F7">Fútbol 7</button><button data-modality="F11">Fútbol 11</button><button data-modality="todos">Todo el club</button></div><span class="mod-note" id="modalityNote">Vista de equipos de Fútbol 7</span></div>
     <section id="viewRoot" aria-live="polite"></section>
-    <footer>Prototipo funcional de demostración · No conectado a cuentas ni a Supabase</footer>
+    <footer>Demo local: tus cambios se guardan en este navegador. «Guardar respaldo» descarga un archivo .json y «Restaurar respaldo» permite recuperarlo. No se sincronizan con Supabase.</footer>
   </main>
 </div>
+<section id="printCalendar" hidden></section>
+<script src="js/club-crest.js"></script>
+<script src="js/club-theme.js"></script>
+<script src="js/kit-mockup.js"></script>
+<script src="js/kit-editor.js"></script>
+<script src="js/file-picker.js"></script>
+<script src="js/club-planner.js"></script>
+<script src="js/demo-club-ux.js"></script>
 <script src="js/demo-club.js"></script>
 </body>
 </html>
