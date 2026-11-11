@@ -169,12 +169,15 @@ V.temporadas = () => {
     } else {
       controls = btn("Abandonar equipo","leaveAsk",{id:season.id},"ghost danger-t small");
     }
-    return '<li class="scard bq-access-season '+(on?"on":"")+'"><div class="sc-m">'+
+    return '<li class="scard bq-access-season '+(on?"on":"")+'">'+
+      '<button type="button" class="bq-season-select" data-act="openSeason" data-id="'+esc(season.id)+'" aria-label="Abrir '+esc(teamLabel)+' de '+esc(locationLabel)+'">'+
+      '<span class="sc-m">'+
       '<b>'+esc(teamLabel)+'</b><small>'+esc(locationLabel)+'</small>'+
-      '<div class="bq-access-badges"><span class="tag">'+(link?(link.archived?"Equipo archivado":"Equipo de club"):"Independiente")+'</span>'+
+      '<span class="bq-access-badges"><span class="tag">'+(link?(link.archived?"Equipo archivado":"Equipo de club"):"Independiente")+'</span>'+
       '<span class="tag '+(isOwner?"ok":"")+'">'+esc(isOwner?"Responsable":link?.manager?"Dirección Deportiva":role==="editor"?"Entrenador":"Solo lectura")+'</span>'+
-      (season.status==="closed"?'<span class="tag">Cerrada</span>':'')+'</div></div>'+
-      '<div class="sc-a bq-season-controls">'+(on?'<span class="tag info">Abierta</span>':btn("Abrir equipo","openSeason",{id:season.id},"ghost small"))+
+      (season.status==="closed"?'<span class="tag">Cerrada</span>':'')+'</span></span>'+
+      '<span class="bq-season-open-hint">'+(on?"Continuar":"Abrir")+' <span aria-hidden="true">↗</span></span></button>'+
+      '<div class="sc-a bq-season-controls">'+(on?'<span class="tag info">Seleccionada</span>':"")+
       controls+'</div></li>';
   }).join("");
   const currentLink = cur && linkFor(cur.id);
@@ -208,7 +211,7 @@ V.temporadas = () => {
     '<div class="row gap wrap">'+btn("Actualizar permisos","refreshSeasonLinks",{},"ghost")+
     '<a class="btn ghost" href="clubes.html">Ir a Dirección Deportiva</a></div></section>';
 };
-ACT.openSeason = el => { Store.selectSeason(el.dataset.id); go("inicio"); toast("Equipo abierto."); };
+ACT.openSeason = el => { const id=el?.dataset?.id;if(!Store.seasons.some(x=>x.id===id)){toast("Este equipo no está disponible en tu cuenta.","err");return;} Store.selectSeason(id); go("inicio"); toast("Has abierto la temporada seleccionada.","ok"); };
 ACT.openClubPanel = () => { location.href = "clubes.html"; };
 ACT.refreshSeasonLinks = async () => {
   await Store.loadRoles();
