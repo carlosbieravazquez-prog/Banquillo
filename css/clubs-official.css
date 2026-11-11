@@ -76,3 +76,22 @@
 .bq-date-strip strong,.bq-fixture b{overflow-wrap:anywhere}
 @media(max-width:950px){.bq-choice-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){.bq-date-strip{grid-template-columns:1fr}.bq-choice-grid,.bq-form-grid{grid-template-columns:1fr}.bq-fixture{grid-template-columns:90px 1fr}.bq-fixture>b:last-child{grid-column:2;text-align:left}.bq-person-actions{margin-left:0;width:100%}}
+
+/* Seguridad y respaldos de clubes */
+.bq-backup-action[hidden]{display:none!important}
+.top-actions .bq-backup-action{font-size:11px!important;white-space:nowrap}
+.bq-danger-zone{margin-top:22px;border:1px solid #f3d5d1!important;background:#fffcfb!important}
+.bq-danger-zone h3{color:#9c3935}
+.bq-danger-zone p{font-size:13px;color:#7d6a6c;line-height:1.55}
+.bq-danger-zone .btn{border-color:#dfb1ac!important;color:#a23d3b!important;background:#fff3f2!important}
+.bq-danger-note{background:#fff6f4;border:1px solid #f1d8d1;border-radius:10px;padding:14px 17px;font-size:13px;line-height:1.5;color:#814744}
+.bq-danger-note strong{color:#a4423e}
+.bq-danger-note p{margin:7px 0 0}
+.bq-recovery{margin-top:16px}
+.bq-recovery-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 2px;border-bottom:1px solid #e6edf2}
+.bq-recovery-row:last-child{border-bottom:0}
+.bq-recovery-row span{font-size:13px;font-weight:700;color:#2f5064}
+#bqModalRoot input[type="file"]{height:auto;padding:14px;cursor:pointer;background:#f7fbfe;border:1px dashed #8eaebc}
+#bqModalRoot .bq-dialog{max-width:610px}
+.bq-invite .ux-team-code strong{user-select:all}
+@media(max-width:870px){.topbar .top-actions{flex-wrap:wrap;gap:7px}.top-actions .bq-backup-action{padding:8px 10px}}
