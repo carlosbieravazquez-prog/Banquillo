@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102a43"><title>Banquillo Demo | Dirigir equipo</title>
+<link rel="stylesheet" href="css/demo-club.css"><link rel="stylesheet" href="css/demo-club-ux.css"><link rel="stylesheet" href="css/demo-equipo.css"></head>
+<body><div class="app-shell"><aside class="sidebar">
+<a class="brand" href="index.html"><span class="brand-mark">B</span><span><b>BANQUILLO</b><small>DEMO ENTRENADOR</small></span></a>
+<div class="club-switch"><span class="club-crest">⚽</span><span><b id="demoTeamName">Alevín A</b><small>Atlético Monteverde CF</small></span></div>
+<div class="nav-label">TU EQUIPO</div><nav>
+<button class="nav-item active" data-demo-view="inicio"><span>▦</span> Inicio</button>
+<button class="nav-item" data-demo-view="partidos"><span>⚽</span> Partidos y convocatorias</button>
+<button class="nav-item" data-demo-view="plantilla"><span>♙</span> Plantilla</button>
+<button class="nav-item" data-demo-view="entrenos"><span>◫</span> Entrenamientos</button>
+<button class="nav-item" data-demo-view="informes"><span>▤</span> Informes</button>
+</nav><div class="nav-label space-top">OTRA VISTA</div>
+<a class="nav-item" href="demo-club.html"><span>🏟️</span> Gestionar club</a>
+<div class="sidebar-bottom"><span class="demo-dot"></span> Datos de demostración<br><small>No se guardan en Supabase</small></div>
+</aside><main class="main"><header class="topbar"><div><div class="eyebrow">ATLÉTICO MONTEVERDE CF <span class="demo-pill">DEMO</span></div><h1 id="demoHeading">Inicio del equipo</h1></div><div class="top-actions">
+<div class="role-chip"><span class="avatar">DT</span><span><b id="demoCoach">Entrenador</b><small>Entrenador principal</small></span></div><a href="index.html" class="btn ghost">Acceder a mi cuenta</a></div></header>
+<div class="demo-today"><div><small>FECHA ACTUAL</small><b id="dateNow">Hoy</b></div><div><small>PRÓXIMA JORNADA</small><b id="nextOpp">Jornada por configurar</b><span id="nextDate"></span></div></div>
+<div class="demo-team-toggle"><span>EQUIPO DE EJEMPLO</span><button type="button" class="selected" data-demo-team="alevin">Alevín A · F7</button><button type="button" data-demo-team="cadete">Cadete A · F11</button></div>
+<section id="demoContent" aria-live="polite"></section><footer>Datos ficticios de muestra. Temporada 2026/2027 del 1 de septiembre al 1 de junio, con 18 jornadas de ida y vuelta. Los resultados se completan automáticamente solo hasta la fecha actual.</footer>
+</main></div><script src="js/demo-equipo.js"></script></body></html>
