@@ -446,7 +446,24 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id,sourceEl){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.workspaceOpen=false;state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="openWorkspaceTeam"){
+   const target=state.workspaceTeams.find(t=>t.id===id);
+   if(!target){notify("Este equipo no está disponible para tu cuenta.","error");return;}
+   state.workspaceOpen=false;closeModal();
+   if(target.club_id!==state.clubId){
+     state.clubId=target.club_id;state.teamId=null;
+     state.staff=[];state.teamRoster=[];state.docs=[];state.messages=[];
+     state.events=[];state.messagingInitialized=false;state.directorInvite=null;
+     state.view="resumen";
+     await refresh();
+   }
+   if(!state.teams.some(t=>t.id===id)){
+     notify("El equipo está archivado o ya no tienes acceso a él.","error");return;
+   }
+   state.teamId=id;state.teamTab="overview";state.staff=[];state.teamRoster=[];state.teamCode=null;
+   return changeView("equipo");
+ }
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
@@ -598,17 +615,33 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
 document.addEventListener("click",e=>{
  const close=e.target.closest("[data-modal-close]");if(close&&(e.target===close||e.target.matches("button[data-modal-close]"))){closeModal();return;}
  const acceptBtn=e.target.closest("[data-accept-action]");if(acceptBtn){accept(acceptBtn.dataset.acceptAction,acceptBtn.dataset.id);return;}
- const switcher=e.target.closest("#clubSwitcher");if(switcher&&state.clubs.length>1){action("chooseClub","");return;}
- const nav=e.target.closest("[data-view]");if(nav){changeView(nav.dataset.view);return;}
+ const switcher=e.target.closest("#clubSwitcher");
+ if(switcher){state.workspaceOpen=!state.workspaceOpen;renderWorkspaceMenu();return;}
+ if(state.workspaceOpen&&!e.target.closest("#bqWorkspaceMenu")){
+   state.workspaceOpen=false;renderWorkspaceMenu();
+ }
+ const nav=e.target.closest("[data-view]");if(nav){state.workspaceOpen=false;changeView(nav.dataset.view);return;}
  const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;render();return;}
  const tab=e.target.closest("[data-tab]");if(tab){state.teamTab=tab.dataset.tab;state.teamCode=null;render();if(state.teamTab==="code")loadTeamCode();return;}
  const act=e.target.closest("[data-action]");if(act){action(act.dataset.action,act.dataset.id||"",act);return;}
+});
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape"&&state.workspaceOpen){state.workspaceOpen=false;renderWorkspaceMenu();$("#clubSwitcher")?.focus();}
 });
 document.addEventListener("submit",e=>{if(!e.target.closest("form"))return;e.preventDefault();const f=e.target;const submitBtn=f.querySelector('button[type="submit"]');if(submitBtn)submitBtn.disabled=true;submit(f).finally(()=>{if(submitBtn?.isConnected)submitBtn.disabled=false;});});
 async function start(){try{const cfg=window.BQ_CONFIG||{};if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||!window.supabase)throw Error("Falta configurar Supabase.");
  state.sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
  const {data:{user},error}=await state.sb.auth.getUser();if(error||!user){notify("Inicia sesión desde Banquillo antes de entrar al club.","error");rview().innerHTML='<div class="panel"><h2>Accede a tu cuenta</h2><a href="index.html" class="btn primary">Entrar o registrarme</a></div>';return;}
- state.uid=user.id;state.accountEmail=user.email||"";state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});if(state.teamId&&state.view==="equipo"&&state.teamTab==="coaches")loadTeamData().catch(()=>{});},20000);
+ state.uid=user.id;state.accountEmail=user.email||"";state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();
+ const incoming=new URLSearchParams(window.location.search);
+ const deepClub=incoming.get("club"),deepTeam=incoming.get("team");
+ if(deepClub&&state.clubs.some(c=>c.id===deepClub)){
+   if(state.clubId!==deepClub){state.clubId=deepClub;await refresh();}
+   if(deepTeam&&state.teams.some(t=>t.id===deepTeam)){
+     state.teamId=deepTeam;state.teamTab="overview";await changeView("equipo");
+   }
+ }
+ notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});if(state.teamId&&state.view==="equipo"&&state.teamTab==="coaches")loadTeamData().catch(()=>{});},20000);
 }catch(e){notify(errText(e),"error");}}
 start();
 })();
