@@ -197,6 +197,7 @@ V.temporadas = () => {
     '<p class="muted small">Esta es tu identidad real en Banquillo. Cerrar sesión permite entrar con otra cuenta sin modificar ni eliminar datos.</p></div>'+
     btn("Cambiar de cuenta","signOut",{},"ghost")+'</div></section>'+
     '<p class="muted small">¿Te han invitado desde un club? Utiliza el código de <b>tu equipo</b>. El director deportivo debe aprobar la solicitud. Los botones de abandonar y eliminar solo aparecen según tus permisos.</p>'+
+    (typeof TeamRequests!=="undefined"?TeamRequests.panel():"")+
     '<ul class="slist2 bq-seasons-list">'+(cards||'<li class="card">Todavía no tienes equipos vinculados.</li>')+'</ul>'+
     (cur?'<section class="card"><div class="card-h"><h3>Equipo abierto · '+esc(cur.name)+'</h3></div>'+
       '<div class="row gap wrap">'+safeActions+'</div>'+
