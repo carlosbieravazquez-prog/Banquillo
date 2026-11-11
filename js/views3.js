@@ -156,12 +156,14 @@ V.temporadas = () => {
     if (!accessReady) controls = '<span class="muted small">Comprobando permisos…</span>';
     else if (link?.manager) {
       controls = btn("Gestionar club","openClubPanel",{id:link.club_id},"ghost small");
-      if (!link.archived) controls +=
-        btn("Retirar equipo","archiveTeamFromSeasonAsk",{id:link.team_id},"ghost danger-t small");
-      if (isOwner) controls += btn("Eliminar club","deleteClubFromSeasonAsk",{id:link.club_id},"ghost danger-t small");
-      controls += btn("Abandonar club","leaveClubFromSeasonAsk",{id:link.club_id},"ghost small");
+      if(!link.archived){
+        controls += btn("Retirar equipo","archiveTeamFromSeasonAsk",{id:link.team_id},"ghost danger-t small");
+        if(isOwner) controls += btn("Eliminar club","deleteClubFromSeasonAsk",{id:link.club_id},"ghost danger-t small");
+        controls += btn("Abandonar club","leaveClubFromSeasonAsk",{id:link.club_id},"ghost small");
+      }
     } else if (link) {
-      controls = btn("Abandonar equipo","leaveTeamAsk",{id:link.team_id,sid:season.id},"ghost danger-t small");
+      controls = link.archived?'<span class="muted small">Equipo archivado · historial conservado</span>':
+        btn("Abandonar equipo","leaveTeamAsk",{id:link.team_id,sid:season.id},"ghost danger-t small");
     } else if (isOwner) {
       controls = btn("Eliminar equipo","seasonDelAsk",{id:season.id},"ghost danger-t small");
     } else {
@@ -177,7 +179,8 @@ V.temporadas = () => {
   }).join("");
   const currentLink = cur && linkFor(cur.id);
   const safeActions = !cur?"":!accessReady?'<span class="muted small">Comprobando permisos y vinculación del equipo…</span>':currentLink?
-    '<a class="btn primary" href="clubes.html">Gestionar equipo desde Dirección Deportiva</a>'+
+    (currentLink.manager?'<a class="btn primary" href="clubes.html">Gestionar desde Dirección Deportiva</a>':
+     '<span class="muted small">Equipo vinculado a un club · Dirección Deportiva gestiona sus permisos.</span>')+
     btn("Exportar Excel","dlXlsx",{},"ghost"):
     btn("Compartir y miembros","openShare",{},"primary","users")+
     btn("Ajustes","openSettings",{},"ghost","edit")+
