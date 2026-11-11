@@ -146,13 +146,15 @@ const FORM = {};
     render(true);
   };
   A.leave = () => {
+    if(typeof CoachInbox!=="undefined")CoachInbox.reset();
+    if(typeof TeamRequests!=="undefined")TeamRequests.reset();
     A.uid = null; A.state = "out"; Cloud.profile = null; Store.reset(); Store.connecting = false;
     UI.sheet = null; UI.wiz = null; UI.ai = {};
     A.ui = { mode: "login", busy: false, msg: null, email: "", name: "" };
     const slot = $("#authSlot"); if (slot) slot.dataset.h = "";
     render(true);
   };
-  ACT.signOut = async () => { UI.sheet = null; await Cloud.sb.auth.signOut(); A.leave(); };
+  ACT.signOut = async () => { UI.sheet = null; await Cloud.sb.auth.signOut({scope:"local"}); A.leave(); };
 
   /* ---------- Mi cuenta y Silbatos ---------- */
   const fmtD = iso => { try { return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return ""; } };

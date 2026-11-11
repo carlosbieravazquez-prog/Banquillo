@@ -41,6 +41,6 @@ async function join(e,type){
 }
 $("joinDirector").addEventListener("submit",e=>join(e,"director"));
 $("joinTeam").addEventListener("submit",e=>join(e,"team"));
-$("logout").addEventListener("click",async()=>{try{await sb.auth.signOut();location.reload();}catch(e){status(String(e.message||e),"err");}});
+$("logout").addEventListener("click",async()=>{try{await sb.auth.signOut({scope:"local"});location.reload();}catch(e){status(String(e.message||e),"err");}});
 boot();
 })();

@@ -142,6 +142,6 @@ async function invite(){
 }
 $("prepareForm").addEventListener("submit",setup);
 $("generateDirectorCode").addEventListener("click",invite);
-$("logout").addEventListener("click",async()=>{try{await sb.auth.signOut();location.reload();}catch(e){status(reportErr(e),"err");}});
+$("logout").addEventListener("click",async()=>{try{await sb.auth.signOut({scope:"local"});location.reload();}catch(e){status(reportErr(e),"err");}});
 inspect();
 })();
