@@ -19,7 +19,7 @@ const currentPeriod=()=>state.periods.find(x=>x.status==="active");
 const nowLabel=()=>new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
 const seasonDefault=()=>{const d=new Date(),y=d.getMonth()>=6?d.getFullYear():d.getFullYear()-1;return y+"/"+(y+1)};
 const showDate=s=>{if(!s)return"Por definir";const d=new Date(s+"T12:00:00");return Number.isNaN(d.getTime())?String(s):new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"short",year:"numeric"}).format(d)};
-const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/too_many_attempts/.test(m))return"Se han introducido varios códigos incorrectos. Prueba de nuevo pasados 10 minutos.";if(/season_owner_transfer_required/.test(m))return"Este usuario es propietario de la temporada deportiva. Transfiere antes esa titularidad.";if(/team_name_exists/.test(m))return"Ya hay un equipo activo con ese nombre en este club.";if(/no_verified_request/.test(m))return"La cuenta aún no ha solicitado unirse mediante el código correcto.";if(/team_has_members_unlink_first/.test(m))return"No se puede cambiar la temporada de un equipo que ya tiene personas vinculadas.";if(/insufficient_management_whistles/.test(m))return"No te quedan suficientes silbatos de gestión para crear esto.";if(/invalid_or_expired_code/.test(m))return"El código ha caducado o ya se ha utilizado. Solicita uno nuevo al director.";if(/owner_must_close_or_delete/.test(m))return"Antes de abandonar debes incorporar a un segundo director o cerrar el club.";if(/not_club_director|not_club_owner/.test(m))return"No tienes permisos de dirección en este club.";if(/team_requires_linked_season/.test(m))return"Primero vincula el equipo a una temporada.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
+const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/too_many_attempts/.test(m))return"Se han introducido varios códigos incorrectos. Prueba de nuevo pasados 10 minutos.";if(/season_owner_transfer_required/.test(m))return"Este usuario es propietario de la temporada deportiva. Transfiere antes esa titularidad.";if(/team_name_exists/.test(m))return"Ya hay un equipo activo con ese nombre en este club.";if(/no_verified_request/.test(m))return"La cuenta aún no ha solicitado unirse mediante el código correcto.";if(/team_has_members_unlink_first/.test(m))return"No se puede cambiar la temporada de un equipo que ya tiene personas vinculadas.";if(/insufficient_management_whistles/.test(m))return"No te quedan suficientes silbatos de gestión para crear esto.";if(/invalid_or_expired_code/.test(m))return"El código ha caducado o ya se ha utilizado. Solicita uno nuevo al director.";if(/owner_must_close_or_delete/.test(m))return"Antes de abandonar debes incorporar a un segundo director o cerrar el club.";if(/not_club_director|not_club_owner/.test(m))return"No tienes permisos de dirección en este club.";if(/team_requires_linked_season/.test(m))return"Primero vincula el equipo a una temporada.";if(/schedule_conflict/.test(m))return"Conflicto de horario: otro partido ocupa ese campo o el mismo equipo ya tiene un encuentro a esa hora.";if(/only_home_match/.test(m))return"Solo puedes asignar horarios desde este planificador a los partidos que tu equipo juega en casa.";if(/field_not_available|field_not_divisible|invalid_field/.test(m))return"Este campo no está habilitado para la modalidad. Revísalo en Instalaciones.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
 function notify(txt,tone="ok"){const e=$("#messageBar");e.textContent=txt;e.className="bq-status "+tone;}
 const rview=()=>$("#viewRoot");
 const head=(title,desc,btns="")=>'<div class="page-head"><div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p></div>'+btns+'</div>';
@@ -697,6 +697,35 @@ async function action(name,id,sourceEl){try{
  }
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="refreshWorkspaces"){await loadWorkspaces();render();notify("Gestiones actualizadas.");return;}
+ if(name==="viewWeek")return changeView("calendario");
+ if(name==="viewMonth")return changeView("calendarioMes");
+ if(name==="plannerPrevWeek"||name==="plannerNextWeek"){
+  const d=new Date((state.plannerDate||new Date().toISOString().slice(0,10))+"T12:00:00");
+  d.setDate(d.getDate()+(name==="plannerPrevWeek"?-7:7));
+  state.plannerDate=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  return render();
+ }
+ if(name==="plannerPickDay"){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(id))return;
+  state.plannerDate=id;const d=new Date(id+"T12:00:00");state.month=d.getMonth();state.year=d.getFullYear();
+  return render();
+ }
+ if(name==="scheduleMatch")return openPlannerForm(id);
+ if(name==="downloadPlanImage"){plannerImage(state.view==="calendarioMes");notify("Imagen del calendario descargada.");return;}
+ if(name==="removeSchedule")return ask("Quitar horario asignado",
+  "Se eliminará únicamente la reserva de campo y hora. La jornada y el acta del partido se conservarán.",
+  "acceptRemoveSchedule",id,"Quitar horario");
+ if(name==="suggestSchedule"){
+  const parts=id.split("|"),form=$("#scheduleMatchForm")||$("#bqModalRoot form");
+  if(form&&parts.length===2){
+    const time=form.querySelector('[name="time"]'),field=form.querySelector('[name="resource"]');
+    if(time&&field){time.value=parts[0];field.value=parts[1];if(sourceEl){
+      sourceEl.classList.add("bq-copied-success");sourceEl.textContent="✓ Sugerencia aplicada";
+      window.setTimeout(()=>sourceEl.classList.remove("bq-copied-success"),1800);
+    }}
+  }
+  return;
+ }
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
  if(name==="restoreBackup")return openBackupForm();
@@ -763,9 +792,16 @@ async function action(name,id,sourceEl){try{
  if(name==="rotateTeamCode")return ask("Renovar código","El anterior ya no permitirá nuevas incorporaciones. Los miembros existentes mantienen su acceso.","acceptRotateTeam",team()?.id,"Renovar código");
  if(name==="rotateClubCode")return ask("Renovar código de club","Los códigos anteriores dejarán de admitir nuevos directores.","acceptRotateClub",state.clubId,"Renovar código");
  if(name==="closeClubSeason")return ask("Cerrar temporada","Se archivará la temporada del club y podrás crear uno nuevo en la siguiente. Los datos no se borrarán.","acceptCloseClub",state.clubId,"Cerrar temporada");
- if(name==="prevMonth"||name==="nextMonth"){const d=new Date(state.year,state.month+(name==="prevMonth"?-1:1),1);state.month=d.getMonth();state.year=d.getFullYear();return render();}
+ if(name==="prevMonth"||name==="nextMonth"){const d=new Date(state.year,state.month+(name==="prevMonth"?-1:1),1);state.month=d.getMonth();state.year=d.getFullYear();state.plannerDate=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";return render();}
  }catch(e){notify(errText(e),"error");}}
 async function accept(name,id){closeModal();try{
+ if(name==="acceptRemoveSchedule"){
+  const row=plannerRows().find(x=>x.key===id&&x.m.home);
+  if(!row)throw Error("Partido local no encontrado o sin permisos.");
+  await rpc("banquillo_unschedule_home_match",{p_team_id:row.t.id,p_match_path:row.path});
+  await loadSchedules();render();notify("Horario retirado. La jornada y el acta se conservan.");
+  return;
+ }
  if(name==="acceptArchive"||name==="acceptRestore"){
   if(name==="acceptArchive"){
     const r=await rpc("banquillo_archive_club_team",{p_team_id:id});
@@ -795,6 +831,22 @@ async function accept(name,id){closeModal();try{
  notify("Cambios guardados correctamente.");
  }catch(e){notify(errText(e),"error");}}
 async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"").trim();try{
+ if(form.id==="scheduleMatchForm"){
+  const row=plannerRows().find(x=>x.key===get("match_key")&&x.m.home);
+  if(!row)throw Error("No se ha encontrado este encuentro local.");
+  const candidate={id:row.key,teamId:row.t.id,date:row.m.date,time:get("time"),
+   duration:Number(get("duration")),home:true,resource:get("resource"),modality:row.t.modality};
+  const validation=ClubPlanner.validate(candidate,plannerExisting(),plannerFacilities(),row.key);
+  if(validation)throw Error(validation);
+  const response=await rpc("banquillo_schedule_home_match",{
+    p_team_id:row.t.id,p_match_path:row.path,p_time:candidate.time,
+    p_duration_minutes:candidate.duration,p_resource:candidate.resource
+  });
+  if(!response?.ok)throw Error(response?.error||"No se ha guardado el horario.");
+  closeModal();await loadSchedules();render();
+  notify("Horario y campo publicados para "+row.t.name+".");
+  return;
+ }
  if(form.id==="deleteClubForm"){
   const c=active(),name=get("confirm_name");if(!owner()||!c||get("club_id")!==c.id||name!==c.name)throw Error("club_name_mismatch");
   const response=await rpc("banquillo_delete_club",{p_club_id:c.id,p_confirm_name:name});if(response!==true)throw Error("No se ha podido eliminar el club.");
