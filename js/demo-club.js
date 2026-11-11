@@ -260,8 +260,8 @@
     n.preparedAt=Date.now();
     if(n.ignoredAt && (Date.now()-Number(n.ignoredAt))>=7*86400000)n.reminderPrepared=true;
     save();
-    // Abrir WhatsApp, sin asumir que el usuario lo ha enviado.
-    window.open("https://wa.me/?text="+encodeURIComponent(content),"_blank","noopener,noreferrer");
+    // No se permite usar servicios externos para avisos.
+    await DemoDialog.alert("Aviso preparado dentro de la demostración. Los mensajes reales se envían únicamente desde la Dirección Deportiva oficial.");
     render();return;
   }
   if(a.dataset.action==="demo-month-view"){
