@@ -7,7 +7,7 @@ const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo e
 const prettyCode = code => /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(String(code||"")) ? code.slice(0,4)+"-"+code.slice(4) : String(code||"");
  const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
 const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],pendingByTeam:{},
-  members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
+  members:[],docs:[],schedules:[],plannerDate:new Date().toLocaleDateString("en-CA"),cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
   clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",workspaceTeams:[],workspaceIndependent:[],workspaceCoachTeams:[],workspaceOpen:false,workspaceError:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
 const calls = async query => {const {data,error}=await query;if(error)throw error;return data;};
@@ -19,7 +19,7 @@ const currentPeriod=()=>state.periods.find(x=>x.status==="active");
 const nowLabel=()=>new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
 const seasonDefault=()=>{const d=new Date(),y=d.getMonth()>=6?d.getFullYear():d.getFullYear()-1;return y+"/"+(y+1)};
 const showDate=s=>{if(!s)return"Por definir";const d=new Date(s+"T12:00:00");return Number.isNaN(d.getTime())?String(s):new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"short",year:"numeric"}).format(d)};
-const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/too_many_attempts/.test(m))return"Se han introducido varios códigos incorrectos. Prueba de nuevo pasados 10 minutos.";if(/season_owner_transfer_required/.test(m))return"Este usuario es propietario de la temporada deportiva. Transfiere antes esa titularidad.";if(/team_name_exists/.test(m))return"Ya hay un equipo activo con ese nombre en este club.";if(/no_verified_request/.test(m))return"La cuenta aún no ha solicitado unirse mediante el código correcto.";if(/team_has_members_unlink_first/.test(m))return"No se puede cambiar la temporada de un equipo que ya tiene personas vinculadas.";if(/insufficient_management_whistles/.test(m))return"No te quedan suficientes silbatos de gestión para crear esto.";if(/invalid_or_expired_code/.test(m))return"El código ha caducado o ya se ha utilizado. Solicita uno nuevo al director.";if(/owner_must_close_or_delete/.test(m))return"Antes de abandonar debes incorporar a un segundo director o cerrar el club.";if(/not_club_director|not_club_owner/.test(m))return"No tienes permisos de dirección en este club.";if(/team_requires_linked_season/.test(m))return"Primero vincula el equipo a una temporada.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
+const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/too_many_attempts/.test(m))return"Se han introducido varios códigos incorrectos. Prueba de nuevo pasados 10 minutos.";if(/season_owner_transfer_required/.test(m))return"Este usuario es propietario de la temporada deportiva. Transfiere antes esa titularidad.";if(/team_name_exists/.test(m))return"Ya hay un equipo activo con ese nombre en este club.";if(/no_verified_request/.test(m))return"La cuenta aún no ha solicitado unirse mediante el código correcto.";if(/team_has_members_unlink_first/.test(m))return"No se puede cambiar la temporada de un equipo que ya tiene personas vinculadas.";if(/insufficient_management_whistles/.test(m))return"No te quedan suficientes silbatos de gestión para crear esto.";if(/invalid_or_expired_code/.test(m))return"El código ha caducado o ya se ha utilizado. Solicita uno nuevo al director.";if(/owner_must_close_or_delete/.test(m))return"Antes de abandonar debes incorporar a un segundo director o cerrar el club.";if(/not_club_director|not_club_owner/.test(m))return"No tienes permisos de dirección en este club.";if(/team_requires_linked_season/.test(m))return"Primero vincula el equipo a una temporada.";if(/schedule_conflict/.test(m))return"Conflicto de horario: otro partido ocupa ese campo o el mismo equipo ya tiene un encuentro a esa hora.";if(/only_home_match/.test(m))return"Solo puedes asignar horarios desde este planificador a los partidos que tu equipo juega en casa.";if(/field_not_available|field_not_divisible|invalid_field/.test(m))return"Este campo no está habilitado para la modalidad. Revísalo en Instalaciones.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
 function notify(txt,tone="ok"){const e=$("#messageBar");e.textContent=txt;e.className="bq-status "+tone;}
 const rview=()=>$("#viewRoot");
 const head=(title,desc,btns="")=>'<div class="page-head"><div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p></div>'+btns+'</div>';
@@ -95,13 +95,46 @@ function deletedSection(){
  return '<section class="panel bq-recovery"><h3>Clubes eliminados recuperables</h3><p class="muted">Los datos deportivos se conservan. Puedes recuperar un club si no tienes otro activo.</p>'+
  state.deletedClubs.map(c=>'<div class="bq-recovery-row"><span>'+esc(c.name)+'</span>'+button("Recuperar club","restoreClub",c.id,"ghost")+'</div>').join("")+'</section>';
 }
-function openClubSettings(){const v=state.settings;formModal("Ajustes del club","clubSettingsForm",
- '<p class="muted">Puedes actualizar esta información en cualquier momento, sin rehacer el club.</p>'+
- input("town","Localidad",v.town||"","text",false,'maxlength="80"')+input("province","Provincia",v.province||"","text",false,'maxlength="80"')+
+function clubKits(){
+ const prev=state.settings?.colors?.kits||{};
+ const defaults={first:["#21598b","#ffffff","#21598b"],second:["#ffffff","#21598b","#ffffff"],third:["#e4b752","#163748","#e4b752"]};
+ return [["first","Primera equipación"],["second","Segunda equipación"],["third","Tercera equipación"]].map(([id,label])=>{
+  const x=prev[id]||{},p=defaults[id],valid=(v,def)=>/^#[0-9a-fA-F]{6}$/.test(String(v||""))?v:def;
+  return {id,label,shirt:valid(x.shirt,p[0]),shorts:valid(x.shorts,p[1]),socks:valid(x.socks,p[2])};
+ });
+}
+function clubKitPreview(){
+ return '<section class="panel bq-kit-panel"><div class="ux-box-title"><h3>Equipaciones del club</h3>'+
+ '<span>Colores definidos para los partidos</span></div><div class="bq-kit-preview">'+clubKits().map(k=>
+ '<div class="bq-kit-item"><div class="bq-kit-icon"><span style="background:'+esc(k.shirt)+'"></span>'+
+ '<span style="background:'+esc(k.shorts)+'"></span><span style="background:'+esc(k.socks)+'"></span></div>'+
+ '<b>'+esc(k.label)+'</b></div>').join("")+'</div>'+
+ '<div class="ux-actions">'+button("Editar equipaciones","editClub","","ghost")+'</div></section>';
+}
+function openClubSettings(){
+ const v=state.settings,available=Math.min(12,Math.max(0,Number(v.fields_f11)||0));
+ const checked=Array.isArray(v.divisible)?v.divisible:[];
+ const choices=Array.from({length:available},(_,i)=>
+  '<label class="bq-field-split"><input type="checkbox" name="split_f11" value="'+i+'" '+
+  (checked[i]!==false?"checked":"")+'><span>Campo F11 '+(i+1)+' divisible en dos campos F7</span></label>').join("");
+ formModal("Datos, instalaciones y equipaciones","clubSettingsForm",
+ '<p class="muted">Configura campos y mitades de F11. Los dos directores verán la misma planificación y los conflictos se comprobarán antes de guardar.</p>'+
+ input("town","Localidad",v.town||"","text",false,'maxlength="80"')+
+ input("province","Provincia",v.province||"","text",false,'maxlength="80"')+
  input("community","Comunidad autónoma",v.community||"","text",false,'maxlength="80"')+
- '<div class="bq-form-grid">'+input("fields_f11","Campos de F11",v.fields_f11||0,"number",true,'min="0" max="25"')+
- input("fields_f7","Campos independientes de F7",v.fields_f7||0,"number",true,'min="0" max="50"')+'</div>'+
- '<p class="bq-hint">Cada campo completo de F11 divisible puede habilitar dos mitades de F7 en el planificador.</p>',"Guardar datos del club");}
+ '<div class="bq-form-grid">'+
+ input("fields_f11","Campos de F11",v.fields_f11||0,"number",true,'min="0" max="12"')+
+ input("fields_f7","Campos independientes de F7",v.fields_f7||0,"number",true,'min="0" max="12"')+'</div>'+
+ '<fieldset class="bq-field-options"><legend>Colores de las equipaciones</legend>'+
+ clubKits().map(k=>'<div class="bq-kit-form-row"><b>'+esc(k.label)+'</b>'+
+ '<label>Camiseta <input type="color" name="kit_'+k.id+'_shirt" value="'+esc(k.shirt)+'"></label>'+
+ '<label>Pantalón <input type="color" name="kit_'+k.id+'_shorts" value="'+esc(k.shorts)+'"></label>'+
+ '<label>Medias <input type="color" name="kit_'+k.id+'_socks" value="'+esc(k.socks)+'"></label></div>').join("")+'</fieldset>'+
+ (available?'<fieldset class="bq-field-options"><legend>¿Qué campos F11 se pueden dividir?</legend>'+choices+'</fieldset>':
+ '<p class="bq-hint">Al añadir campos F11 nuevos, serán divisibles por defecto. Podrás desactivar sus mitades en el siguiente ajuste.</p>')+
+ '<p class="bq-hint">Cada F11 divisible ofrece dos medios campos F7. El calendario bloqueará que se utilicen sus mitades mientras se juega un partido completo de F11.</p>',
+ "Guardar instalaciones");
+}
 function dayBanner(){const list=state.docs.filter(x=>x.type==="match" && x.data && !x.data.rest).map(x=>({t:x.team,m:x.data}));const next=list.filter(x=>x.m.date>=new Date().toISOString().slice(0,10)&&!Calc.matchInfo(x.m).played).sort((a,b)=>String(a.m.date).localeCompare(String(b.m.date)))[0];return'<div class="bq-date-strip"><div><span>HOY</span><strong>'+esc(nowLabel())+'</strong></div><div><span>PRÓXIMA JORNADA</span><strong>'+(next?(next.m.home?"🏠 ":"✈️ ")+esc(next.t.name)+' · '+esc(next.m.rival||"Rival por definir"):'Pendiente de calendario')+'</strong>'+(next?'<small>Jornada '+esc(next.m.n||"—")+' · '+esc(showDate(next.m.date))+'</small>':'')+'</div></div>';}
 function summary(){const c=active();if(!c)return emptyClub();const teams=state.teams;const f7=teams.filter(x=>x.modality==="F7").length;const f11=teams.length-f7;
 return head("Resumen del club","Organización deportiva de "+c.name,button("+ Añadir equipo","newTeam"))+
@@ -322,13 +355,204 @@ function seasonsPage(){
  (c?'<div class="ux-actions">'+(isOwner?button("Eliminar club","deleteClub","","ghost"):"")+
  button("Abandonar club","leaveClub","","ghost")+'</div>':"")+'</section>'+deletedSection();
 }
-function facilitiesPage(){const v=state.settings;return head("Instalaciones","Configura el número de campos que dispone el club.",button("Editar instalaciones","editClub"))+
- '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+(v.fields_f11||0)+'</div></article><article class="stat"><div class="stat-label">Campos independientes F7</div><div class="stat-value">'+(v.fields_f7||0)+'</div></article><article class="stat"><div class="stat-label">Capacidad F7 si F11 divisible</div><div class="stat-value">'+((v.fields_f11||0)*2+(v.fields_f7||0))+'</div></article></div>'+
- '<section class="panel"><h3>Organización de partidos</h3><p class="muted">La planificación detallada de campos, horarios y conflictos sigue disponible en la demostración de club mientras se prepara su integración segura con calendarios reales.</p><a href="demo-club.html#instalaciones" class="btn ghost">Ver planificador demostrativo</a></section>';}
+function facilitiesPage(){
+ const v=state.settings,config=plannerFacilities();
+ const split=config.divisible.filter(Boolean).length;
+ const full=state.schedules.length;
+ return head("Instalaciones","Campos reales del club y capacidad disponible para programar partidos.",
+ button("Editar instalaciones","editClub"))+
+ '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+config.f11+'</div></article>'+
+ '<article class="stat"><div class="stat-label">Campos F7 independientes</div><div class="stat-value">'+config.f7+'</div></article>'+
+ '<article class="stat"><div class="stat-label">Pistas F7 en mitades F11</div><div class="stat-value">'+(split*2)+'</div></article>'+
+ '<article class="stat"><div class="stat-label">Horarios asignados</div><div class="stat-value">'+full+'</div></article></div>'+
+ '<section class="panel"><h3>Planificación de partidos</h3>'+
+ '<p class="muted">El calendario de Dirección Deportiva ya está conectado a Supabase. Organiza partidos como local por día, hora y campo sin reservas superpuestas.</p>'+
+ '<div class="ux-actions">'+button("Organizar esta semana","viewWeek","","primary")+
+ button("Abrir calendario mensual","viewMonth","","ghost")+'</div></section>'+
+ '<section class="panel"><h3>Distribución de campos F11</h3><p class="muted">'+
+ (config.f11?config.divisible.map((value,i)=>'<span class="bq-field-status">Campo '+(i+1)+': '+(value?"2 mitades F7 disponibles":"F11 completo únicamente")+'</span>').join(""):
+ "No hay campos F11 configurados todavía.")+'</p></section>';
+}
 function fixtures(){return state.docs.filter(x=>x.type==="match"&&!x.data?.rest).map(x=>({t:x.team,m:x.data})).sort((a,b)=>String(a.m.date||"9999").localeCompare(String(b.m.date||"9999")));}
-function calendarPage(monthly=false){const list=fixtures().filter(x=>!monthly||String(x.m.date||"").startsWith(state.year+"-"+String(state.month+1).padStart(2,"0")));return head(monthly?"Planificador mensual":"Calendario del club","Jornadas visibles según los permisos de las temporadas vinculadas.",monthly?button("Mes anterior","prevMonth","","ghost")+button("Mes siguiente","nextMonth","","ghost"):"")+
- (monthly?'<h3 class="bq-month-title">'+new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(new Date(state.year,state.month,1))+'</h3>':"")+
- '<section class="panel"><div class="bq-fixtures">'+(list.map(x=>'<div class="bq-fixture"><span>'+esc(showDate(x.m.date))+'</span><span><b>'+esc(x.t.name)+'</b><small>Jornada '+esc(x.m.n||"—")+' · '+(x.m.home?"🏠 Local":"✈️ Visitante")+'</small></span><b>'+esc(x.m.rival||"Rival por definir")+'</b></div>').join("")||'<p class="muted">No hay encuentros registrados en las temporadas a las que tienes acceso.</p>')+'</div></section><p class="bq-hint">Este calendario utiliza las jornadas reales de cada temporada. La asignación de instalaciones aún se realiza en el planificador demostrativo.</p>';}
+// Planificador oficial: utiliza exclusivamente partidos visibles bajo RLS.
+function plannerFacilities(){
+ const f11=Math.max(0,Math.min(12,Number(state.settings.fields_f11)||0));
+ const f7=Math.max(0,Math.min(12,Number(state.settings.fields_f7)||0));
+ const div=Array.isArray(state.settings.divisible)?state.settings.divisible:[];
+ return {f11,f7,divisible:Array.from({length:f11},(_,i)=>div[i]!==false)};
+}
+function plannerRows(){
+ const slots=new Map(state.schedules.map(v=>[v.team_id+"|"+v.match_path,v]));
+ return state.docs.filter(x=>x.type==="match"&&x.team&&x.data&&!x.data.rest&&
+   /^\d{4}-\d{2}-\d{2}$/.test(x.data.date||""))
+  .map(x=>{
+   const path="seasons/"+x.team.season_id+"/matches/"+x.id;
+   return {t:x.team,m:x.data,path,key:x.team.id+"|"+path,
+    slot:slots.get(x.team.id+"|"+path)||null};
+  }).sort((a,b)=>(a.m.date+(a.slot?.kickoff||"")).localeCompare(b.m.date+(b.slot?.kickoff||"")));
+}
+function plannerFieldLabel(resource){
+ const settings=plannerFacilities();
+ return [...ClubPlanner.resourceList(settings,"F11"),...ClubPlanner.resourceList(settings,"F7")]
+   .find(x=>x.id===resource)?.label||resource||"Sin asignar";
+}
+function plannerExisting(){
+ return state.schedules.map(x=>({id:x.team_id+"|"+x.match_path,
+ teamId:x.team_id,date:x.match_date,time:String(x.kickoff||"").slice(0,5),
+ duration:Number(x.duration_minutes),home:true,resource:x.resource}));
+}
+function plannerSuggestions(row,limit=3){
+ const slots=plannerExisting(),fields=ClubPlanner.resourceList(plannerFacilities(),row.t.modality);
+ const mins=Number(row.t.settings?.matchMinutes)||(row.t.modality==="F11"?90:60);
+ const options=[];
+ for(let h=9;h<=19;h++)for(const mm of [0,30])for(const resource of fields){
+  const time=String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+  const candidate={id:row.key,teamId:row.t.id,date:row.m.date,
+   time,duration:mins,home:true,resource:resource.id,modality:row.t.modality};
+  if(!ClubPlanner.validate(candidate,slots,plannerFacilities(),row.key)){
+    options.push({time,resource:resource.id,label:resource.label});
+    if(options.length>=limit)return options;
+  }
+ }
+ return options;
+}
+function openPlannerForm(key){
+ const row=plannerRows().find(x=>x.key===key&&x.m.home);
+ if(!row)return notify("No se encuentra este partido local entre las actas autorizadas.","error");
+ const fields=ClubPlanner.resourceList(plannerFacilities(),row.t.modality);
+ if(!fields.length)return notify("Primero configura los campos F7/F11 del club en Instalaciones.","error");
+ const tips=plannerSuggestions(row),slot=row.slot,first=tips[0];
+ const values=fields.map(v=>[v.id,v.label]);
+ const help=tips.length?'<div class="bq-planner-suggestions"><b>Horarios recomendados (sin conflictos)</b>'+
+  tips.map(t=>'<button type="button" class="btn ghost" data-action="suggestSchedule" data-id="'+esc(t.time+"|"+t.resource)+'">'+
+   esc(t.time+" · "+t.label)+'</button>').join("")+'</div>':
+  '<p class="bq-hint">No se ha encontrado un hueco libre entre las 9:00 y las 19:30. Revisa las instalaciones y los horarios existentes.</p>';
+ const duration=Number(slot?.duration_minutes)||Number(row.t.settings?.matchMinutes)||(row.t.modality==="F11"?90:60);
+ formModal("Asignar partido · "+row.t.name,"scheduleMatchForm",
+  '<p class="muted">🏠 Jornada '+esc(row.m.n||"—")+' · '+esc(showDate(row.m.date))+
+  ' · contra '+esc(row.m.rival||"Rival por confirmar")+'</p>'+
+  '<input type="hidden" name="match_key" value="'+esc(row.key)+'">'+
+  input("time","Hora de inicio",String(slot?.kickoff||first?.time||"10:00").slice(0,5),"time",true,'step="300"')+
+  sel("resource","Campo de juego",values,slot?.resource||first?.resource||fields[0].id)+
+  input("duration","Duración en minutos",duration,"number",true,'min="30" max="180"')+
+  '<p class="bq-hint">El horario se guarda en Supabase. Si otro director ocupa el mismo campo, el servidor rechazará el solapamiento.</p>'+
+  help+(slot?'<div class="bq-planner-remove">'+button("Quitar horario asignado","removeSchedule",row.key,"ghost")+'</div>':""),
+  "Guardar horario y campo");
+}
+function calendarPage(monthly=false){
+ const all=plannerRows(),fac=plannerFacilities(),day=state.plannerDate||new Date().toISOString().slice(0,10);
+ const dd=new Date(day+"T12:00:00");
+ const weekStart=new Date(dd);weekStart.setDate(dd.getDate()-(dd.getDay()+6)%7);
+ const key=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+ const change=(d,n)=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+n);return key(x)};
+ const from=monthly?state.year+"-"+String(state.month+1).padStart(2,"0")+"-01":key(weekStart);
+ const to=monthly?key(new Date(state.year,state.month+1,0)):change(from,6);
+ const list=all.filter(x=>x.m.date>=from&&x.m.date<=to);
+ const selected=monthly?all.filter(x=>x.m.date===day):list;
+ const pending=list.filter(x=>x.m.home&&!x.slot),scheduled=list.filter(x=>x.m.home&&x.slot);
+ const label=monthly?new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(new Date(state.year,state.month,1)):
+  showDate(from)+" — "+showDate(to);
+ const rangeButtons=monthly?button("← Mes anterior","prevMonth","","ghost")+button("Mes siguiente →","nextMonth","","ghost"):
+  button("← Semana anterior","plannerPrevWeek","","ghost")+button("Semana siguiente →","plannerNextWeek","","ghost");
+ const detail=x=>{
+  const home=!!x.m.home,slot=x.slot;
+  return '<article class="bq-real-fixture '+(home&&!slot?"pending":"")+'">'+
+   '<div class="bq-real-fixture-day"><b>'+esc(showDate(x.m.date))+'</b><small>Jornada '+esc(x.m.n||"—")+'</small></div>'+
+   '<div class="bq-real-fixture-description"><b>'+esc(x.t.name)+' <span>vs</span> '+esc(x.m.rival||"Rival pendiente")+'</b>'+
+   '<small>'+(home?"🏠 Local":"✈️ Visitante")+' · '+esc(x.t.modality)+
+    (home?" · "+esc(slot?plannerFieldLabel(slot.resource):"Campo por asignar"):"")+'</small></div>'+
+   '<div class="bq-real-fixture-action"><strong>'+(home?(slot?esc(String(slot.kickoff).slice(0,5)):"Sin horario"):"Fuera")+'</strong>'+
+   (home?button(slot?"Cambiar":"Asignar","scheduleMatch",x.key,slot?"ghost":"primary"):"")+'</div></article>';
+ };
+ let monthHtml="";
+ if(monthly){
+  const first=new Date(state.year,state.month,1),offset=(first.getDay()+6)%7;
+  const start=new Date(state.year,state.month,1-offset);
+  const length=Math.ceil((offset+new Date(state.year,state.month+1,0).getDate())/7)*7;
+  const count=new Map();
+  for(const x of all)count.set(x.m.date,(count.get(x.m.date)||0)+1);
+  const cells=[];
+  for(let j=0;j<length;j++){
+   const d=new Date(start);d.setDate(start.getDate()+j);const iso=key(d),n=count.get(iso)||0;
+   cells.push('<button type="button" class="bq-real-day '+(d.getMonth()!==state.month?"faded ":"")+
+    (day===iso?"selected":"")+'" data-action="plannerPickDay" data-id="'+esc(iso)+'">'+
+    '<b>'+d.getDate()+'</b>'+(n?'<small>'+n+' partido'+(n===1?"":"s")+'</small>':"")+'</button>');
+  }
+  monthHtml='<section class="panel bq-real-month"><div class="bq-real-weeknames">'+
+  ["L","M","X","J","V","S","D"].map(x=>'<b>'+x+'</b>').join("")+
+  '</div><div class="bq-real-calendar-grid">'+cells.join("")+'</div></section>';
+ }
+ const rows=selected.map(detail).join("")||'<p class="muted">No hay encuentros registrados para este período.</p>';
+ const side=pending.map(x=>'<div class="bq-real-waiting"><div><b>'+esc(x.t.name)+'</b><small>'+
+  esc(showDate(x.m.date))+' · '+esc(x.m.rival||"Rival")+'</small></div>'+
+  button("Asignar","scheduleMatch",x.key,"primary")+'</div>').join("")||
+  '<p class="muted">Todos los partidos locales de este período tienen campo y horario.</p>';
+ return head(monthly?"Planificador mensual":"Calendario semanal",
+  "Planificación real compartida entre los directores. Los partidos proceden de las temporadas autorizadas.",
+  button("Semana","viewWeek","","ghost")+button("Mes","viewMonth","","ghost")+
+  button("Copiar planificación","copyFixtures","","ghost")+button("Descargar imagen","downloadPlanImage","","ghost"))+
+  '<div class="bq-real-metrics"><div><strong>'+list.length+'</strong><span>Partidos</span></div>'+
+  '<div><strong>'+scheduled.length+'</strong><span>Locales asignados</span></div>'+
+  '<div><strong>'+pending.length+'</strong><span>Locales pendientes</span></div>'+
+  '<div><strong>'+list.filter(x=>!x.m.home).length+'</strong><span>Visitantes ✈️</span></div></div>'+
+  '<div class="bq-real-datebar">'+rangeButtons+'<b>'+esc(label)+'</b></div>'+
+  (fac.f11+fac.f7===0?'<div class="bq-info-note">Configura al menos un campo en Instalaciones para poder asignar horarios.</div>':"")+
+  '<div class="bq-real-layout"><div>'+monthHtml+
+  '<section class="panel"><div class="bq-real-panel-title"><h3>'+(monthly?"Partidos del "+esc(showDate(day)):"Jornadas de la semana")+
+  '</h3><small>🏠 Local · ✈️ Visitante</small></div>'+rows+'</section></div>'+
+  '<aside class="panel bq-real-side"><h3>Partidos pendientes</h3>'+side+
+  '<hr><h3>Instalaciones</h3><p class="muted">'+fac.f11+' campo(s) F11 · '+fac.f7+' campo(s) F7 independientes. Un F11 divisible dispone de dos mitades F7.</p>'+
+  button("Configurar campos","viewFacilities","","ghost")+'</aside></div>'+
+  '<p class="bq-hint">Banquillo bloquea en Supabase los solapamientos entre partidos del mismo equipo o instalaciones. Los horarios se comparten entre directores del club.</p>';
+}
+function plannerRange(monthly){
+ const d=state.plannerDate||new Date().toISOString().slice(0,10);
+ const key=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+ if(monthly)return [state.year+"-"+String(state.month+1).padStart(2,"0")+"-01",key(new Date(state.year,state.month+1,0))];
+ const monday=new Date(d+"T12:00:00");monday.setDate(monday.getDate()-(monday.getDay()+6)%7);
+ const end=new Date(monday);end.setDate(monday.getDate()+6);
+ return [key(monday),key(end)];
+}
+function plannerMessageText(monthly=false){
+ const [from,to]=plannerRange(monthly),rows=plannerRows().filter(x=>x.m.date>=from&&x.m.date<=to);
+ const name=active()?.name||"Banquillo";
+ const lines=["📅 "+name+(monthly?" · Plan mensual":" · Plan semanal"),from+" al "+to,""];
+ for(const r of rows){
+  const slot=r.slot;
+  lines.push((r.m.home?"🏠":"✈️")+" "+showDate(r.m.date)+" · Jornada "+(r.m.n||"—"));
+  lines.push(r.t.name+" vs "+(r.m.rival||"Rival por definir"));
+  if(r.m.home)lines.push(slot?"⏰ "+String(slot.kickoff).slice(0,5)+" · "+plannerFieldLabel(slot.resource):"🟡 Horario y campo pendientes");
+  lines.push("");
+ }
+ if(!rows.length)lines.push("Todavía no hay partidos registrados para este período.");
+ lines.push("— Dirección Deportiva · Banquillo");
+ return lines.join("\n");
+}
+function plannerImage(monthly=false){
+ const [from,to]=plannerRange(monthly);
+ const rows=plannerRows().filter(x=>x.m.date>=from&&x.m.date<=to);
+ const w=1150,h=215+Math.max(1,rows.length)*94+80;
+ const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+ const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo generar la imagen en este navegador.");
+ ctx.fillStyle="#f2f6f8";ctx.fillRect(0,0,w,h);
+ ctx.fillStyle="#173b54";ctx.fillRect(0,0,w,175);
+ ctx.fillStyle="#fff";ctx.font="bold 39px Arial";ctx.fillText((active()?.name||"Banquillo").slice(0,42),48,70);
+ ctx.fillStyle="#c5dedf";ctx.font="21px Arial";ctx.fillText("PLANIFICACIÓN "+(monthly?"MENSUAL":"SEMANAL")+" · "+from+" / "+to,48,120);
+ const short=(v,n)=>String(v||"").length>n?String(v).slice(0,n-1)+"…":String(v||"");
+ for(const [i,r] of rows.entries()){
+  const y=195+i*94,slot=r.slot;
+  ctx.fillStyle="#fff";ctx.fillRect(28,y,w-56,85);
+  ctx.fillStyle="#17475d";ctx.font="bold 21px Arial";
+  ctx.fillText(short(r.t.name+" — "+(r.m.rival||"Rival por definir"),53),48,y+33);
+  ctx.fillStyle="#668393";ctx.font="17px Arial";
+  ctx.fillText(short(showDate(r.m.date)+" · J"+(r.m.n||"?")+" · "+(r.m.home?"LOCAL":"VISITANTE"),65),48,y+64);
+  ctx.fillStyle=slot?"#147956":"#a17634";ctx.font="bold 17px Arial";
+  ctx.fillText(short(r.m.home?(slot?String(slot.kickoff).slice(0,5)+" · "+plannerFieldLabel(slot.resource):"Hora y campo pendientes"):"Fuera",35),770,y+49);
+ }
+ ctx.fillStyle="#607f8f";ctx.font="15px Arial";ctx.fillText("Banquillo · Calendario actualizado desde Dirección Deportiva",46,h-38);
+ const a=document.createElement("a");a.download="banquillo-"+(monthly?"mes-":"semana-")+from+".png";
+ a.href=canvas.toDataURL("image/png");document.body.appendChild(a);a.click();a.remove();
+}
 function openMessageForm(teamId,kind="manual",matchN=null){
  const available=state.teams.filter(t=>t.season_id&&!t.archived_at);
  if(!available.length)return notify("Primero vincula un equipo a su temporada y añade al entrenador autorizado.","error");
@@ -390,7 +614,7 @@ async function loadMessaging(silent=false){
 }
 
 function clubSettingsPage(){const w=state.wallet||{};return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+
- '<section class="panel bq-wallet"><div class="bq-wallet-head"><div><span>SILBATOS DE GESTIÓN</span><strong>'+esc(w.balance??"–")+' <small>/ 20</small></strong></div><div>🎺</div></div><h3>¿Para qué sirven?</h3><p>Son el saldo anual para organizar clubes y equipos individuales: <b>10 silbatos al crear un club</b> y <b>5 al crear un equipo independiente</b>. Añadir equipos dentro de un club no tiene otro coste.</p><p>El 1 de agosto se repone el saldo a <b>20 silbatos</b> sin acumular el remanente. Si cierras una temporada o eliminas el club durante la misma temporada en la que pagaste, se devuelve su coste una sola vez, hasta el límite de 20.</p><p class="muted">Saldo de gestión separado de los silbatos para informes de IA. Próxima recarga: '+esc(w.next_refill||"1 de agosto")+'.</p></section>'+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
+ '<section class="panel bq-wallet"><div class="bq-wallet-head"><div><span>SILBATOS DE GESTIÓN</span><strong>'+esc(w.balance??"–")+' <small>/ 20</small></strong></div><div>🎺</div></div><h3>¿Para qué sirven?</h3><p>Son el saldo anual para organizar clubes y equipos individuales: <b>10 silbatos al crear un club</b> y <b>5 al crear un equipo independiente</b>. Añadir equipos dentro de un club no tiene otro coste.</p><p>El 1 de agosto se repone el saldo a <b>20 silbatos</b> sin acumular el remanente. Si cierras una temporada o eliminas el club durante la misma temporada en la que pagaste, se devuelve su coste una sola vez, hasta el límite de 20.</p><p class="muted">Saldo de gestión separado de los silbatos para informes de IA. Próxima recarga: '+esc(w.next_refill||"1 de agosto")+'.</p></section>'+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+clubKitPreview()+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
 const titles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",temporadas:"Temporadas",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
 function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});const switcher=$("#clubSwitcher");if(switcher) switcher.classList.add("bq-switcher-clickable");
  $("#sideClubName").textContent=c?.name||"Mis equipos";$("#topClubName").textContent=c?.name||"BANQUILLO";
@@ -462,9 +686,14 @@ async function loadTeamData(){
  }catch(e){notify(errText(e),"error");}
 }
 
+async function loadSchedules(){
+ const cid=state.clubId;if(!cid){state.schedules=[];return;}
+ try{const rows=await calls(state.sb.from("banquillo_match_schedules").select("id,club_id,team_id,season_id,match_path,match_n,match_date,kickoff,duration_minutes,resource").eq("club_id",cid).order("match_date",{ascending:true}));if(state.clubId===cid)state.schedules=rows||[];}
+ catch(e){state.schedules=[];notify("No se ha podido cargar el planificador: "+errText(e),"error");}
+}
 async function loadAllData(){const teams=state.teams.filter(t=>t.season_id&&state.members.some(m=>m.season_id===t.season_id));let all=[];
  for(const t of teams){try{const rows=await calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id));all.push(...(rows||[]).map(x=>{const p=x.path.split("/");return{team:t,type:p[2]==="matches"?"match":p[2]==="players"?"player":"other",id:p[3],data:x.data}}).filter(x=>x.type!=="other"));}catch(e){/* no access */}}
- state.docs=all;render();}
+ state.docs=all;await loadSchedules();render();}
 async function loadDirectors(){if(!active())return;
  try{
  const clubId=state.clubId;
@@ -496,14 +725,14 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id,sourceEl){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.workspaceOpen=false;state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.workspaceOpen=false;state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.schedules=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
  if(name==="openWorkspaceTeam"){
    const target=state.workspaceTeams.find(t=>t.id===id);
    if(!target){notify("Este equipo no está disponible para tu cuenta.","error");return;}
    state.workspaceOpen=false;closeModal();
    if(target.club_id!==state.clubId){
      state.clubId=target.club_id;state.teamId=null;
-     state.staff=[];state.teamRoster=[];state.docs=[];state.messages=[];
+     state.staff=[];state.teamRoster=[];state.docs=[];state.schedules=[];state.messages=[];
      state.events=[];state.messagingInitialized=false;state.directorInvite=null;
      state.view="resumen";
      await refresh();
@@ -516,6 +745,35 @@ async function action(name,id,sourceEl){try{
  }
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="refreshWorkspaces"){await loadWorkspaces();render();notify("Gestiones actualizadas.");return;}
+ if(name==="viewWeek")return changeView("calendario");
+ if(name==="viewMonth")return changeView("calendarioMes");
+ if(name==="plannerPrevWeek"||name==="plannerNextWeek"){
+  const d=new Date((state.plannerDate||new Date().toISOString().slice(0,10))+"T12:00:00");
+  d.setDate(d.getDate()+(name==="plannerPrevWeek"?-7:7));
+  state.plannerDate=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  return render();
+ }
+ if(name==="plannerPickDay"){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(id))return;
+  state.plannerDate=id;const d=new Date(id+"T12:00:00");state.month=d.getMonth();state.year=d.getFullYear();
+  return render();
+ }
+ if(name==="scheduleMatch")return openPlannerForm(id);
+ if(name==="downloadPlanImage"){plannerImage(state.view==="calendarioMes");notify("Imagen del calendario descargada.");return;}
+ if(name==="removeSchedule")return ask("Quitar horario asignado",
+  "Se eliminará únicamente la reserva de campo y hora. La jornada y el acta del partido se conservarán.",
+  "acceptRemoveSchedule",id,"Quitar horario");
+ if(name==="suggestSchedule"){
+  const parts=id.split("|"),form=$("#scheduleMatchForm")||$("#bqModalRoot form");
+  if(form&&parts.length===2){
+    const time=form.querySelector('[name="time"]'),field=form.querySelector('[name="resource"]');
+    if(time&&field){time.value=parts[0];field.value=parts[1];if(sourceEl){
+      sourceEl.classList.add("bq-copied-success");sourceEl.textContent="✓ Sugerencia aplicada";
+      window.setTimeout(()=>sourceEl.classList.remove("bq-copied-success"),1800);
+    }}
+  }
+  return;
+ }
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
  if(name==="restoreBackup")return openBackupForm();
@@ -547,7 +805,7 @@ async function action(name,id,sourceEl){try{
  if(name==="openTeam"){state.teamId=id;state.teamTab="overview";state.staff=[];state.teamRoster=[];state.teamCode=null;return changeView("equipo");}
  if(name==="joinClub")return formModal("Entrar como segundo director","joinClubForm",input("code","Código de 8 caracteres para ser segundo director","","text",true,'maxlength="40" minlength="8" placeholder="ABCD-EFGH"'),"Unirme");
  if(name==="copyTeamCode"||name==="copyClubCode"||name==="copyFixtures"){
-  const txt=name==="copyTeamCode"?state.teamCode:name==="copyClubCode"?state.clubCode:messageText();
+  const txt=name==="copyTeamCode"?state.teamCode:name==="copyClubCode"?state.clubCode:plannerMessageText(state.view==="calendarioMes");
   if(!txt)return notify("No hay contenido para copiar.","error");
   try{
     await navigator.clipboard.writeText(txt);
@@ -582,9 +840,16 @@ async function action(name,id,sourceEl){try{
  if(name==="rotateTeamCode")return ask("Renovar código","El anterior ya no permitirá nuevas incorporaciones. Los miembros existentes mantienen su acceso.","acceptRotateTeam",team()?.id,"Renovar código");
  if(name==="rotateClubCode")return ask("Renovar código de club","Los códigos anteriores dejarán de admitir nuevos directores.","acceptRotateClub",state.clubId,"Renovar código");
  if(name==="closeClubSeason")return ask("Cerrar temporada","Se archivará la temporada del club y podrás crear uno nuevo en la siguiente. Los datos no se borrarán.","acceptCloseClub",state.clubId,"Cerrar temporada");
- if(name==="prevMonth"||name==="nextMonth"){const d=new Date(state.year,state.month+(name==="prevMonth"?-1:1),1);state.month=d.getMonth();state.year=d.getFullYear();return render();}
+ if(name==="prevMonth"||name==="nextMonth"){const d=new Date(state.year,state.month+(name==="prevMonth"?-1:1),1);state.month=d.getMonth();state.year=d.getFullYear();state.plannerDate=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";return render();}
  }catch(e){notify(errText(e),"error");}}
 async function accept(name,id){closeModal();try{
+ if(name==="acceptRemoveSchedule"){
+  const row=plannerRows().find(x=>x.key===id&&x.m.home);
+  if(!row)throw Error("Partido local no encontrado o sin permisos.");
+  await rpc("banquillo_unschedule_home_match",{p_team_id:row.t.id,p_match_path:row.path});
+  await loadSchedules();render();notify("Horario retirado. La jornada y el acta se conservan.");
+  return;
+ }
  if(name==="acceptArchive"||name==="acceptRestore"){
   if(name==="acceptArchive"){
     const r=await rpc("banquillo_archive_club_team",{p_team_id:id});
@@ -614,6 +879,22 @@ async function accept(name,id){closeModal();try{
  notify("Cambios guardados correctamente.");
  }catch(e){notify(errText(e),"error");}}
 async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"").trim();try{
+ if(form.id==="scheduleMatchForm"){
+  const row=plannerRows().find(x=>x.key===get("match_key")&&x.m.home);
+  if(!row)throw Error("No se ha encontrado este encuentro local.");
+  const candidate={id:row.key,teamId:row.t.id,date:row.m.date,time:get("time"),
+   duration:Number(get("duration")),home:true,resource:get("resource"),modality:row.t.modality};
+  const validation=ClubPlanner.validate(candidate,plannerExisting(),plannerFacilities(),row.key);
+  if(validation)throw Error(validation);
+  const response=await rpc("banquillo_schedule_home_match",{
+    p_team_id:row.t.id,p_match_path:row.path,p_time:candidate.time,
+    p_duration_minutes:candidate.duration,p_resource:candidate.resource
+  });
+  if(!response?.ok)throw Error(response?.error||"No se ha guardado el horario.");
+  closeModal();await loadSchedules();render();
+  notify("Horario y campo publicados para "+row.t.name+".");
+  return;
+ }
  if(form.id==="deleteClubForm"){
   const c=active(),name=get("confirm_name");if(!owner()||!c||get("club_id")!==c.id||name!==c.name)throw Error("club_name_mismatch");
   const response=await rpc("banquillo_delete_club",{p_club_id:c.id,p_confirm_name:name});if(response!==true)throw Error("No se ha podido eliminar el club.");
@@ -659,7 +940,24 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
   return;
  }
  if(form.id==="teamSettingsForm"){const rec={name:get("name"),modality:get("modality"),category:get("category"),competition:get("competition"),settings:{...team()?.settings,matchMinutes:Number(get("matchMinutes"))}};const {error}=await state.sb.from("banquillo_teams").update(rec).eq("id",state.teamId);if(error)throw error;closeModal();await refresh();notify("Configuración del equipo guardada.");return;}
- if(form.id==="clubSettingsForm"){const rec={club_id:state.clubId,town:get("town"),province:get("province"),community:get("community"),fields_f11:Number(get("fields_f11")),fields_f7:Number(get("fields_f7"))};const {error}=await state.sb.from("banquillo_club_settings").upsert(rec,{onConflict:"club_id"});if(error)throw error;closeModal();await refresh();notify("Datos del club guardados.");return;}
+ if(form.id==="clubSettingsForm"){
+  const fields11=Number(get("fields_f11")),fields7=Number(get("fields_f7"));
+  if(!Number.isInteger(fields11)||fields11<0||fields11>12||
+     !Number.isInteger(fields7)||fields7<0||fields7>12)throw Error("Configura entre 0 y 12 campos por modalidad.");
+  const before=Number(state.settings.fields_f11)||0;
+  const selected=f.getAll("split_f11");
+  const divisible=Array.from({length:fields11},(_,i)=>i<before?selected.includes(String(i)):true);
+  const kits=Object.fromEntries(["first","second","third"].map(id=>[id,{
+   shirt:get("kit_"+id+"_shirt"),shorts:get("kit_"+id+"_shorts"),socks:get("kit_"+id+"_socks")}]));
+  if(Object.values(kits).some(k=>Object.values(k).some(v=>!/^#[0-9a-fA-F]{6}$/.test(v))))
+    throw Error("Uno de los colores de las equipaciones no es válido.");
+  const rec={club_id:state.clubId,town:get("town"),province:get("province"),
+    community:get("community"),fields_f11:fields11,fields_f7:fields7,divisible,
+    colors:{...(state.settings.colors||{}),kits}};
+  const {error}=await state.sb.from("banquillo_club_settings").upsert(rec,{onConflict:"club_id"});
+  if(error)throw error;
+  closeModal();await refresh();notify("Instalaciones guardadas en Supabase.");return;
+ }
  if(form.id==="joinClubForm"){const r=await rpc("banquillo_join_club",{p_code:get("code").toLowerCase()});if(!r?.ok)throw Error(r?.error==="invalid_or_expired_code"?"invalid_or_expired_code":r?.error==="director_limit"?"director_limit":"Código no válido.");state.clubId=r.club_id;state.view="resumen";state.directorInvite=null;closeModal();await refresh();notify("Has entrado al club con tu propia cuenta de director deportivo.");return;}
  if(form.id==="linkTeamForm"){const sid=get("season_id");if(!state.members.some(m=>m.season_id===sid&&m.role==="owner"))throw Error("No eres propietario de esa temporada.");const {data,error}=await state.sb.from("banquillo_teams").update({season_id:sid}).eq("id",state.teamId).select("id");if(error)throw error;if(!data?.length)throw Error("No se ha vinculado la temporada.");await refresh();state.teamTab="code";await loadTeamData();notify("Temporada vinculada. Ya puedes compartir el código.");return;}
  }catch(e){notify(errText(e),"error");const b=form.querySelector('button[type="submit"]');if(b)b.disabled=false;}}
