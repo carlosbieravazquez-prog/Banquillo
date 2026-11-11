@@ -310,10 +310,11 @@ function seasonsPage(){
  button("Actualizar equipos","refreshWorkspaces","","ghost")+'</section>':"")+
  '<section class="panel"><div class="ux-box-title"><h3>Temporadas del club seleccionado</h3></div>'+
  '<div class="bq-seasons-grid">'+state.periods.map(p=>
- '<article class="bq-period-item"><span class="ux-pill '+(p.status==="active"?"good":"")+'">'+
+ '<button type="button" class="bq-period-item bq-period-select" data-action="switchClub" data-id="'+esc(p.club_id||c?.id||"")+'">'+
+ '<span class="ux-pill '+(p.status==="active"?"good":"")+'">'+
  (p.status==="active"?"En curso":"Cerrada")+'</span><b>'+esc(p.season_label)+'</b>'+
  '<small>'+esc(c?.name||"Club")+'</small><p class="muted">'+(p.status==="active"?
- "Temporada activa":"Cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></article>').join("")+
+ "Abrir gestión del club":"Temporada cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></button>').join("")+
  (state.periods.length?"":'<p class="muted">No hay una temporada de club seleccionada.</p>')+
  '</div></section>'+
  '<section class="panel"><h3>¿Quieres empezar la siguiente temporada?</h3>'+
