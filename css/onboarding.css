@@ -24,3 +24,12 @@
 .bq-demo-option b{font-size:17px}
 .bq-demo-option span{font-size:12px;opacity:.7}
 @media(max-width:850px){.bq-onboard-grid{grid-template-columns:1fr}.bq-onboard-card{min-height:220px}.bq-onboard-card p{flex:unset}.bq-entry-header{padding:15px 18px}.bq-entry-brand small{display:none}}
+
+/* Inicio del entrenador: fecha y próximo rival en la misma línea visual. */
+.bq-coach-today{display:grid;grid-template-columns:1fr 1.2fr;gap:12px;margin:13px 0 16px}
+.bq-coach-today>div{background:linear-gradient(110deg,#e8f5f0,#f5fbfa);border:1px solid #d4e9e2;border-radius:13px;padding:16px 20px;display:flex;flex-direction:column;gap:5px}
+.bq-coach-today>div:last-child{background:linear-gradient(110deg,#163952,#255b72);color:white;border-color:#255b72}
+.bq-coach-today small{font-size:10px;letter-spacing:.11em;font-weight:800;opacity:.7}
+.bq-coach-today strong{font-size:15px;line-height:1.3}
+.bq-coach-today span{font-size:12px;opacity:.8}
+@media(max-width:600px){.bq-coach-today{grid-template-columns:1fr}}
