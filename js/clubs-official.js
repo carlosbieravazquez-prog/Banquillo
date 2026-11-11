@@ -203,7 +203,7 @@ async function loadWorkspaces(){
  const memberIds=new Set(members.map(m=>m.season_id));
  state.workspaceTeams=teams.filter(t=>!t.archived_at)
    .sort((a,b)=>a.name.localeCompare(b.name,"es"));
- state.workspaceIndependent=members.filter(m=>!linked.has(m.season_id))
+ state.workspaceIndependent=results[2].status==="rejected"?[]:members.filter(m=>!linked.has(m.season_id))
    .map(m=>{
      const d=rootById.get(m.season_id)||{};
      return {id:m.season_id,name:d.name||m.season_id,
@@ -229,7 +229,7 @@ function workspaceMenuHTML(){
  const standalone=state.workspaceIndependent.map(x=>
    '<a class="bq-workspace-option" href="'+esc(seasonHref(x.id))+'">'+
    '<span class="bq-workspace-symbol">⚽</span><span><b>'+esc(x.name)+'</b>'+
-   '<small>'+esc(x.category||x.club||"Temporada individual")+' · '+(x.role==="owner"?"Responsable":"Miembro")+'</small></span>'+
+   '<small>'+esc([x.club,x.category].filter(Boolean).join(" · ")||"Temporada individual")+' · '+(x.role==="owner"?"Responsable":x.role==="editor"?"Entrenador":"Solo lectura")+'</small></span>'+
    '<span aria-hidden="true">↗</span></a>').join("");
  const coached=state.workspaceCoachTeams.map(x=>
    '<a class="bq-workspace-option" href="'+esc(seasonHref(x.season_id))+'">'+
@@ -241,7 +241,8 @@ function workspaceMenuHTML(){
    (coached?'<div class="bq-workspace-group-title">Equipos en los que entreno</div>'+coached:"")+
    (!clubRows&&!standalone&&!coached?'<p class="bq-workspace-empty">Todavía no tienes equipos vinculados a esta cuenta.</p>':"")+
    (state.workspaceError?'<p class="bq-workspace-empty">'+esc(state.workspaceError)+'</p>':"")+
-   '<a class="bq-workspace-create" href="index.html#temporadas">＋ Crear o gestionar equipo independiente</a>';
+   '<button type="button" class="bq-workspace-all" data-view="temporadas">Ver todas mis temporadas</button>'+
+   '<a class="bq-workspace-create" href="index.html#temporadas">＋ Crear equipo independiente</a>';
 }
 function renderWorkspaceMenu(){
  const trigger=$("#clubSwitcher"),menu=$("#bqWorkspaceMenu");
@@ -422,6 +423,7 @@ async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs"
   state.allTeams=ts||[];state.teams=state.allTeams.filter(x=>!x.archived_at);state.periods=periods||[];state.settings=settings||{};state.members=members||[];
  }else{state.teams=[];state.allTeams=[];state.periods=[];state.settings={};state.members=[];}
  await loadWorkspaces();
+  if(!state.clubId && state.view==="resumen" && (state.workspaceIndependent.length||state.workspaceCoachTeams.length))state.view="temporadas";
   if(!state.teams.some(t=>t.id===state.teamId)){state.teamId=state.teams[0]?.id||null;state.staff=[];state.teamRoster=[];}
  state.pendingByTeam={};
  if(state.teams.length){
