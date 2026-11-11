@@ -349,9 +349,8 @@
   document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  });
- $("#importDemo").addEventListener("click",()=>$("#importDemoFile").click());
- $("#importDemoFile").addEventListener("change",async e=>{
-  const file=e.target.files?.[0];if(!file)return;
+ async function restoreDemoBackup(file){
+  if(!file)return;
   try{
    if(file.size>3*1024*1024)throw Error("La copia supera el límite de 3 MB.");
    const raw=JSON.parse(await file.text());
@@ -385,8 +384,9 @@
    UI.view="resumen";UI.teamId=null;UI.teamTab="overview";
    save();render();await DemoDialog.alert("Respaldo restaurado en este navegador.");
   }catch(err){await DemoDialog.alert(err.message||"No se ha podido abrir el respaldo. Comprueba el archivo.");}
-  finally{e.target.value="";}
- });
+ }
+ $("#importDemo").addEventListener("click",async()=>{const file=await DemoDialog.pickJSON();if(file)await restoreDemoBackup(file);});
+ $("#importDemoFile").addEventListener("change",async e=>{const file=e.target.files?.[0];e.target.value="";if(file)await restoreDemoBackup(file);});
  $("#resetDemo").addEventListener("click",async()=>{if(!await DemoDialog.confirm("¿Restablecer todos los datos ficticios del club?"))return;localStorage.removeItem(KEY);state=JSON.parse(JSON.stringify(seed));save();render()});
  save();render();
 })();
