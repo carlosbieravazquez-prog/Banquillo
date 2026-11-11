@@ -95,13 +95,25 @@ function deletedSection(){
  return '<section class="panel bq-recovery"><h3>Clubes eliminados recuperables</h3><p class="muted">Los datos deportivos se conservan. Puedes recuperar un club si no tienes otro activo.</p>'+
  state.deletedClubs.map(c=>'<div class="bq-recovery-row"><span>'+esc(c.name)+'</span>'+button("Recuperar club","restoreClub",c.id,"ghost")+'</div>').join("")+'</section>';
 }
-function openClubSettings(){const v=state.settings;formModal("Ajustes del club","clubSettingsForm",
- '<p class="muted">Puedes actualizar esta información en cualquier momento, sin rehacer el club.</p>'+
- input("town","Localidad",v.town||"","text",false,'maxlength="80"')+input("province","Provincia",v.province||"","text",false,'maxlength="80"')+
+function openClubSettings(){
+ const v=state.settings,available=Math.min(12,Math.max(0,Number(v.fields_f11)||0));
+ const checked=Array.isArray(v.divisible)?v.divisible:[];
+ const choices=Array.from({length:available},(_,i)=>
+  '<label class="bq-field-split"><input type="checkbox" name="split_f11" value="'+i+'" '+
+  (checked[i]!==false?"checked":"")+'><span>Campo F11 '+(i+1)+' divisible en dos campos F7</span></label>').join("");
+ formModal("Instalaciones del club","clubSettingsForm",
+ '<p class="muted">Configura campos y mitades de F11. Los dos directores verán la misma planificación y los conflictos se comprobarán antes de guardar.</p>'+
+ input("town","Localidad",v.town||"","text",false,'maxlength="80"')+
+ input("province","Provincia",v.province||"","text",false,'maxlength="80"')+
  input("community","Comunidad autónoma",v.community||"","text",false,'maxlength="80"')+
- '<div class="bq-form-grid">'+input("fields_f11","Campos de F11",v.fields_f11||0,"number",true,'min="0" max="25"')+
- input("fields_f7","Campos independientes de F7",v.fields_f7||0,"number",true,'min="0" max="50"')+'</div>'+
- '<p class="bq-hint">Cada campo completo de F11 divisible puede habilitar dos mitades de F7 en el planificador.</p>',"Guardar datos del club");}
+ '<div class="bq-form-grid">'+
+ input("fields_f11","Campos de F11",v.fields_f11||0,"number",true,'min="0" max="12"')+
+ input("fields_f7","Campos independientes de F7",v.fields_f7||0,"number",true,'min="0" max="12"')+'</div>'+
+ (available?'<fieldset class="bq-field-options"><legend>¿Qué campos F11 se pueden dividir?</legend>'+choices+'</fieldset>':
+ '<p class="bq-hint">Al añadir campos F11 nuevos, serán divisibles por defecto. Podrás desactivar sus mitades en el siguiente ajuste.</p>')+
+ '<p class="bq-hint">Cada F11 divisible ofrece dos medios campos F7. El calendario bloqueará que se utilicen sus mitades mientras se juega un partido completo de F11.</p>',
+ "Guardar instalaciones");
+}
 function dayBanner(){const list=state.docs.filter(x=>x.type==="match" && x.data && !x.data.rest).map(x=>({t:x.team,m:x.data}));const next=list.filter(x=>x.m.date>=new Date().toISOString().slice(0,10)&&!Calc.matchInfo(x.m).played).sort((a,b)=>String(a.m.date).localeCompare(String(b.m.date)))[0];return'<div class="bq-date-strip"><div><span>HOY</span><strong>'+esc(nowLabel())+'</strong></div><div><span>PRÓXIMA JORNADA</span><strong>'+(next?(next.m.home?"🏠 ":"✈️ ")+esc(next.t.name)+' · '+esc(next.m.rival||"Rival por definir"):'Pendiente de calendario')+'</strong>'+(next?'<small>Jornada '+esc(next.m.n||"—")+' · '+esc(showDate(next.m.date))+'</small>':'')+'</div></div>';}
 function summary(){const c=active();if(!c)return emptyClub();const teams=state.teams;const f7=teams.filter(x=>x.modality==="F7").length;const f11=teams.length-f7;
 return head("Resumen del club","Organización deportiva de "+c.name,button("+ Añadir equipo","newTeam"))+
@@ -322,9 +334,24 @@ function seasonsPage(){
  (c?'<div class="ux-actions">'+(isOwner?button("Eliminar club","deleteClub","","ghost"):"")+
  button("Abandonar club","leaveClub","","ghost")+'</div>':"")+'</section>'+deletedSection();
 }
-function facilitiesPage(){const v=state.settings;return head("Instalaciones","Configura el número de campos que dispone el club.",button("Editar instalaciones","editClub"))+
- '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+(v.fields_f11||0)+'</div></article><article class="stat"><div class="stat-label">Campos independientes F7</div><div class="stat-value">'+(v.fields_f7||0)+'</div></article><article class="stat"><div class="stat-label">Capacidad F7 si F11 divisible</div><div class="stat-value">'+((v.fields_f11||0)*2+(v.fields_f7||0))+'</div></article></div>'+
- '<section class="panel"><h3>Organización de partidos</h3><p class="muted">La planificación detallada de campos, horarios y conflictos sigue disponible en la demostración de club mientras se prepara su integración segura con calendarios reales.</p><a href="demo-club.html#instalaciones" class="btn ghost">Ver planificador demostrativo</a></section>';}
+function facilitiesPage(){
+ const v=state.settings,config=plannerFacilities();
+ const split=config.divisible.filter(Boolean).length;
+ const full=state.schedules.length;
+ return head("Instalaciones","Campos reales del club y capacidad disponible para programar partidos.",
+ button("Editar instalaciones","editClub"))+
+ '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+config.f11+'</div></article>'+
+ '<article class="stat"><div class="stat-label">Campos F7 independientes</div><div class="stat-value">'+config.f7+'</div></article>'+
+ '<article class="stat"><div class="stat-label">Pistas F7 en mitades F11</div><div class="stat-value">'+(split*2)+'</div></article>'+
+ '<article class="stat"><div class="stat-label">Horarios asignados</div><div class="stat-value">'+full+'</div></article></div>'+
+ '<section class="panel"><h3>Planificación de partidos</h3>'+
+ '<p class="muted">El calendario de Dirección Deportiva ya está conectado a Supabase. Organiza partidos como local por día, hora y campo sin reservas superpuestas.</p>'+
+ '<div class="ux-actions">'+button("Organizar esta semana","viewWeek","","primary")+
+ button("Abrir calendario mensual","viewMonth","","ghost")+'</div></section>'+
+ '<section class="panel"><h3>Distribución de campos F11</h3><p class="muted">'+
+ (config.f11?config.divisible.map((value,i)=>'<span class="bq-field-status">Campo '+(i+1)+': '+(value?"2 mitades F7 disponibles":"F11 completo únicamente")+'</span>').join(""):
+ "No hay campos F11 configurados todavía.")+'</p></section>';
+}
 function fixtures(){return state.docs.filter(x=>x.type==="match"&&!x.data?.rest).map(x=>({t:x.team,m:x.data})).sort((a,b)=>String(a.m.date||"9999").localeCompare(String(b.m.date||"9999")));}
 // Planificador oficial: utiliza exclusivamente partidos visibles bajo RLS.
 function plannerFacilities(){
@@ -892,7 +919,19 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
   return;
  }
  if(form.id==="teamSettingsForm"){const rec={name:get("name"),modality:get("modality"),category:get("category"),competition:get("competition"),settings:{...team()?.settings,matchMinutes:Number(get("matchMinutes"))}};const {error}=await state.sb.from("banquillo_teams").update(rec).eq("id",state.teamId);if(error)throw error;closeModal();await refresh();notify("Configuración del equipo guardada.");return;}
- if(form.id==="clubSettingsForm"){const rec={club_id:state.clubId,town:get("town"),province:get("province"),community:get("community"),fields_f11:Number(get("fields_f11")),fields_f7:Number(get("fields_f7"))};const {error}=await state.sb.from("banquillo_club_settings").upsert(rec,{onConflict:"club_id"});if(error)throw error;closeModal();await refresh();notify("Datos del club guardados.");return;}
+ if(form.id==="clubSettingsForm"){
+  const fields11=Number(get("fields_f11")),fields7=Number(get("fields_f7"));
+  if(!Number.isInteger(fields11)||fields11<0||fields11>12||
+     !Number.isInteger(fields7)||fields7<0||fields7>12)throw Error("Configura entre 0 y 12 campos por modalidad.");
+  const before=Number(state.settings.fields_f11)||0;
+  const selected=f.getAll("split_f11");
+  const divisible=Array.from({length:fields11},(_,i)=>i<before?selected.includes(String(i)):true);
+  const rec={club_id:state.clubId,town:get("town"),province:get("province"),
+    community:get("community"),fields_f11:fields11,fields_f7:fields7,divisible};
+  const {error}=await state.sb.from("banquillo_club_settings").upsert(rec,{onConflict:"club_id"});
+  if(error)throw error;
+  closeModal();await refresh();notify("Instalaciones guardadas en Supabase.");return;
+ }
  if(form.id==="joinClubForm"){const r=await rpc("banquillo_join_club",{p_code:get("code").toLowerCase()});if(!r?.ok)throw Error(r?.error==="invalid_or_expired_code"?"invalid_or_expired_code":r?.error==="director_limit"?"director_limit":"Código no válido.");state.clubId=r.club_id;state.view="resumen";state.directorInvite=null;closeModal();await refresh();notify("Has entrado al club con tu propia cuenta de director deportivo.");return;}
  if(form.id==="linkTeamForm"){const sid=get("season_id");if(!state.members.some(m=>m.season_id===sid&&m.role==="owner"))throw Error("No eres propietario de esa temporada.");const {data,error}=await state.sb.from("banquillo_teams").update({season_id:sid}).eq("id",state.teamId).select("id");if(error)throw error;if(!data?.length)throw Error("No se ha vinculado la temporada.");await refresh();state.teamTab="code";await loadTeamData();notify("Temporada vinculada. Ya puedes compartir el código.");return;}
  }catch(e){notify(errText(e),"error");const b=form.querySelector('button[type="submit"]');if(b)b.disabled=false;}}
