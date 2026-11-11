@@ -149,7 +149,7 @@ return head("Avisos de actividad","Partidos pendientes de cerrar detectados a pa
  '<section class="panel">'+(list.map(x=>'<div class="notice">⚑ <b>'+esc(x.t.name)+'</b> · jornada '+esc(x.m.n||"–")+' contra '+esc(x.m.rival||"Rival")+' · '+esc(showDate(x.m.date))+'</div>').join("")||'<p class="muted">No hay incidencias pendientes en los partidos disponibles.</p>')+'</section>';}
 function clubSettingsPage(){return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
 const titles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",temporadas:"Temporadas",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
-function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});$("#sideClubName").textContent=c?.name||"Tu club";$("#topClubName").textContent=c?.name||"BANQUILLO";
+function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});const switcher=$("#clubSwitcher");if(switcher){switcher.classList.toggle("bq-switcher-clickable",state.clubs.length>1);switcher.title=state.clubs.length>1?"Cambiar de club":"Club seleccionado";}$("#sideClubName").textContent=c?.name||"Tu club";$("#topClubName").textContent=c?.name||"BANQUILLO";
  $("#sideSeason").textContent=currentPeriod()?.season_label||"Sin temporada activa";$("#teamCount").textContent=state.teams.length;
  $("#pageTitle").textContent=state.view==="equipo"&&t?t.name:(titles[state.view]||"Banquillo");
  $("#topSituation").innerHTML=dayBanner();
@@ -162,7 +162,11 @@ function render(){if(!state.loaded)return;const c=active(),t=team();document.que
  rview().innerHTML=body;
 }
 async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs").select("id,name,owner_id,created_at").order("created_at",{ascending:true}))||[];
- if(!state.clubs.some(x=>x.id===state.clubId))state.clubId=state.clubs[0]?.id||null;
+ if(!state.clubs.some(x=>x.id===state.clubId)){
+  const activePeriods=state.clubs.length?await calls(state.sb.from("banquillo_club_seasons").select("club_id").eq("status","active")):[];
+  const pick=state.clubs.find(c=>(activePeriods||[]).some(p=>p.club_id===c.id));
+  state.clubId=pick?.id||state.clubs[0]?.id||null;
+ }
  state.deletedClubs=await rpc("banquillo_list_deleted_clubs")||[];
  if(state.clubId){
   const [ts,periods,settings,members]=await Promise.all([
@@ -200,6 +204,8 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["calendario","calendarioMes","comunicaciones","avisos"].includes(v))await loadAllData();
 }
 async function action(name,id){try{
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.view="resumen";await refresh();return;}
+ if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
  if(name==="restoreBackup")return openBackupForm();
@@ -261,6 +267,7 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
 document.addEventListener("click",e=>{
  const close=e.target.closest("[data-modal-close]");if(close&&(e.target===close||e.target.matches("button[data-modal-close]"))){closeModal();return;}
  const acceptBtn=e.target.closest("[data-accept-action]");if(acceptBtn){accept(acceptBtn.dataset.acceptAction,acceptBtn.dataset.id);return;}
+ const switcher=e.target.closest("#clubSwitcher");if(switcher&&state.clubs.length>1){action("chooseClub","");return;}
  const nav=e.target.closest("[data-view]");if(nav){changeView(nav.dataset.view);return;}
  const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;render();return;}
  const tab=e.target.closest("[data-tab]");if(tab){state.teamTab=tab.dataset.tab;state.teamCode=null;render();if(state.teamTab==="code")loadTeamCode();return;}
