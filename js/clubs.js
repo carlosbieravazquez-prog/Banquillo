@@ -1,6 +1,6 @@
 /* Clubes reales en Supabase-Staging: directores, equipos, códigos individuales. */
 const ClubSpace = (() => {
-  const state={clubs:null,loading:false,error:"",selected:null,tab:"teams",pendingCode:null,notices:[],noticeLoading:false,noticeError:"",noticeModality:"todos"};
+  const state={clubs:null,loading:false,error:"",selected:null,tab:"teams",pendingCode:null,notices:[],noticeLoading:false,noticeError:"",noticeModality:"todos",noticeSeenResolved:new Set()};
   const e=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const current=()=>state.clubs?.find(c=>c.id===state.selected)||state.clubs?.[0]||null;
   const fmtCode=x=>String(x||"").replace(/^(.{4})(.{4})$/,"$1-$2");
@@ -63,7 +63,16 @@ const ClubSpace = (() => {
     state.noticeLoading=true;state.noticeError="";render(true);
     try{
       const rows=await Cloud.rpc("bq_list_team_notices",{p_club:id});
-      if(current()?.id===id)state.notices=Array.isArray(rows)?rows:[];
+      if(current()?.id===id){
+        state.notices=(Array.isArray(rows)?rows:[]).filter(n=>!state.noticeSeenResolved.has(n.id));
+        const corrected=state.notices.filter(n=>n.resolved_at).map(n=>n.id);
+        if(corrected.length)setTimeout(()=>{
+          if(current()?.id!==id||Auth.state!=="in")return;
+          corrected.forEach(x=>state.noticeSeenResolved.add(x));
+          state.notices=state.notices.filter(n=>!corrected.includes(n.id));
+          if(state.tab==="alerts")render(true);
+        },1100);
+      }
     }catch(_){if(current()?.id===id)state.noticeError="No se han podido cargar los avisos del club.";}
     finally{state.noticeLoading=false;if(current()?.id===id)render(true);}
   }
@@ -359,7 +368,7 @@ const ClubSpace = (() => {
   };
   const reset=()=>{
     state.clubs=null;state.selected=null;state.loading=false;state.error="";state.tab="teams";
-    state.notices=[];state.noticeLoading=false;state.noticeError="";state.noticeModality="todos";
+    state.notices=[];state.noticeLoading=false;state.noticeError="";state.noticeModality="todos";state.noticeSeenResolved.clear();
   };
   return {state,current,refresh,clubPage,reset};
 })();
