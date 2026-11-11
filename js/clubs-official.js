@@ -7,7 +7,7 @@ const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo e
 const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
 const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],
   members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
-  clubDirectors:[],clubCode:null,teamCode:null,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
+  clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
 const calls = async query => {const {data,error}=await query;if(error)throw error;return data;};
 const rpc = (name,args) => calls(state.sb.rpc(name,args||{}));
@@ -18,7 +18,7 @@ const currentPeriod=()=>state.periods.find(x=>x.status==="active");
 const nowLabel=()=>new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
 const seasonDefault=()=>{const d=new Date(),y=d.getMonth()>=6?d.getFullYear():d.getFullYear()-1;return y+"/"+(y+1)};
 const showDate=s=>{if(!s)return"Por definir";const d=new Date(s+"T12:00:00");return Number.isNaN(d.getTime())?String(s):new Intl.DateTimeFormat("es-ES",{day:"numeric",month:"short",year:"numeric"}).format(d)};
-const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
+const errText=e=>{const m=String(e?.message||e||"");if(/active_club_exists/.test(m))return"Ya tienes un club activo. Cierra su temporada antes de crear otro.";if(/season_already_used/.test(m))return"Ya has utilizado esa temporada para otro club.";if(/season_owner_required/.test(m))return"Solo el propietario de la temporada puede vincularla.";if(/duplicate key|unique constraint/i.test(m))return"Ya existe un registro con ese nombre o cargo.";if(/team_limit/.test(m))return"Se ha alcanzado el máximo de 12 equipos activos.";if(/club_name_mismatch/.test(m))return"Escribe exactamente el nombre del club para confirmar.";if(/backup_team_not_found|backup_staff_not_in_club|backup_staff_team_missing|invalid_backup/.test(m))return"La copia no corresponde a este club o tiene datos incompatibles.";if(/active_club_exists/.test(m))return"Ya tienes un club activo. No puedes recuperar otro hasta cerrar su temporada.";if(/director_limit/.test(m))return"Ya hay un segundo director deportivo en este club.";if(/row-level security|permission denied|not_team_manager|not_club_owner|42501/.test(m))return"No tienes permiso para esta operación.";return m||"No ha sido posible completar la operación."};
 function notify(txt,tone="ok"){const e=$("#messageBar");e.textContent=txt;e.className="bq-status "+tone;}
 const rview=()=>$("#viewRoot");
 const head=(title,desc,btns="")=>'<div class="page-head"><div><h2>'+esc(title)+'</h2><p>'+esc(desc)+'</p></div>'+btns+'</div>';
@@ -47,6 +47,44 @@ function openSettingsForm(){const t=team();if(!t)return;formModal("Configuració
  sel("category","Categoría",[["Prebenjamín","Prebenjamín"],["Benjamín","Benjamín"],["Alevín","Alevín"],["Infantil","Infantil"],["Cadete","Cadete"],["Juvenil","Juvenil"],["Sénior","Sénior"]],t.category||"Alevín")+'</div>'+
  input("competition","Competición",t.competition||"","text",false,'maxlength="100"')+
  input("matchMinutes","Duración del partido (minutos)",t.settings?.matchMinutes||50,"number",true,'min="20" max="120"'),"Guardar configuración");}
+function openDeleteClubForm(){
+ const c=active();if(!owner()||!c)return;
+ formModal("Eliminar club","deleteClubForm",
+ '<div class="bq-danger-note"><strong>Esta acción retirará el club de tu cuenta.</strong><p>Se cerrará la temporada, se anularán los códigos de invitación y se revocarán los accesos de dirección deportiva. Los datos deportivos y las actas se conservan para poder recuperarlos.</p></div>'+
+ input("confirm_name","Escribe exactamente «"+c.name+"» para confirmar","","text",true,'autocomplete="off" maxlength="120"')+
+ '<input type="hidden" name="club_id" value="'+esc(c.id)+'"><p class="bq-hint">Esta opción solo está disponible para el propietario.</p>',"Eliminar club");
+}
+function openBackupForm(){
+ if(!active())return;
+ formModal("Restaurar copia de configuración","restoreConfigForm",
+ '<p>Selecciona un archivo JSON exportado anteriormente desde <b>este mismo club</b>. Restauraremos los datos de configuración y los cargos del cuerpo técnico, no las actas ni las cuentas.</p>'+
+ '<label class="field"><span>Archivo de copia de seguridad (.json)</span><input type="file" name="backup" accept=".json,application/json" required></label>'+
+ input("confirm_name","Confirma el nombre del club",active().name,"text",true,'maxlength="120"')+
+ '<p class="bq-danger-note">Esta operación reemplazará nombres, categorías, ajustes y cargos de los equipos incluidos en la copia. No creará ni eliminará equipos.</p>',"Restaurar configuración");
+}
+async function saveBackup(){
+ const c=active();if(!c)throw Error("No hay club seleccionado.");
+ const all=state.allTeams;
+ const ids=all.map(x=>x.id);
+ const staff=ids.length?await calls(state.sb.from("banquillo_team_staff").select("team_id,display_name,position,role_detail").in("team_id",ids)):[];
+ const backup={format:"banquillo-club-configuration",version:1,
+   club_id:c.id,club_name:c.name,exported_at:new Date().toISOString(),
+   settings:{town:state.settings.town||"",province:state.settings.province||"",
+   community:state.settings.community||"",fields_f11:state.settings.fields_f11||0,
+   fields_f7:state.settings.fields_f7||0},
+   teams:all.map(({id,name,modality,category,competition,settings})=>({id,name,modality,category,competition,settings})),
+   staff:(staff||[]).map(({team_id,display_name,position,role_detail})=>({team_id,display_name,position,role_detail}))};
+ const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json;charset=utf-8"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="banquillo-"+c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").slice(0,35)+"-config-"+new Date().toISOString().slice(0,10)+".json";
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+ notify("Copia de configuración guardada. No incluye actas ni cuentas.");
+}
+function deletedSection(){
+ if(!state.deletedClubs.length)return "";
+ return '<section class="panel bq-recovery"><h3>Clubes eliminados recuperables</h3><p class="muted">Los datos deportivos se conservan. Puedes recuperar un club si no tienes otro activo.</p>'+
+ state.deletedClubs.map(c=>'<div class="bq-recovery-row"><span>'+esc(c.name)+'</span>'+button("Recuperar club","restoreClub",c.id,"ghost")+'</div>').join("")+'</section>';
+}
 function openClubSettings(){const v=state.settings;formModal("Ajustes del club","clubSettingsForm",
  '<p class="muted">Puedes actualizar esta información en cualquier momento, sin rehacer el club.</p>'+
  input("town","Localidad",v.town||"","text",false,'maxlength="80"')+input("province","Provincia",v.province||"","text",false,'maxlength="80"')+
@@ -62,7 +100,7 @@ return head("Resumen del club","Organización deportiva de "+c.name,button("+ A�
 function emptyClub(){return head("Bienvenido a Banquillo","Empieza desde el club o incorpora un equipo a tu cuenta.")+'<div class="bq-choice-grid">'+
  '<article class="panel"><h3>Crear un club</h3><p>Configúralo progresivamente: equipos, campos, cuerpo técnico y temporadas.</p>'+button("Crear club","newClub")+'</article>'+
  '<article class="panel"><h3>Unirme a un club</h3><p>Usa el código que te facilite su director deportivo.</p>'+button("Introducir código","joinClub","","ghost")+'</article>'+
- '<article class="panel"><h3>Dirigir un equipo</h3><p>Crea una temporada individual en la aplicación del entrenador.</p><a class="btn ghost" href="index.html">Ir a mi equipo</a></article></div>';}
+ '<article class="panel"><h3>Dirigir un equipo</h3><p>Crea una temporada individual en la aplicación del entrenador.</p><a class="btn ghost" href="index.html">Ir a mi equipo</a></article></div>'+deletedSection();}
 function teamRows(){const list=state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality);return list.map(t=>'<button type="button" class="bq-team-line" data-action="openTeam" data-id="'+esc(t.id)+'"><span>⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+' · '+esc(t.competition||"Competición por definir")+'</small></span><span>Configurar →</span></button>').join("")||'<p class="muted">Aún no hay equipos en esta modalidad.</p>';}
 function teamsPage(){return head("Equipos del club","Selecciona un equipo para consultar sus estadísticas, entrenadores y configuración.",button("+ Añadir equipo","newTeam"))+
  '<div class="team-grid">'+state.teams.filter(t=>state.modality==="todos"||t.modality===state.modality).map(t=>
@@ -96,7 +134,7 @@ function directorsPage(){const c=active();if(!c)return emptyClub();return head("
  (owner()?'<div class="bq-invite"><h3>Código para nuevo director</h3><p class="muted">No es el mismo código que utilizan los entrenadores de los equipos.</p><div class="ux-team-code"><strong>'+esc(state.clubCode||"Cargando…")+'</strong></div><div class="ux-actions">'+button("Copiar código","copyClubCode")+button("Renovar código","rotateClubCode","","ghost")+'</div></div>':"")+'</section>';}
 function seasonsPage(){return head("Temporadas","Solo puede haber un club activo por titular en una temporada. El historial permanece disponible.",owner()&&currentPeriod()?button("Cerrar temporada","closeClubSeason","","ghost"):button("Crear club","newClub"))+
  '<div class="bq-seasons-grid">'+state.periods.map(p=>'<article class="panel bq-season-card"><span class="ux-pill '+(p.status==="active"?"good":"")+'">'+(p.status==="active"?"En curso":"Cerrada")+'</span><h3>'+esc(p.season_label)+'</h3><p>'+esc(active()?.name||"Club")+'</p><p class="muted">'+(p.status==="active"?"Activa desde su creación":"Cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></article>').join("")+'</div>'+
- '<section class="panel"><h3>Inicio de nueva temporada</h3><p>Para crear un club diferente, cierra primero la temporada activa. Una vez cerrada podrás abrir la siguiente temporada sin borrar los datos anteriores.</p></section>';}
+ '<section class="panel"><h3>Inicio de nueva temporada</h3><p>Para crear un club diferente, cierra primero la temporada activa. Una vez cerrada podrás abrir la siguiente temporada sin borrar los datos anteriores.</p></section>'+deletedSection();}
 function facilitiesPage(){const v=state.settings;return head("Instalaciones","Configura el número de campos que dispone el club.",button("Editar instalaciones","editClub"))+
  '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+(v.fields_f11||0)+'</div></article><article class="stat"><div class="stat-label">Campos independientes F7</div><div class="stat-value">'+(v.fields_f7||0)+'</div></article><article class="stat"><div class="stat-label">Capacidad F7 si F11 divisible</div><div class="stat-value">'+((v.fields_f11||0)*2+(v.fields_f7||0))+'</div></article></div>'+
  '<section class="panel"><h3>Organización de partidos</h3><p class="muted">La planificación detallada de campos, horarios y conflictos sigue disponible en la demostración de club mientras se prepara su integración segura con calendarios reales.</p><a href="demo-club.html#instalaciones" class="btn ghost">Ver planificador demostrativo</a></section>';}
@@ -109,7 +147,7 @@ function messageText(){const today=new Date().toISOString().slice(0,10);const li
 function noticesPage(){const now=Date.now();const list=fixtures().filter(x=>x.m.date&&!Calc.matchInfo(x.m).played&&new Date(x.m.date+"T23:59:59").getTime()+48*3600000<now);
 return head("Avisos de actividad","Partidos pendientes de cerrar detectados a partir de las actas disponibles.")+
  '<section class="panel">'+(list.map(x=>'<div class="notice">⚑ <b>'+esc(x.t.name)+'</b> · jornada '+esc(x.m.n||"–")+' contra '+esc(x.m.rival||"Rival")+' · '+esc(showDate(x.m.date))+'</div>').join("")||'<p class="muted">No hay incidencias pendientes en los partidos disponibles.</p>')+'</section>';}
-function clubSettingsPage(){return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div></section>';}
+function clubSettingsPage(){return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
 const titles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",temporadas:"Temporadas",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
 function render(){if(!state.loaded)return;const c=active(),t=team();$("#sideClubName").textContent=c?.name||"Tu club";$("#topClubName").textContent=c?.name||"BANQUILLO";
  $("#sideSeason").textContent=currentPeriod()?.season_label||"Sin temporada activa";$("#teamCount").textContent=state.teams.length;
@@ -125,6 +163,7 @@ function render(){if(!state.loaded)return;const c=active(),t=team();$("#sideClub
 }
 async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs").select("id,name,owner_id,created_at").order("created_at",{ascending:true}))||[];
  if(!state.clubs.some(x=>x.id===state.clubId))state.clubId=state.clubs[0]?.id||null;
+ state.deletedClubs=await rpc("banquillo_list_deleted_clubs")||[];
  if(state.clubId){
   const [ts,periods,settings,members]=await Promise.all([
    calls(state.sb.from("banquillo_teams").select("id,club_id,name,modality,category,competition,settings,season_id,archived_at").eq("club_id",state.clubId).order("name")),
@@ -162,6 +201,11 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
 }
 async function action(name,id){try{
  if(name==="newClub")return openClubForm();
+ if(name==="deleteClub")return openDeleteClubForm();
+ if(name==="restoreBackup")return openBackupForm();
+ if(name==="saveBackup")return saveBackup();
+ if(name==="shareDirector")return modal("Invitar al segundo director",'<p>Entrega este código únicamente al director autorizado. Debe iniciar sesión en Banquillo y elegir «Unirme a un club».</p><div class="ux-team-code"><strong>'+esc(state.clubCode||"Código no disponible")+'</strong></div><p class="bq-hint">El director tendrá acceso a los equipos del club, pero las actas se comparten por temporada de forma independiente.</p><div class="ux-actions">'+button("Copiar código","copyClubCode")+'</div>');
+ if(name==="restoreClub")return ask("Recuperar club","Se recuperará la temporada original si no tienes otro club activo. Los códigos anteriores seguirán invalidados.","acceptRestoreClub",id,"Recuperar club");
  if(name==="newTeam")return openTeamForm();
  if(name==="addStaff")return openStaffForm();
  if(name==="editStaff")return openStaffForm(state.staff.find(x=>x.id===id));
@@ -189,9 +233,23 @@ async function accept(name,id){closeModal();try{
  if(name==="acceptRotateTeam"){state.teamCode=await rpc("banquillo_team_code",{p_team_id:id,p_rotate:true});render();}
  if(name==="acceptRotateClub"){state.clubCode=await rpc("banquillo_club_code",{p_club_id:id,p_rotate:true});render();}
  if(name==="acceptCloseClub"){await rpc("banquillo_close_club_season",{p_club_id:id});await refresh();state.view="temporadas";render();}
+ if(name==="acceptRestoreClub"){await rpc("banquillo_restore_club",{p_club_id:id});state.clubId=id;state.view="resumen";await refresh();state.clubCode=null;render();}
  notify("Cambios guardados correctamente.");
  }catch(e){notify(errText(e),"error");}}
 async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"").trim();try{
+ if(form.id==="deleteClubForm"){
+  const c=active(),name=get("confirm_name");if(!owner()||!c||get("club_id")!==c.id||name!==c.name)throw Error("club_name_mismatch");
+  const response=await rpc("banquillo_delete_club",{p_club_id:c.id,p_confirm_name:name});if(response!==true)throw Error("No se ha podido eliminar el club.");
+  closeModal();state.clubId=null;state.clubCode=null;state.teamCode=null;state.view="resumen";await refresh();notify("Club retirado. Sus actas se conservan y puedes recuperarlo desde esta pantalla.");return;
+ }
+ if(form.id==="restoreConfigForm"){
+  const c=active();if(!c||get("confirm_name")!==c.name)throw Error("club_name_mismatch");
+  const file=f.get("backup");if(!(file instanceof File)||!file.size||file.size>180000)throw Error("Selecciona un archivo JSON de menos de 180 KB.");
+  let payload;try{payload=JSON.parse(await file.text());}catch(e){throw Error("El archivo no es un JSON válido.");}
+  if(payload.format!=="banquillo-club-configuration"||payload.version!==1||payload.club_id!==c.id||!Array.isArray(payload.teams)||!Array.isArray(payload.staff))throw Error("invalid_backup");
+  const res=await rpc("banquillo_restore_club_config",{p_club_id:c.id,p_snapshot:payload});if(!res?.ok)throw Error("No se pudo restaurar la configuración.");
+  closeModal();state.staff=[];state.docs=[];await refresh();notify("Restaurada la configuración de "+res.teams+" equipos y "+res.staff+" cargos. Las actas no se han modificado.");return;
+ }
  if(form.id==="clubForm"){const id=await rpc("banquillo_create_club",{p_name:get("name"),p_season:get("season")});state.clubId=id;state.view="resumen";closeModal();await refresh();notify("Club creado. Puedes completar su configuración cuando quieras.");return;}
  if(form.id==="teamForm"){const rec={club_id:state.clubId,name:get("name"),modality:get("modality"),category:get("category"),competition:get("competition"),settings:{matchMinutes:get("modality")==="F11"?90:50}};const x=await calls(state.sb.from("banquillo_teams").insert(rec).select("id").single());if(get("coach"))await calls(state.sb.from("banquillo_team_staff").insert({team_id:x.id,display_name:get("coach"),position:"head_coach"}));state.teamId=x.id;state.teamTab="overview";state.view="equipo";closeModal();await refresh();notify("Equipo creado. La configuración se puede ampliar más adelante.");return;}
  if(form.id==="staffForm"){const rec={display_name:get("display_name"),position:get("position"),role_detail:get("position")==="other"?get("role_detail"):""};if(get("staff_id"))await calls(state.sb.from("banquillo_team_staff").update(rec).eq("id",get("staff_id")).eq("team_id",state.teamId).select("id"));else await calls(state.sb.from("banquillo_team_staff").insert({...rec,team_id:state.teamId}).select("id"));closeModal();await loadTeamData();notify("Cuerpo técnico actualizado.");return;}
