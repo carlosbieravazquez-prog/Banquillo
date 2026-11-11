@@ -17,7 +17,9 @@ const CoachInbox=(()=>{
      const incoming=data||[];
      const different=s!==sid||JSON.stringify(cache.map(m=>[m.id,m.read_at,m.resolved_at]))!==
        JSON.stringify(incoming.map(m=>[m.id,m.read_at,m.resolved_at]));
+     const newlyUnread= sid===s? incoming.filter(m=>!m.read_at&&!cache.some(old=>old.id===m.id)).length:0;
      sid=s;cache=incoming;lastFetch=Date.now();
+     if(newlyUnread&&typeof toast==="function")toast("🔔 Tienes "+newlyUnread+" mensaje(s) nuevo(s) de Dirección Deportiva.","ok");
      if(different&&typeof render==="function")render(true);
    }catch(e){/* Sin acceso o sin conexión: no mostrar mensajes ajenos ni inventar avisos. */}
    finally{loading=false;}
