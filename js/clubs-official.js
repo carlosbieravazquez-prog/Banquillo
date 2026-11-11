@@ -68,28 +68,26 @@ function openDeleteClubForm(){
 function openBackupForm(){
  if(!active())return;
  formModal("Restaurar copia de configuración","restoreConfigForm",
- '<p>Selecciona un archivo JSON exportado anteriormente desde <b>este mismo club</b>. Restauraremos los datos de configuración y los cargos del cuerpo técnico, no las actas ni las cuentas.</p>'+
+ '<p>Selecciona un archivo JSON exportado anteriormente desde <b>este mismo club</b>. Restauraremos solo la configuración y las categorías. Los entrenadores y sus permisos provienen de cuentas reales y no pueden restaurarse mediante nombres escritos en un archivo.</p>'+
  '<label class="field"><span>Archivo de copia de seguridad (.json)</span><input type="file" name="backup" accept=".json,application/json" required></label>'+
  input("confirm_name","Confirma el nombre del club",active().name,"text",true,'maxlength="120"')+
- '<p class="bq-danger-note">Esta operación reemplazará nombres, categorías, ajustes y cargos de los equipos incluidos en la copia. No creará ni eliminará equipos.</p>',"Restaurar configuración");
+ '<p class="bq-danger-note">Esta operación reemplazará nombres, categorías y ajustes de los equipos incluidos. No modificará entrenadores ni permisos de cuentas, y no creará ni eliminará equipos.</p>',"Restaurar configuración");
 }
 async function saveBackup(){
  const c=active();if(!c)throw Error("No hay club seleccionado.");
  const all=state.allTeams;
- const ids=all.map(x=>x.id);
- const staff=ids.length?await calls(state.sb.from("banquillo_team_staff").select("team_id,display_name,position,role_detail").in("team_id",ids)):[];
- const backup={format:"banquillo-club-configuration",version:1,
+ // El respaldo nunca incluye personas ni cargos: se vinculan exclusivamente por cuenta.
+ const backup={format:"banquillo-club-configuration",version:2,
    club_id:c.id,club_name:c.name,exported_at:new Date().toISOString(),
    settings:{town:state.settings.town||"",province:state.settings.province||"",
    community:state.settings.community||"",fields_f11:state.settings.fields_f11||0,
    fields_f7:state.settings.fields_f7||0},
-   teams:all.map(({id,name,modality,category,competition,settings})=>({id,name,modality,category,competition,settings})),
-   staff:(staff||[]).map(({team_id,display_name,position,role_detail})=>({team_id,display_name,position,role_detail}))};
+   teams:all.map(({id,name,modality,category,competition,settings})=>({id,name,modality,category,competition,settings}))};
  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json;charset=utf-8"});
  const url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download="banquillo-"+c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").slice(0,35)+"-config-"+new Date().toISOString().slice(0,10)+".json";
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
- notify("Copia de configuración guardada. No incluye actas ni cuentas.");
+ notify("Copia de configuración guardada. No incluye actas, personas ni permisos.");
 }
 function deletedSection(){
  if(!state.deletedClubs.length)return "";
@@ -423,9 +421,9 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
   const c=active();if(!c||get("confirm_name")!==c.name)throw Error("club_name_mismatch");
   const file=f.get("backup");if(!(file instanceof File)||!file.size||file.size>180000)throw Error("Selecciona un archivo JSON de menos de 180 KB.");
   let payload;try{payload=JSON.parse(await file.text());}catch(e){throw Error("El archivo no es un JSON válido.");}
-  if(payload.format!=="banquillo-club-configuration"||payload.version!==1||payload.club_id!==c.id||!Array.isArray(payload.teams)||!Array.isArray(payload.staff))throw Error("invalid_backup");
+  if(payload.format!=="banquillo-club-configuration"||![1,2].includes(payload.version)||payload.club_id!==c.id||!Array.isArray(payload.teams))throw Error("invalid_backup");
   const res=await rpc("banquillo_restore_club_config",{p_club_id:c.id,p_snapshot:payload});if(!res?.ok)throw Error("No se pudo restaurar la configuración.");
-  closeModal();state.staff=[];state.docs=[];await refresh();notify("Restaurada la configuración de "+res.teams+" equipos y "+res.staff+" cargos. Las actas no se han modificado.");return;
+  closeModal();state.staff=[];state.docs=[];await refresh();notify("Restaurada la configuración de "+res.teams+" equipos. Los entrenadores y sus permisos siguen vinculados exclusivamente a sus cuentas.");return;
  }
  if(form.id==="teamMessageForm"){
   const tid=get("team_id"),kind=get("kind"),n=get("match_n"),title=get("title"),body=get("body");
