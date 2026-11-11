@@ -364,3 +364,18 @@ body.in-app #landing{display:none}
 .l-demo-access small{font-size:11px;opacity:.8}
 .l-demo-access-link{display:block;text-align:center;padding:12px 15px;border-radius:10px;background:#237c58;color:#fff!important;text-decoration:none;font-weight:750;margin-top:5px}
 .l-demo-access-link:hover,.l-demo-access-link:focus-visible{background:#176044;color:#fff!important}
+
+/* Temporadas: permisos claros y confirmación de copia. */
+.bq-account-identity{border:1px solid #bcded3!important;background:linear-gradient(120deg,#f3fbf7,#f6f9fb)!important}
+.bq-account-identity strong{display:block;font-size:15px;color:#214d5d;margin:5px 0;overflow-wrap:anywhere}
+.bq-identity-eyebrow{font-size:10px;font-weight:800;letter-spacing:.13em;color:#2b8b70}
+.bq-account-identity .muted{max-width:600px;margin:6px 0}
+.bq-access-season{align-items:flex-start;gap:12px}
+.bq-access-season .sc-m{flex:1;min-width:180px}
+.bq-access-season .sc-m>b{font-size:17px}
+.bq-access-season .sc-m>small{display:block;overflow-wrap:anywhere}
+.bq-access-badges{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bq-season-controls{display:flex;align-items:center;flex-wrap:wrap;gap:7px;justify-content:flex-end}
+.bq-season-controls .btn{white-space:normal;min-height:36px}
+.btn.bq-copied-success,.btn.bq-copied-success:hover,.btn.bq-copied-success:focus-visible{background:#16825e!important;border-color:#16825e!important;color:white!important;box-shadow:0 0 0 3px #16825e20!important;transform:translateY(-1px);transition:background .16s,transform .16s}
+@media(max-width:760px){.bq-access-season{flex-direction:column;align-items:stretch}.bq-season-controls{justify-content:flex-start}.bq-account-identity>.row{align-items:flex-start}}
