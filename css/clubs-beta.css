@@ -65,3 +65,13 @@ body{margin:0}
 @media(max-width:1250px){#root .layout{grid-template-columns:240px minmax(0,1fr)}}
 @media(max-width:960px){#root .layout{grid-template-columns:1fr}#root .bq-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){#root .bq-summary{grid-template-columns:1fr 1fr}.bq-main{padding:14px}#root .panel{padding:16px}#root .cards{grid-template-columns:1fr}#root .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+#root .bq-rank{display:grid;grid-template-columns:minmax(65px,1fr) minmax(42px,1fr) auto;gap:10px}
+#root .bq-rank-track{height:7px;border-radius:10px;background:#ebf1f5;overflow:hidden;align-self:center}
+#root .bq-rank-track i{display:block;height:100%;background:linear-gradient(90deg,#16845b,#38ac80);border-radius:inherit}
+#root .bq-rank strong{font-variant-numeric:tabular-nums;white-space:nowrap;color:#174666}
+#root .bq-team-list{margin-top:12px}
+#root #teamDetails{scroll-margin-top:16px}
+#root #equipos,#root #directores,#root #avisos{scroll-margin-top:16px}
+#root .metric:nth-child(2) strong{color:#117b57}
+#root .metric:nth-child(4) strong{color:#b26b2c}
