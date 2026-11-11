@@ -132,7 +132,6 @@ const Store = {
   };
 
   S.selectSeason = id => {
-    if (id && S.loaded.seasons && !S.seasons.some(x=>x.id===id)) return;
     try { localStorage.setItem("bq.season", id); } catch (e) { /* noop */ }
     // Los enlaces del panel DD usan ?season=<id>. Actualizarlo al cambiar evita
     // que un F5 vuelva a abrir una temporada antigua.
