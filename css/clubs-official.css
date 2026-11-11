@@ -269,3 +269,19 @@
 .bq-field-status{display:inline-block;margin:4px 7px 4px 0;padding:7px 10px;border:1px solid #d9e7e5;border-radius:9px;color:#376b5a;background:#eef8f2;font-size:12px}
 @media(max-width:1080px){.bq-real-layout{grid-template-columns:1fr}.bq-real-side{position:static}.bq-real-metrics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.bq-real-metrics{gap:8px}.bq-real-metrics>div{padding:12px}.bq-real-metrics strong{font-size:23px}.bq-real-datebar{justify-content:center}.bq-real-datebar>b{width:100%;text-align:center;order:-1}.bq-real-fixture{grid-template-columns:74px minmax(0,1fr);gap:9px}.bq-real-fixture-action{grid-column:2;justify-items:start;display:flex;align-items:center;justify-content:space-between}.bq-real-calendar-grid{gap:2px}.bq-real-day{min-height:55px;padding:5px;border-radius:6px}.bq-real-day small{font-size:8px}.bq-real-month{padding:8px!important}}
+
+
+/* Equipaciones oficiales por club: visibles y editables desde ajustes */
+.bq-kit-panel .ux-box-title{margin-bottom:15px}
+.bq-kit-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bq-kit-item{display:flex;align-items:center;gap:13px;padding:15px;border:1px solid #dce8ed;border-radius:12px;background:#f9fcfd}
+.bq-kit-item b{font-size:12px;color:#1f485c}
+.bq-kit-icon{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.bq-kit-icon span{display:block;width:17px;height:27px;border:1px solid #9baeb8;border-radius:4px}
+.bq-kit-icon span:nth-child(2){height:21px}
+.bq-kit-icon span:nth-child(3){height:23px}
+.bq-kit-form-row{display:flex;align-items:center;flex-wrap:wrap;gap:13px;margin:9px 0;padding:12px;background:#f9fbfc;border:1px solid #e5edef;border-radius:10px}
+.bq-kit-form-row>b{flex:1;min-width:130px;color:#305569;font-size:12px}
+.bq-kit-form-row label{display:flex;gap:7px;align-items:center;color:#587484;font-size:11px}
+.bq-kit-form-row input[type=color]{width:38px;height:32px;border:1px solid #c6d9df;border-radius:7px;background:#fff;padding:2px;cursor:pointer}
+@media(max-width:700px){.bq-kit-preview{grid-template-columns:1fr}.bq-kit-form-row>b{flex-basis:100%}}
