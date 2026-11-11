@@ -204,7 +204,7 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["calendario","calendarioMes","comunicaciones","avisos"].includes(v))await loadAllData();
 }
 async function action(name,id){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.view="resumen";await refresh();return;}
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
