@@ -219,7 +219,7 @@ const FORM = {};
     const sh = UI.sheet;if(!sh||sh.type!=="teamJoin"||sh.busy)return;
     const code=String(f.elements.code.value||"").trim().toLowerCase().replace(/[\s-]/g,"");
     sh.code=code;
-    if(!/^(?:[abcdefghjkmnpqrstuvwxyz23456789]{8}|[a-f0-9]{32})$/.test(code)){sh.err="Introduce el código de 8 caracteres de tu equipo (también se aceptan códigos antiguos).";return render(true);}
+    if(!/^(?:[abcdefghjklmnpqrstuvwxyz23456789]{8}|[a-f0-9]{32})$/.test(code)){sh.err="Introduce el código de 8 caracteres de tu equipo (también se aceptan códigos antiguos).";return render(true);}
     sh.busy=true;sh.err=null;render(true);
     try {
       const result=await Cloud.rpc("banquillo_join_team",{p_code:code});
