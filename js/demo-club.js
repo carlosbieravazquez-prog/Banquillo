@@ -209,8 +209,87 @@
   const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;save();render();return}
   const a=e.target.closest("[data-action]");if(!a)return;
   const id=a.dataset.id;
+  if(a.dataset.action==="demo-team-tab"){
+    if(["overview","players","coaches","settings","code"].includes(a.dataset.tab)){UI.teamTab=a.dataset.tab;render();}
+    return;
+  }
+  if(a.dataset.action==="demo-copy-code"){
+    const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
+    const code=DemoClubUX.details(state,t).code;
+    if(navigator.clipboard?.writeText)navigator.clipboard.writeText(code).then(()=>alert("Código local copiado (no sirve para crear cuentas)."),()=>prompt("Copia el código de demostración:",code));
+    else prompt("Copia el código de demostración:",code);
+    return;
+  }
+  if(a.dataset.action==="demo-rotate-code"){
+    const t=state.teams.find(t=>t.id===UI.teamId);
+    if(t&&confirm("¿Renovar el código de demostración de "+t.name+"? El anterior dejará de mostrarse.")){
+      DemoClubUX.details(state,t).code=DemoClubUX.randomCode();save();render();
+    }return;
+  }
+  if(a.dataset.action==="demo-change-coach"){
+    const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
+    const name=prompt("Nombre del nuevo entrenador (ficticio):",t.coach==="Por asignar"?"":t.coach);
+    if(name===null)return;
+    const n=name.trim().slice(0,60);if(!n)return;
+    t.coach=n;const d=DemoClubUX.details(state,t);d.coachStatus="active";d.code=DemoClubUX.randomCode();
+    save();render();return;
+  }
+  if(a.dataset.action==="demo-remove-coach"){
+    const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
+    if(!confirm("¿Dar de baja a "+t.coach+" y renovar el código del "+t.name+"? Es una simulación local, no revoca cuentas reales."))return;
+    t.coach="Por asignar";const d=DemoClubUX.details(state,t);d.coachStatus="vacant";d.code=DemoClubUX.randomCode();
+    save();render();return;
+  }
+  if(a.dataset.action==="demo-ignore-notice"){
+    const n=state.notifications.find(n=>n.id===id);if(!n)return;
+    if(!n.ignoredAt)n.ignoredAt=Date.now();
+    save();render();return;
+  }
+  if(a.dataset.action==="demo-resolve-notice"){
+    const n=state.notifications.find(n=>n.id===id);if(!n)return;
+    n.resolvedAt=Date.now();save();
+    const card=a.closest(".ux-notice");
+    if(card){
+      card.classList.add("is-resolved");
+      setTimeout(()=>{n.archived=true;save();if(UI.view==="avisos")render();},990);
+    }else{n.archived=true;save();render();}
+    return;
+  }
+  if(a.dataset.action==="demo-send-notice"){
+    const n=state.notifications.find(n=>n.id===id);if(!n)return;
+    const content=DemoClubUX.noticeText(state,n);
+    n.preparedAt=Date.now();
+    if(n.ignoredAt && (Date.now()-Number(n.ignoredAt))>=7*86400000)n.reminderPrepared=true;
+    save();
+    // Abrir WhatsApp, sin asumir que el usuario lo ha enviado.
+    window.open("https://wa.me/?text="+encodeURIComponent(content),"_blank","noopener,noreferrer");
+    render();return;
+  }
+  if(a.dataset.action==="demo-month-view"){
+    UI.view="calendarioMes";render();return;
+  }
+  if(a.dataset.action==="demo-week-view"){
+    UI.view="calendario";render();return;
+  }
+  if(a.dataset.action==="demo-month-prev"||a.dataset.action==="demo-month-next"){
+    const d=parseDate(state.calendarDate);d.setDate(1);d.setMonth(d.getMonth()+(a.dataset.action==="demo-month-prev"?-1:1));
+    state.calendarDate=dateKey(d);save();render();return;
+  }
+  if(a.dataset.action==="demo-pick-day"){
+    if(ClubPlanner.validDate(a.dataset.date)){state.calendarDate=a.dataset.date;save();render();}
+    return;
+  }
+  if(a.dataset.action==="demo-print-month"){
+    const printable=$("#printCalendar");if(!printable)return;
+    printable.innerHTML=DemoClubUX.printCalendar(state);printable.hidden=false;
+    window.print();
+    const finish=()=>{printable.hidden=true;};
+    window.addEventListener("afterprint",finish,{once:true});
+    return;
+  }
+
   if(a.dataset.action==="demo-settings-tab"&&["data","kits","palette"].includes(a.dataset.tab)){UI.settingsTab=a.dataset.tab;render();return}
-  if(a.dataset.action==="go"){UI.view=a.dataset.view;render()}
+  if(a.dataset.action==="go"){UI.view=a.dataset.view;render();return}
   if(a.dataset.action==="edit-team"){UI.teamId=id;UI.teamTab="overview";UI.view="equipo";render();return}
   if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}
   if(a.dataset.action==="switch-director"){state.activeDirector=id;state.modality=active().preferred;save();render()}
