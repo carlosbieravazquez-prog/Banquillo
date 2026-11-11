@@ -95,3 +95,8 @@
 #bqModalRoot .bq-dialog{max-width:610px}
 .bq-invite .ux-team-code strong{user-select:all}
 @media(max-width:870px){.topbar .top-actions{flex-wrap:wrap;gap:7px}.top-actions .bq-backup-action{padding:8px 10px}}
+
+.bq-switcher-clickable{cursor:pointer;transition:background .2s}
+.bq-switcher-clickable:hover{background:rgba(255,255,255,.12)}
+.bq-club-picker{display:flex;flex-direction:column;gap:10px;margin-top:15px}
+.bq-club-picker .btn{text-align:left;justify-content:flex-start;width:100%}
