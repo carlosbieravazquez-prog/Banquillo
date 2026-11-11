@@ -176,7 +176,7 @@ V.temporadas = () => {
       controls+'</div></li>';
   }).join("");
   const currentLink = cur && linkFor(cur.id);
-  const safeActions = !cur?"":currentLink?
+  const safeActions = !cur?"":!accessReady?'<span class="muted small">Comprobando permisos y vinculación del equipo…</span>':currentLink?
     '<a class="btn primary" href="clubes.html">Gestionar equipo desde Dirección Deportiva</a>'+
     btn("Exportar Excel","dlXlsx",{},"ghost"):
     btn("Compartir y miembros","openShare",{},"primary","users")+
