@@ -2,11 +2,23 @@
 const TeamRequests=(()=>{
  "use strict";
  let cache=[],lastFetch=0,loading=false,lastUid=null,approvedSeen=new Set();
+ function reset(){
+   cache=[];lastFetch=0;lastUid=null;approvedSeen.clear();
+ }
+ function ensureIdentity(){
+   const uid=Store.user?.uid||null;
+   if(uid!==lastUid){
+     reset();
+     lastUid=uid;
+   }
+   return uid;
+ }
+
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const roles={head_coach:"Entrenador principal",assistant_coach:"Segundo entrenador",
  third_coach:"Tercer entrenador",delegate:"Delegado",other:"Otro"};
  async function fetch(force=false){
-   const uid=Store.user?.uid;
+   const uid=ensureIdentity();
    if(!uid||!Cloud?.sb)return;
    if(loading||(!force&&uid===lastUid&&Date.now()-lastFetch<17000))return;
    loading=true;
@@ -46,7 +58,8 @@ const TeamRequests=(()=>{
    finally{loading=false;}
  }
  function panel(){
-   if(!Store.user?.uid)return"";
+   const current=ensureIdentity();
+   if(!current)return"";
    if(!lastFetch||lastUid!==Store.user.uid||Date.now()-lastFetch>18000)
      Promise.resolve().then(()=>fetch());
    const relevant=cache.filter(x=>x.status!=="active"||!Store.roles[x.season_id]);
@@ -62,5 +75,5 @@ const TeamRequests=(()=>{
    window.setInterval(()=>{if(Store.user?.uid&&Auth?.state==="in")fetch(true);},20000);
    window.addEventListener("focus",()=>{if(Store.user?.uid)fetch(true);});
  }
- return {fetch,panel};
+ return {fetch,panel,reset};
 })();
