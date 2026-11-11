@@ -3,7 +3,7 @@ const Store = {
   db: null, user: null, roles: {},
   seasons: [], sid: null,
   players: [], matches: [], reports: {}, training: { absences: {}, skipped: [], extra: [] },
-  loaded: {}, slow: false, offline: false,
+  loaded: {}, slow: false, offline: false, clubLinks: [], clubLinksReady: false,
   status: "idle", // idle | saving | saved | error
   subs: [], pending: new Map(), inflight: new Set(), timer: null, flushing: false, retryTimer: null, onChange: () => {},
 };
@@ -140,12 +140,27 @@ const Store = {
     const { data, error } = await Cloud.sb.from("season_members").select("season_id,role").eq("user_id", S.user.uid);
     if (!error && data) { S.roles = {}; data.forEach(r => { S.roles[r.season_id] = r.role; }); }
   };
+  S.loadClubLinks = async () => {
+    const uid = S.user?.uid;
+    if (!uid) { S.clubLinks = []; S.clubLinksReady = false; return; }
+    S.clubLinksReady = false;
+    try {
+      const data = await Cloud.rpc("banquillo_my_season_context");
+      if (S.user?.uid !== uid) return;
+      S.clubLinks = Array.isArray(data) ? data : [];
+      S.clubLinksReady = true;
+    } catch (e) {
+      if (S.user?.uid === uid) { S.clubLinks = []; S.clubLinksReady = false; }
+    }
+    S.onChange("data");
+  };
   S.reset = () => { unsubAll(); S.seasonsUnsub && S.seasonsUnsub(); S.seasonsUnsub = null; if (S.db && S.db.reset) S.db.reset(); clearTimeout(S.timer); clearTimeout(S.retryTimer); S.pending.clear(); S.inflight.clear();
-    S.seasons = []; S.sid = null; S.players = []; S.matches = []; S.reports = {}; S.training = { absences: {}, skipped: [], extra: [] }; S.loaded = {}; S.roles = {}; S.offline = false; S.slow = false; S.db = null; S.user = null; };
+    S.clubLinks = []; S.clubLinksReady = false; S.seasons = []; S.sid = null; S.players = []; S.matches = []; S.reports = {}; S.training = { absences: {}, skipped: [], extra: [] }; S.loaded = {}; S.roles = {}; S.offline = false; S.slow = false; S.db = null; S.user = null; };
 
   S.init = async (db, user) => {
     S.db = db; S.user = user;
     try { await S.loadRoles(); } catch (e) { /* se reintenta con la lista de temporadas */ }
+    await S.loadClubLinks();
     const slowT = setTimeout(() => { if (!S.isLoaded()) { S.slow = true; S.onChange("data"); } }, 10000);
     S.seasonsUnsub = db.collection("seasons").onSnapshot(async snap => {
       if (!S.user) return;
@@ -173,6 +188,7 @@ const Store = {
   // Tras unirse con un código: recarga permisos y temporadas y abre la temporada
   S.afterJoin = async sid => {
     await S.loadRoles();
+    await S.loadClubLinks();
     await S.db.refreshNow("seasons");
     S.selectSeason(sid);
   };
