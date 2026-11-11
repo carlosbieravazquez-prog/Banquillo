@@ -56,6 +56,7 @@ V.inicio = () => {
 
   return `${pageHead(esc(s.club || "Tu equipo"), `${esc(s.category || "")} · Temporada ${esc(s.name)}`)}
     ${nextCard}
+    ${Store.role()==="owner"?`<section class="card"><div class="card-h"><h3>Acceso al equipo</h3>${btn("Compartir o renovar código", "openShare", {}, "primary", "copy")}</div><p class="muted small">Consulta y actualiza el código exclusivo de esta temporada. Cuando lo cambies, el anterior dejará de funcionar.</p></section>`:""}
     <section class="card"><div class="card-h"><h3>Mensajes de Dirección Deportiva</h3>${btn("Abrir buzón", "openCoachInbox", {}, "ghost", "bell")}</div>
       <p class="muted small">Consulta avisos de tus equipos y abre directamente el acta de la jornada indicada. Los recordatorios internos solo se crean si sigue pendiente.</p></section>
     <section class="tiles">
