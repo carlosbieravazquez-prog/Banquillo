@@ -1,8 +1,8 @@
 # Banquillo — Documento maestro de proyecto
 
 > Documento vivo de continuidad. Se actualizará al cerrar cada bloque de análisis, implementación y pruebas.
-> Última actualización: 10 de noviembre de 2026.
-> Estado: auditoría inicial completada; Fase 1 aún no implementada.
+> Última actualización: 11 de noviembre de 2026.
+> Estado: Fase 1 parcialmente implementada en main y Supabase; auditoría y validación pendientes.
 
 ## 1. Propósito y visión
 
@@ -305,3 +305,53 @@ Se mantiene fuera de Fase 1 cualquier cobro o suscripción. Se mantienen en la h
 | 2026-11-10 | Comparación entre ramas | Feature 59 commits por delante y 4 por detrás de main; divergencia pendiente de resolver |
 | 2026-11-10 | Lecturas de Supabase y asesores | 5 tablas, recuentos 2/2/3/54/0; 6 políticas; 17/2 funciones SECURITY DEFINER; sin migraciones ni Edge Functions |
 | 2026-11-10 | Cambios efectuados durante la revisión | Solo este documento; ninguna modificación de base de datos, permisos ni código funcional |
+
+## 11. Revisión de continuidad — 11 de noviembre de 2026
+
+### 11.1 Cambio sustancial respecto al 10 de noviembre
+
+- Desde el commit documental `f083efa399adf1f8256d04341115a4fbcf2dda9c`, `main` registra **22 commits posteriores** y cambios en **25 archivos** (comparación de GitHub realizada el 11-11). Hay código nuevo, interfaz, documentación y cuatro scripts SQL; ya no es correcto describir la Fase 1 como completamente ausente.
+- Nuevos elementos relevantes: `clubes.html`, `js/clubs-beta.js`, `css/clubs-beta.css`, `js/club-planner.js`, `js/club-crest.js`, `js/club-theme.js`, `js/file-picker.js`, `js/kit-editor.js`, `js/kit-mockup.js`, `js/demo-club-ux.js`, sus estilos, y cuatro scripts en `supabase/`. También cambiaron `index.html`, `js/core.js` y la demo.
+- `docs/FASE1_CLUBES_INTEGRACION.md` describe la página conectada a Supabase, el alta de clubes/equipos, vinculación manual de temporadas por su propietario, resumen estadístico y códigos de dirección. `docs/BETA_GESTION_EQUIPOS_CUERPO_TECNICO.md` documenta archivo reversible de equipos y cuatro cargos organizativos. **Los cargos del directorio NO conceden acceso a los documentos de temporada**: las invitaciones y permisos de temporada siguen separados.
+- La rama `feature/fase-1-clubes-equipos` sigue divergente: **59 commits por delante y 27 por detrás** de `main`. No fusionar sin análisis de conflictos y regresiones.
+- La demo ficticia continúa siendo distinta de `clubes.html` y no prueba el funcionamiento real de la beta.
+
+### 11.2 Supabase — verificación de solo lectura
+
+- Proyecto `ACTIVE_HEALTHY`, PostgreSQL 17.11; **10 tablas públicas** con RLS habilitado: las cinco originales y `banquillo_clubs`, `banquillo_club_directors`, `banquillo_teams`, `banquillo_club_codes`, `banquillo_team_staff`.
+- Recuentos informativos del conector: perfiles 2; temporadas 2; miembros de temporada 3; documentos 54; intentos 0; clubes 1; directores de club 0; equipos 1; códigos de club 0; miembros del directorio técnico 2. No se consultaron nombres ni datos de menores.
+- **Cuatro migraciones YA REGISTRADAS**: `20261111010109 banquillo_clubes_fase1_base_20261111`; `20261111010305 banquillo_clubes_directores_codigos_20261111`; `20261111010917 banquillo_seguridad_basica_beta_20261111`; `20261111141404 banquillo_gestion_equipos_cuerpo_tecnico_20261111`. Esta revisión **no las ejecutó**. Los scripts correspondientes están en `supabase/clubes_fase1_borrador.sql`, `supabase/clubes_directores_codigos.sql`, `supabase/seguridad_basica_beta.sql` y `supabase/gestion_equipos_cuerpo_tecnico_20261111.sql`.
+- **19 políticas RLS**: directores de club 3, clubes 3, personal técnico 4, equipos 3, documentos 4, perfiles 1, miembros de temporada 1. `banquillo_club_codes`, `join_attempts` y `seasons_meta` siguen sin políticas. Los códigos de club están diseñados para consulta mediante RPC con autorización y sin grants directos a usuarios API.
+- **19 funciones SECURITY DEFINER ejecutables por `authenticated` y 0 por `anon`** según metadatos. La migración de seguridad revocó la ejecución directa de `handle_new_user()` y `rls_auto_enable()`, añadió índice a `seasons_meta.owner_id` y optimizó `profiles_select_own`. Comprobar en navegador los flujos de alta y acceso tras esos cambios.
+- **0 Edge Functions** desplegadas; no dar por operativos los informes IA. Asesor de salud: sin avisos.
+- Asesor de seguridad: tres tablas con RLS sin políticas, 19 RPC SECURITY DEFINER accesibles a autenticados y protección de contraseñas filtradas desactivada. Revisar autorizaciones de cada RPC; el aviso no prueba una brecha por sí solo.
+- Asesor de rendimiento: `join_attempts` sin PK; tres índices aún sin uso observado (dos nuevos y el índice nuevo de `seasons_meta`). No eliminarlos por una muestra de uso tan corta.
+- **No se ejecutó ninguna escritura, migración ni modificación de Auth, RLS, permisos o datos durante esta revisión.** No se ha verificado en esta revisión una copia restaurable ni un rollback probado para las cuatro migraciones ya aplicadas.
+
+### 11.3 Alcance real de Fase 1 y pruebas
+
+- **Parcialmente implementado**: entidades de clubes/equipos/directores, RLS, límite transaccional de **12 equipos activos** por club, máximo de dos directores adicionales, códigos de invitación, asociación opcional a temporada, directorio de cuatro cargos y archivado/restauración de equipos.
+- Los documentos del repositorio afirman pruebas SQL reversibles de permisos y cargos, y parseo de `js/clubs-beta.js`; son **pruebas documentadas por implementaciones previas, no reproducidas por esta revisión**. No se ha realizado prueba visual ni prueba extremo a extremo de GitHub Pages, móvil, escritorio o sesión real.
+- **Pendiente de Fase 1**: registro de auditoría persistente con actor/fecha/campo/valor anterior/valor nuevo; notificaciones agrupadas con estado leído (los avisos de la página son consultas al abrir, no notificaciones persistentes); prueba segura y confirmación de vinculación del Prebenjamín existente; validación de que la dirección accede únicamente a temporadas autorizadas.
+- No confundir directorio técnico informativo con permisos de entrenador. El archivado oculta el equipo activo sin borrar la temporada; confirmar que las políticas y el guard evitan reactivaciones no autorizadas y respetan el máximo de doce bajo concurrencia.
+- La página de clubes real existe en `main`, pero **no se ha demostrado su funcionamiento en un navegador**; no afirmar que la beta está lista para producción.
+- No implementar cobros ni suscripciones. Conservar en fases posteriores avisos de IA, identidad/historial de jugadores entre categorías y deshacer cambios.
+
+### 11.4 Prioridades siguientes y control de cambios
+
+1. **Urgente:** obtener copia de seguridad verificable y diseñar restauración/rollback documentado de las cuatro migraciones ya aplicadas, sin alterar datos reales.
+2. Auditar detalladamente los permisos efectivos, las 19 funciones SECURITY DEFINER y las nuevas políticas RLS; validar separación entre clubes, revocación de directores, acceso a temporadas y registro/recuperación. No modificar producción sin autorización.
+3. Revisar integridad de vinculación de temporadas y capacidad de 12 equipos activos con pruebas aisladas y datos ficticios; no enlazar ni modificar automáticamente el Prebenjamín real.
+4. Diseñar migraciones aditivas de **auditoría anterior/nuevo** y **notificaciones agrupadas** con pruebas y rollback; no desplegar aún.
+5. Verificar beta en navegador real y móvil; comparar rama feature divergente antes de integrar cambios.
+6. Revisar configuración de protección de contraseñas filtradas y textos de landing que prometan funciones no desplegadas.
+
+| Fecha | Trabajo | Resultado |
+|---|---|---|
+| 2026-11-11 | GitHub: comparación con `f083efa` | 22 commits, 25 archivos; nueva beta conectada y scripts SQL en main |
+| 2026-11-11 | GitHub: comparación de ramas | Feature 59 por delante, 27 por detrás; sin merge |
+| 2026-11-11 | Supabase: tablas, migraciones y metadatos | 10 tablas, 4 migraciones, 19 políticas, 19/0 SECURITY DEFINER para authenticated/anon, 0 Edge Functions |
+| 2026-11-11 | Asesores de seguridad/rendimiento/salud | Persisten avisos descritos; salud sin hallazgos |
+| 2026-11-11 | Código y documentación | Revisados SQL de clubes, directores, seguridad y personal técnico; identificadas funciones parciales y pendientes |
+| 2026-11-11 | Cambios de esta revisión | Solo documento maestro; sin escrituras en Supabase ni cambios funcionales |
+
