@@ -75,3 +75,18 @@ body{margin:0}
 #root #equipos,#root #directores,#root #avisos{scroll-margin-top:16px}
 #root .metric:nth-child(2) strong{color:#117b57}
 #root .metric:nth-child(4) strong{color:#b26b2c}
+
+/* Equipo y cuerpo técnico: acciones reversibles sin perder temporadas. */
+#root .bq-staff-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:11px;margin:12px 0 18px}
+#root .bq-staff-card{background:linear-gradient(145deg,#f7fafc,#eff5f8);border:1px solid #dae5ed;border-radius:13px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:126px}
+#root .bq-staff-role{font-size:11px;color:#54758b;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+#root .bq-staff-card strong{font-size:15px;color:#183d58;overflow-wrap:anywhere}
+#root .bq-staff-card button{margin-top:auto}
+#root #staffForm{padding:15px 18px;border-radius:12px;background:#f6f9fc;border:1px solid #e2ebf1;margin:12px 0}
+#root .bq-danger-zone{margin-top:30px;border-top:1px solid #e3eaf0;padding-top:18px}
+#root .bq-danger-zone button{border:1px solid #b86464;background:#fff2f0;color:#a33335}
+#root .bq-archived{margin-top:18px;background:#f6f8fa;border:1px solid #e3eaf0;padding:12px 14px;border-radius:10px}
+#root .bq-archived summary{cursor:pointer;font-size:13px;font-weight:700;color:#405c6c}
+#root .bq-archive-row{padding:10px 0;border-bottom:1px solid #e2e8ee;font-size:13px}
+#root .bq-archive-row:last-child{border-bottom:0}
+#root #teamAccess{margin-top:22px}
