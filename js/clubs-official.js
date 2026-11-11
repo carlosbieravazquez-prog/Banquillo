@@ -151,12 +151,68 @@ function fixtures(){return state.docs.filter(x=>x.type==="match"&&!x.data?.rest)
 function calendarPage(monthly=false){const list=fixtures().filter(x=>!monthly||String(x.m.date||"").startsWith(state.year+"-"+String(state.month+1).padStart(2,"0")));return head(monthly?"Planificador mensual":"Calendario del club","Jornadas visibles según los permisos de las temporadas vinculadas.",monthly?button("Mes anterior","prevMonth","","ghost")+button("Mes siguiente","nextMonth","","ghost"):"")+
  (monthly?'<h3 class="bq-month-title">'+new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(new Date(state.year,state.month,1))+'</h3>':"")+
  '<section class="panel"><div class="bq-fixtures">'+(list.map(x=>'<div class="bq-fixture"><span>'+esc(showDate(x.m.date))+'</span><span><b>'+esc(x.t.name)+'</b><small>Jornada '+esc(x.m.n||"—")+' · '+(x.m.home?"🏠 Local":"✈️ Visitante")+'</small></span><b>'+esc(x.m.rival||"Rival por definir")+'</b></div>').join("")||'<p class="muted">No hay encuentros registrados en las temporadas a las que tienes acceso.</p>')+'</div></section><p class="bq-hint">Este calendario utiliza las jornadas reales de cada temporada. La asignación de instalaciones aún se realiza en el planificador demostrativo.</p>';}
-function communicationsPage(){return head("Comunicaciones","Prepara un mensaje de las jornadas programadas y cópialo para compartirlo.")+'<section class="panel"><h3>Próximos partidos</h3><pre id="bqMessagePreview" class="message-preview">'+esc(messageText())+'</pre>'+button("Copiar resumen","copyFixtures")+'</section>';}
-function messageText(){const today=new Date().toISOString().slice(0,10);const list=fixtures().filter(x=>x.m.date>=today).slice(0,20);return "⚽ PARTIDOS DEL CLUB · "+(active()?.name||"")+" \n"+(list.length?list.map(x=>(x.m.home?"🏠":"✈️")+" "+x.t.name+" · Jornada "+(x.m.n||"–")+"\n   "+showDate(x.m.date)+" · "+(x.m.rival||"Rival por definir")).join("\n\n"):"No hay próximos partidos confirmados.");}
-function noticesPage(){const now=Date.now();const list=fixtures().filter(x=>x.m.date&&!Calc.matchInfo(x.m).played&&new Date(x.m.date+"T23:59:59").getTime()+48*3600000<now);
-return head("Avisos de actividad","Partidos pendientes de cerrar detectados a partir de las actas disponibles.")+
- '<section class="panel">'+(list.map(x=>'<div class="notice">⚑ <b>'+esc(x.t.name)+'</b> · jornada '+esc(x.m.n||"–")+' contra '+esc(x.m.rival||"Rival")+' · '+esc(showDate(x.m.date))+'</div>').join("")||'<p class="muted">No hay incidencias pendientes en los partidos disponibles.</p>')+'</section>';}
-function clubSettingsPage(){return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
+function openMessageForm(teamId,kind="manual",matchN=null){
+ const available=state.teams.filter(t=>t.season_id&&!t.archived_at);
+ if(!available.length)return notify("Primero vincula un equipo a su temporada y añade al entrenador autorizado.","error");
+ const first=available.find(t=>t.id===teamId)||available[0];
+ const isActa=kind==="acta";
+ formModal(isActa?"Recordatorio de acta":"Mensaje interno al equipo","teamMessageForm",
+ '<p class="muted">El mensaje se entregará únicamente a los entrenadores autorizados de la temporada del equipo seleccionado. No se abrirá WhatsApp.</p>'+
+ sel("team_id","Equipo destinatario",available.map(t=>[t.id,t.name+" · "+t.modality]),first.id)+
+ sel("kind","Tipo de mensaje",[["manual","Comunicación general"],["acta","Acta pendiente"],["convocatoria","Convocatoria pendiente"]],kind)+
+ input("match_n","Número de jornada (cuando corresponda)",matchN||"","number",isActa,'min="1" max="99"')+
+ input("title","Asunto",isActa?"Falta cerrar el acta de la jornada "+matchN:"Aviso de Dirección Deportiva","text",true,'minlength="3" maxlength="120"')+
+ '<label class="field"><span>Mensaje</span><textarea name="body" required minlength="3" maxlength="1500" rows="5" placeholder="Explica qué hay que revisar.">'+esc(isActa?"Por favor, completa el acta de la jornada "+matchN+" en Banquillo para que quede registrada.":"")+'</textarea></label>'+
+ '<p class="bq-hint">En los avisos de acta, el entrenador tendrá un acceso directo a la jornada correspondiente. El aviso desaparecerá cuando quede cerrada.</p>',
+ "Enviar mensaje interno");
+}
+function messageList(){
+ const items=state.messages;
+ return '<section class="panel bq-message-list"><h3>Historial de mensajes internos</h3>'+
+ (items.length?items.slice(0,35).map(m=>{
+  const t=state.teams.find(t=>t.id===m.team_id);
+  return '<article class="bq-message-item"><div><b>'+esc(m.title)+'</b><small>'+esc(t?.name||"Equipo")+' · '+esc(new Date(m.created_at).toLocaleDateString("es-ES"))+
+  (m.match_n?' · Jornada '+m.match_n:'')+'</small><p>'+esc(m.body)+'</p></div><span class="bq-message-state '+(m.resolved_at?"done":m.read_at?"read":"pending")+'">'+
+  (m.resolved_at?"Resuelto":m.read_at?"Leído":"Pendiente")+'</span></article>';
+ }).join(""):'<p class="muted">Todavía no se han enviado mensajes a los equipos.</p>')+'</section>';
+}
+function communicationsPage(){
+ return head("Mensajes internos","Comunicación privada entre Dirección Deportiva y los entrenadores del equipo correspondiente.",
+ button("+ Redactar mensaje","composeMessage"))+
+ '<div class="bq-info-note">Los directores pueden enviar avisos. Los entrenadores únicamente los reciben en su bandeja de Banquillo. Ninguna comunicación abre WhatsApp ni se entrega a equipos ajenos.</div>'+
+ messageList();
+}
+function noticesPage(){
+ const now=Date.now();
+ const pending=fixtures().filter(x=>x.m.date&&!Calc.matchInfo(x.m).played&&
+ new Date(x.m.date+"T23:59:59").getTime()+48*3600000<now);
+ return head("Avisos de actividad","Detectados en las actas de los equipos autorizados. El director decide cuándo enviar el recordatorio.",
+ button("Redactar aviso","composeMessage"))+
+ '<section class="panel"><h3>Incidencias pendientes</h3>'+
+ (pending.length?pending.map(x=>'<div class="bq-alert"><div><b>⚑ '+esc(x.t.name)+'</b><p>Acta pendiente · jornada '+esc(x.m.n||"–")+' contra '+esc(x.m.rival||"Rival")+' · '+esc(showDate(x.m.date))+'</p></div>'+
+ button("Enviar recordatorio","sendActa",x.t.id+"|"+esc(x.m.n))+'</div>').join(""):
+ '<p class="muted">No se han detectado actas pendientes entre los partidos que puedes consultar.</p>')+'</section>'+
+ '<section class="panel"><h3>Problemas resueltos automáticamente</h3>'+
+ (state.events.length?state.events.slice(0,20).map(e=>
+ '<div class="bq-event">✅ <b>'+esc(e.title)+'</b><small>'+esc(state.teams.find(t=>t.id===e.team_id)?.name||"Equipo")+' · '+esc(new Date(e.created_at).toLocaleString("es-ES"))+'</small></div>').join(""):
+ '<p class="muted">Cuando se cierre un acta con un aviso enviado, aparecerá aquí la notificación correspondiente.</p>')+'</section>';
+}
+async function loadMessaging(silent=false){
+ if(!state.clubId)return;
+ const cid=state.clubId;
+ const [messages,events]=await Promise.all([
+ calls(state.sb.from("banquillo_team_messages").select("id,club_id,team_id,kind,title,body,match_n,read_at,resolved_at,created_at").eq("club_id",cid).order("created_at",{ascending:false}).limit(100)),
+ calls(state.sb.from("banquillo_director_events").select("id,club_id,team_id,title,kind,created_at").eq("club_id",cid).order("created_at",{ascending:false}).limit(40))
+ ]);
+ if(cid!==state.clubId)return;
+ const oldId=state.events[0]?.id;
+ state.messages=messages||[];state.events=events||[];
+ if(silent&&oldId&&state.events.length&&state.events[0].id!==oldId)notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");
+ if(["comunicaciones","avisos"].includes(state.view))render();
+}
+
+function clubSettingsPage(){const w=state.wallet||{};return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+
+ '<section class="panel bq-wallet"><div class="bq-wallet-head"><div><span>SILBATOS DE GESTIÓN</span><strong>'+esc(w.balance??"–")+' <small>/ 20</small></strong></div><div>🎺</div></div><h3>¿Para qué sirven?</h3><p>Son el saldo anual para organizar clubes y equipos individuales: <b>10 silbatos al crear un club</b> y <b>5 al crear un equipo independiente</b>. Añadir equipos dentro de un club no tiene otro coste.</p><p>El 1 de agosto se repone el saldo a <b>20 silbatos</b> sin acumular el remanente. Si cierras una temporada o eliminas el club durante la misma temporada en la que pagaste, se devuelve su coste una sola vez, hasta el límite de 20.</p><p class="muted">Saldo de gestión separado de los silbatos para informes de IA. Próxima recarga: '+esc(w.next_refill||"1 de agosto")+'.</p></section>'+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
 const titles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",temporadas:"Temporadas",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
 function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});const switcher=$("#clubSwitcher");if(switcher){switcher.classList.toggle("bq-switcher-clickable",state.clubs.length>1);switcher.title=state.clubs.length>1?"Cambiar de club":"Club seleccionado";}$("#sideClubName").textContent=c?.name||"Tu club";$("#topClubName").textContent=c?.name||"BANQUILLO";
  $("#sideSeason").textContent=currentPeriod()?.season_label||"Sin temporada activa";$("#teamCount").textContent=state.teams.length;
