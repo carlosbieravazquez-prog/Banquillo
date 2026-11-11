@@ -59,8 +59,11 @@ function bodyView() {
     return `<div class="loading"><div class="spin"></div><p>${Store.offline ? "No se puede conectar con los datos. Se reintentará automáticamente." : Store.slow ? "Tarda más de lo normal en responder. Comprueba tu conexión." : "Cargando tus datos…"}</p></div>`;
   }
   if (!Store.seasons.length) {
-    return empty("Aún no tienes ninguna temporada", "Crea tu primera temporada con los jugadores y el calendario de jornadas, o únete a la de otro entrenador con su código.",
-      `<div class="row gap wrap center">${btn("Crear temporada", "wizStart", { first: 1 }, "primary", "plus")}${btn("Unirme con un código", "openJoin", {}, "ghost", "users")}</div>`);
+    return '<div class="bq-onboard"><div class="bq-onboard-head"><span>BIENVENIDO A BANQUILLO</span><h1>Empieza a organizar tu fútbol base</h1><p>Una única cuenta para gestionar un equipo o coordinar un club. Elige cómo empezar.</p></div><div class="bq-onboard-grid">'+
+      '<article class="bq-onboard-card"><div class="bq-onboard-icon">⚽</div><h2>Crear equipo</h2><p>Configura categoría, plantilla, calendario y entrenadores desde tu primera temporada.</p>'+btn("Crear mi equipo","wizStart",{first:1},"primary","plus")+'</article>'+
+      '<article class="bq-onboard-card"><div class="bq-onboard-icon">🏟️</div><h2>Crear club</h2><p>Organiza equipos, temporadas y dirección deportiva. Completa la configuración poco a poco.</p><a class="btn primary" href="clubes.html">Gestionar mi club →</a></article>'+
+      '<article class="bq-onboard-card"><div class="bq-onboard-icon">◈</div><h2>Mostrar prueba</h2><p>Explora una demostración profesional con jornadas, estadísticas y datos ficticios.</p>'+btn("Ver demostraciones","openDemoChooser",{},"ghost")+'</article></div>'+
+      '<div class="bq-onboard-join"><span>¿Te han invitado a un equipo?</span>'+btn("Introducir código de equipo","openTeamJoin",{},"ghost")+btn("Código antiguo de temporada","openJoin",{},"ghost")+'</div></div>';
   }
   const fn = V[UI.route.name] || V.inicio;
   return fn(UI.route.arg);
@@ -75,6 +78,9 @@ function accountBtn(compact) {
   return `<button type="button" class="acc ${compact ? "compact" : ""}" data-act="openAccount" aria-label="Mi cuenta"><span class="avatar">${ini}</span>${compact ? "" : `<span class="acc-t"><b>Mi cuenta</b><small>${p ? p.tokens : 0} Silbatos</small></span>`}</button>`;
 }
 function shell() {
+  if (Store.isLoaded() && Store.db && !Store.seasons.length) {
+    return '<div class="bq-entry-shell"><header class="bq-entry-header"><div class="bq-entry-brand"><span class="mark">'+icon("ball")+'</span><b>BANQUILLO</b><small>Fútbol base · Gestión profesional</small></div>'+accountBtn()+'</header><main class="bq-entry-main">'+bodyView()+'</main></div>';
+  }
   const s = Store.season();
   const rn = UI.route.name;
   const activeKey = rn === "partido" ? "partidos" : rn === "jugador" ? "plantilla" : rn;
@@ -108,6 +114,8 @@ function sheetView() {
   return `<div class="scrim" data-act="closeSheet"></div><div class="sheet ${sh.wide ? "wide" : ""}" role="dialog" aria-modal="true"><button type="button" class="sheet-x" data-act="closeSheet" aria-label="Cerrar">${icon("x")}</button>${inner}</div>`;
 }
 V.sheet = {};
+ACT.openDemoChooser = () => { UI.sheet = { type: "demoChooser" }; };
+V.sheet.demoChooser = () => '<h2>Explorar Banquillo</h2><p class="muted">Dos demostraciones completas con datos ficticios. No modifican tu cuenta ni tus equipos reales.</p><div class="bq-demo-modes"><a class="bq-demo-option" href="demo-club.html"><b>🏟️ Gestionar club</b><span>Dirección deportiva · Instalaciones, calendarios y equipos</span></a><a class="bq-demo-option" href="demo-equipo.html"><b>⚽ Dirigir equipo</b><span>Entrenador · 18 jornadas, plantilla y estadísticas</span></a></div>';
 ACT.closeSheet = () => { UI.sheet = null; render(true); };
 ACT.noop = () => {};
 ACT.retrySave = () => Store.retry();
