@@ -41,9 +41,9 @@ const matches=rows.filter(r=>r.path.startsWith('seasons/'+t.season_id+'/matches/
 const players=rows.filter(r=>r.path.startsWith('seasons/'+t.season_id+'/players/')).map(r=>({...r.data,id:r.path.split('/').pop()})).filter(p=>p.active!==false);
 const r=Calc.record(matches);
 const now=Date.now();
-const delayed=matches.filter(m=>!m.rest&&/^\\d{4}-\\d\\d-\\d\\d$/.test(m.date||'')&&!Calc.matchInfo(m).played&&
+const delayed=matches.filter(m=>!m.rest&&/^\d{4}-\d\d-\d\d$/.test(m.date||'')&&!Calc.matchInfo(m).played&&
    new Date(m.date+'T23:59:59').getTime()+48*3600000<now);
-const pendingCall=matches.filter(m=>!m.rest&&/^\\d{4}-\\d\\d-\\d\\d$/.test(m.date||'')&&
+const pendingCall=matches.filter(m=>!m.rest&&/^\d{4}-\d\d-\d\d$/.test(m.date||'')&&
    !m.callDone&&(!Array.isArray(m.noCall)||!m.noCall.length)&&new Date(m.date+'T12:00:00').getTime()>now&&
    new Date(m.date+'T12:00:00').getTime()<now+7*86400000);
 const noticeBox=(delayed.length||pendingCall.length)?'<section class="panel"><h3>Avisos pendientes del equipo</h3>'+
