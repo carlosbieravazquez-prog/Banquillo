@@ -150,8 +150,8 @@ V.temporadas = () => {
       <div class="sc-s">${s.status === "closed" ? `<span class="tag">Cerrada</span>` : `<span class="tag ok">Activa</span>`}${on ? `<span class="tag info">Abierta</span>` : ""}<span class="tag">${Auth.roleLabel(Store.roles[s.id])}</span></div>
       <div class="sc-a">${on ? "" : btn("Abrir", "openSeason", { id: s.id }, "ghost small")}</div></li>`;
   }).join("");
-  return `${pageHead("Temporadas", "Cada temporada guarda su plantilla, jornadas, estadísticas y entrenos.", `<div class="row gap wrap">${btn("Código de equipo del club", "openTeamJoin", {}, "ghost", "users")}${btn("Código de temporada independiente", "openJoin", {}, "ghost")}${btn("Nueva temporada", "wizStart", {}, "primary", "plus")}</div>`)}
-    <p class="muted small">En los equipos de club, el director deportivo aprueba las cuentas y asigna los cargos. El código general de una temporada independiente no incorpora entrenadores a un club.</p>
+  return `${pageHead("Temporadas", "Cada temporada guarda su plantilla, jornadas, estadísticas y entrenos.", `<div class="row gap wrap">${btn("Tengo un código de mi equipo", "openTeamJoin", {}, "ghost", "users")}${btn("Código de equipo independiente", "openJoin", {}, "ghost")}${btn("Crear equipo independiente", "wizStart", {}, "primary", "plus")}</div>`)}
+    <p class="muted small">¿Te ha invitado un director? Pulsa «Tengo un código de mi equipo». Si eres responsable de un equipo que no pertenece a un club, utiliza «Código de equipo independiente».</p>
     <ul class="slist2">${cards}</ul>
     <section class="card"><div class="card-h"><h3>Temporada abierta · ${esc(cur.name)}</h3></div>
       <div class="row gap wrap">${btn("Compartir y miembros", "openShare", {}, "primary", "users")}${btn("Ajustes", "openSettings", {}, "ghost", "edit")}${btn(UI.ai.busyXlsx ? "Preparando…" : "Exportar Excel", "dlXlsx", {}, "ghost", "down")}${cur.status === "closed" ? btn("Reabrir temporada", "reopenSeason", {}, "ghost") : btn("Cerrar temporada", "closeSeasonAsk", {}, "ghost", "lock")}</div>
