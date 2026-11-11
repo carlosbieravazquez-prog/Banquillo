@@ -265,14 +265,23 @@ const FORM = {};
       ${owner && sh.share ? `<section class="card flat"><div class="card-h"><h3>Código de la temporada</h3>${sh.share.enabled ? `<span class="tag ok">Activo</span>` : `<span class="tag">Desactivado</span>`}</div>
         <div class="codebox" aria-live="polite">${esc(fmtCode(code))}</div>
         <p class="muted small">El otro entrenador crea su cuenta en esta web, pulsa «Unirme con un código» y escribe esto. Entra como <b>Entrenador</b> (puede editar). Tú puedes dejarle solo en lectura o quitarle cuando quieras.</p>
-        <div class="row gap wrap">${btn("Copiar código", "copyCode", {}, "primary small")}${btn("Código nuevo", "codeNewAsk", {}, "ghost small")}${btn(sh.share.enabled ? "Desactivar código" : "Activar código", "codeToggle", {}, "ghost small")}</div></section>` : ""}
+        <div class="row gap wrap">${UI.copyFlash==="share"?btn("✓ Copiado", "copyCode", {}, "primary small bq-copied-success"):btn("Copiar código", "copyCode", {}, "primary small")}${btn("Código nuevo", "codeNewAsk", {}, "ghost small")}${btn(sh.share.enabled ? "Desactivar código" : "Activar código", "codeToggle", {}, "ghost small")}</div></section>` : ""}
       <section class="card flat"><div class="card-h"><h3>Quién tiene acceso</h3><span class="count">${(sh.members || []).length}</span></div>
         <ul class="mlist">${rows}</ul>${sh.err ? `<p class="err small">${esc(sh.err)}</p>` : ""}</section>
       <div class="row between gap wrap foot">${owner ? btn("Eliminar temporada", "seasonDelAsk", {}, "ghost danger-t") : btn("Salir de esta temporada", "leaveAsk", {}, "ghost danger-t")}${btn("Cerrar", "closeSheet", {}, "primary")}</div>`;
   };
   ACT.copyCode = async () => {
-    const c = UI.sheet && UI.sheet.share && UI.sheet.share.code; if (!c) return;
-    try { await navigator.clipboard.writeText(fmtCode(c)); toast("Código copiado.", "ok"); } catch (e) { toast("Selecciona el código y cópialo.", ""); }
+    const c = UI.sheet?.share?.code;if(!c)return;
+    try {
+      await navigator.clipboard.writeText(fmtCode(c));
+      UI.copyFlash="share";render(true);
+      toast("✓ Código copiado al portapapeles.","ok");
+      setTimeout(()=>{
+        if(UI.copyFlash==="share"){UI.copyFlash=null;render(true);}
+      },1900);
+    }catch(e){
+      toast("Tu navegador no ha permitido copiar. Selecciona el código de la pantalla para copiarlo.","err");
+    }
   };
   ACT.codeNewAsk = () => { UI.sheet.confirmNew = true; };
   ACT.codeToggle = async () => {
@@ -296,18 +305,148 @@ const FORM = {};
     try { await Cloud.rpc("remove_member", { sid: sh.sid, uid: el.dataset.u }); sh.members = sh.members.filter(x => x.user_id !== el.dataset.u); toast("Persona quitada de la temporada.", "ok"); }
     catch (e) { toast("No se ha podido quitar.", "err"); } render(true);
   };
-  ACT.leaveAsk = () => confirmSheet("¿Salir de esta temporada?", "Dejarás de ver sus datos. Para volver a entrar necesitarás el código otra vez.", "Salir", "leaveSeason", {}, true);
-  ACT.leaveSeason = async () => {
-    const sid = Store.sid; UI.sheet = null;
-    try { await Cloud.rpc("leave_season", { sid }); } catch (e) { toast("No se ha podido salir de la temporada.", "err"); return; }
-    delete Store.roles[sid]; Store.subscribeSeason(null); try { localStorage.removeItem("bq.season"); } catch (e) { /* noop */ }
-    await Store.db.refreshNow("seasons"); go("inicio"); toast("Has salido de la temporada.", "ok");
+  async function refreshAfterSeparation(sid) {
+    if(Store.sid===sid){
+      Store.subscribeSeason(null);
+      try{localStorage.removeItem("bq.season");}catch(e){}
+    }
+    await Store.loadRoles();
+    await Store.loadClubLinks();
+    await Store.db.refreshNow("seasons");
+    go("temporadas");
+  }
+  ACT.leaveAsk = el => {
+    const sid=el?.dataset?.id||Store.sid;
+    const link=Store.clubLinks.find(x=>x.season_id===sid);
+    if(link){if(link.manager)return toast("Los directores abandonan el club desde Dirección Deportiva.","err");
+      return ACT.leaveTeamAsk({dataset:{id:link.team_id,sid}});
+    }
+    confirmSheet("¿Abandonar este equipo independiente?","Se retirará tu acceso, pero no se eliminarán sus jugadores ni sus actas. Podrás volver a entrar si recibes otra invitación.","Abandonar equipo","leaveSeason",{id:sid});
   };
-  ACT.seasonDelAsk = () => confirmSheet("¿Eliminar la temporada entera?", "Se borrarán para todos sus jugadores, partidos, entrenos e informes. No se puede deshacer. Antes puedes descargar el Excel desde Temporadas.", "Eliminar temporada", "seasonDel", {}, true);
-  ACT.seasonDel = async () => {
-    const sid = Store.sid; UI.sheet = null;
-    try { await Cloud.rpc("delete_season", { sid }); } catch (e) { toast("No se ha podido eliminar la temporada.", "err"); return; }
-    delete Store.roles[sid]; Store.subscribeSeason(null); try { localStorage.removeItem("bq.season"); } catch (e) { /* noop */ }
-    await Store.db.refreshNow("seasons"); go("inicio"); toast("Temporada eliminada.", "ok");
+  ACT.leaveSeason = async el => {
+    const sid=el?.dataset?.id||Store.sid;UI.sheet=null;
+    try{
+      await Cloud.rpc("leave_season",{sid});
+      await refreshAfterSeparation(sid);
+      toast("Has abandonado el equipo independiente.","ok");
+    }catch(e){toast(/managed_team/.test(String(e?.message||e))?"Un equipo de club se abandona con su opción específica.":"No se ha podido abandonar el equipo.","err");}
+  };
+  ACT.leaveTeamAsk = el => {
+    const tid=el?.dataset?.id,link=Store.clubLinks.find(x=>x.team_id===tid);
+    if(!link||link.manager)return toast("No puedes abandonar este equipo desde aquí.","err");
+    confirmSheet("¿Abandonar "+(link.team_name||"equipo")+"?",
+      "Perderás el acceso a su plantilla, jornadas y avisos. Los datos deportivos se conservarán para el club.",
+      "Abandonar equipo","leaveTeamConfirmed",{id:tid,sid:link.season_id});
+  };
+  ACT.leaveTeamConfirmed = async el => {
+    const tid=el.dataset.id,sid=el.dataset.sid;
+    UI.sheet=null;
+    try{
+      const r=await Cloud.rpc("banquillo_leave_team",{p_team_id:tid});
+      if(!r?.ok)throw Error("No se ha podido revocar el acceso.");
+      await refreshAfterSeparation(sid);
+      if(typeof TeamRequests!=="undefined")TeamRequests.fetch(true);
+      toast("Has abandonado el equipo. Ya no tienes acceso a sus datos.","ok");
+    }catch(e){toast("No se ha podido abandonar el equipo. Comprueba que sigues vinculado y vuelve a intentarlo.","err");}
+  };
+  ACT.withdrawTeamRequest = async el => {
+    const tid=el.dataset.teamId;
+    if(!tid)return;
+    try{
+      await Cloud.rpc("banquillo_leave_team",{p_team_id:tid});
+      if(typeof TeamRequests!=="undefined")await TeamRequests.fetch(true);
+      toast("Has retirado la solicitud.","ok");
+    }catch(e){toast("No se ha podido retirar la solicitud.","err");}
+  };
+  ACT.leaveClubFromSeasonAsk = el => {
+    const cid=el.dataset.id;
+    if(!Store.clubLinks.some(x=>x.club_id===cid&&x.manager))
+      return toast("No tienes permisos de dirección para este club.","err");
+    confirmSheet("¿Abandonar el club?",
+      "Si eres titular, la dirección pasará al segundo director. Si eres el único responsable, antes tendrás que invitar a otro o cerrar el club. Tus permisos se revocarán.",
+      "Abandonar club","leaveClubFromSeasonConfirmed",{id:cid});
+  };
+  ACT.leaveClubFromSeasonConfirmed = async el => {
+    const cid=el.dataset.id;UI.sheet=null;
+    try{
+      const ok=await Cloud.rpc("banquillo_leave_club",{p_club_id:cid});
+      if(ok!==true)throw Error("leave_failed");
+      await Store.loadRoles();await Store.loadClubLinks();await Store.db.refreshNow("seasons");
+      go("temporadas");toast("Has abandonado el club. Permisos actualizados.","ok");
+    }catch(e){toast(/owner_must_close_or_delete/.test(String(e?.message||e))?
+      "No puedes abandonar el club siendo su único director. Puedes cerrarlo o invitar a un segundo responsable.":
+      "No se ha podido abandonar el club.","err");}
+  };
+  ACT.archiveTeamFromSeasonAsk = el => {
+    const tid=el.dataset.id,link=Store.clubLinks.find(x=>x.team_id===tid&&x.manager);
+    if(!link||link.archived)return toast("No se puede retirar este equipo desde esta cuenta.","err");
+    confirmSheet("¿Retirar "+link.team_name+" del club?",
+      "Se archivará el equipo y su código dejará de admitir incorporaciones. Los datos, las actas y las estadísticas se conservarán; podrás restaurarlo desde Dirección Deportiva.",
+      "Retirar equipo","archiveTeamFromSeasonConfirmed",{id:tid});
+  };
+  ACT.archiveTeamFromSeasonConfirmed = async el => {
+    UI.sheet=null;
+    try{
+      const r=await Cloud.rpc("banquillo_archive_club_team",{p_team_id:el.dataset.id});
+      if(!r?.ok)throw Error("archive_failed");
+      await Store.loadClubLinks();
+      go("temporadas");toast("Equipo archivado sin perder sus datos.","ok");
+    }catch(e){toast("No se ha podido retirar el equipo. Inténtalo desde Dirección Deportiva.","err");}
+  };
+  ACT.seasonDelAsk = el => {
+    const sid=el?.dataset?.id||Store.sid,season=Store.seasons.find(x=>x.id===sid);
+    if(!Store.clubLinksReady||Store.clubLinks.some(x=>x.season_id===sid)||Store.roles[sid]!=="owner")
+      return toast("Las temporadas de club se gestionan desde Dirección Deportiva.","err");
+    if(!season)return toast("No se ha encontrado ese equipo.","err");
+    UI.sheet={type:"deleteSoloConfirm",sid,seasonName:season.name,busy:false,err:null};
+  };
+  V.sheet.deleteSoloConfirm = sh => '<h2>Eliminar equipo independiente</h2>'+
+    '<p>Esta operación <b>elimina permanentemente</b> los jugadores, las jornadas, los entrenamientos y los informes de <b>'+esc(sh.seasonName)+'</b>. No puede deshacerse.</p>'+
+    '<p class="muted">Si solo quieres dejarlo sin actividad, utiliza «Cerrar temporada» en vez de eliminarlo.</p>'+
+    '<form data-form="deleteSoloConfirm" class="form" novalidate>'+
+    '<label class="fld"><span>Escribe exactamente el nombre del equipo para confirmar</span>'+
+    '<input class="inp" type="text" name="confirm" autocomplete="off" required></label>'+
+    (sh.err?'<p class="err small">'+esc(sh.err)+'</p>':"")+
+    '<div class="row end gap foot">'+btn("Cancelar","closeSheet",{},"ghost")+
+    '<button type="submit" class="btn danger" '+(sh.busy?"disabled":"")+'>Eliminar definitivamente</button></div></form>';
+  FORM.deleteSoloConfirm = async form => {
+    const sh=UI.sheet;if(sh?.type!=="deleteSoloConfirm"||sh.busy)return;
+    if(String(form.elements.confirm.value).trim()!==sh.seasonName){
+      sh.err="El nombre no coincide. No se ha eliminado nada.";return render(true);
+    }
+    sh.busy=true;sh.err=null;render(true);
+    try{
+      await Cloud.rpc("delete_season",{sid:sh.sid});
+      UI.sheet=null;await refreshAfterSeparation(sh.sid);
+      toast("Equipo independiente eliminado.","ok");
+    }catch(e){sh.busy=false;sh.err="No se ha podido eliminar el equipo. Revisa tus permisos e inténtalo de nuevo.";render(true);}
+  };
+  ACT.seasonDel = ACT.seasonDelAsk;
+  ACT.deleteClubFromSeasonAsk = el => {
+    const cid=el.dataset.id,link=Store.clubLinks.find(x=>x.club_id===cid&&x.manager&&Store.roles[x.season_id]==="owner");
+    if(!link)return toast("Solo el propietario puede eliminar el club.","err");
+    UI.sheet={type:"deleteClubConfirm",clubId:cid,clubName:link.club_name,busy:false,err:null};
+  };
+  V.sheet.deleteClubConfirm = sh => '<h2>Eliminar club</h2>'+
+    '<p>Se retirará <b>'+esc(sh.clubName)+'</b> de Dirección Deportiva, se cerrará su temporada y se desactivarán los códigos. Las actas e información deportiva quedarán conservadas para una posible recuperación.</p>'+
+    '<form data-form="deleteClubConfirm" class="form" novalidate>'+
+    '<label class="fld"><span>Escribe exactamente el nombre del club</span>'+
+    '<input class="inp" type="text" name="confirm" autocomplete="off" required></label>'+
+    (sh.err?'<p class="err small">'+esc(sh.err)+'</p>':"")+
+    '<div class="row end gap foot">'+btn("Cancelar","closeSheet",{},"ghost")+
+    '<button type="submit" class="btn danger" '+(sh.busy?"disabled":"")+'>Eliminar club</button></div></form>';
+  FORM.deleteClubConfirm = async form => {
+    const sh=UI.sheet;if(sh?.type!=="deleteClubConfirm"||sh.busy)return;
+    if(String(form.elements.confirm.value).trim()!==sh.clubName){
+      sh.err="El nombre del club no coincide. No se ha modificado nada.";return render(true);
+    }
+    sh.busy=true;sh.err=null;render(true);
+    try{
+      const response=await Cloud.rpc("banquillo_delete_club",{p_club_id:sh.clubId,p_confirm_name:sh.clubName});
+      if(response!==true)throw Error("failed");
+      UI.sheet=null;await Store.loadClubLinks();await Store.loadRoles();
+      await Store.db.refreshNow("seasons");go("temporadas");
+      toast("Club retirado. Los datos deportivos se conservan.","ok");
+    }catch(e){sh.busy=false;sh.err="No se ha podido eliminar el club. Solo puede hacerlo su propietario.";render(true);}
   };
 })();

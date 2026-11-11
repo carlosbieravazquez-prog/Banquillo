@@ -69,7 +69,7 @@ const TeamRequests=(()=>{
       (m.status==="pending"?"Pendiente de aprobación y de asignación de cargo por Dirección Deportiva":
        m.status==="active"?"Acceso autorizado: "+esc(roles[m.position]||m.role_detail||"Personal técnico")+". Recarga la página si aún no aparece.":
        "Solicitud rechazada. Pide un nuevo código de acceso al director.")+
-     '</small></div></article>').join("")+'</section>';
+     '</small>'+(m.status==="pending"?'<button type="button" class="btn ghost small" data-act="withdrawTeamRequest" data-team-id="'+esc(m.team_id)+'">Retirar solicitud</button>':'')+'</div></article>').join("")+'</section>';
  }
  if(typeof window!=="undefined"){
    window.setInterval(()=>{if(Store.user?.uid&&Auth?.state==="in")fetch(true);},20000);

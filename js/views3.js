@@ -144,25 +144,81 @@ INP.repText = el => {
 /* ---------- TEMPORADAS ---------- */
 V.temporadas = () => {
   const cur = Store.season();
-  const cards = Store.seasons.map(s => {
-    const on = s.id === Store.sid;
-    return `<li class="scard ${on ? "on" : ""}"><div class="sc-m"><b>${esc(s.name)}</b><small>${esc(s.club || "")} · ${esc(s.category || "")}</small></div>
-      <div class="sc-s">${s.status === "closed" ? `<span class="tag">Cerrada</span>` : `<span class="tag ok">Activa</span>`}${on ? `<span class="tag info">Abierta</span>` : ""}<span class="tag">${Auth.roleLabel(Store.roles[s.id])}</span></div>
-      <div class="sc-a">${on ? "" : btn("Abrir", "openSeason", { id: s.id }, "ghost small")}</div></li>`;
+  const links = Store.clubLinks || [];
+  const linkFor = sid => links.find(x=>x.season_id===sid);
+  const accessReady = Store.clubLinksReady;
+  const cards = Store.seasons.map(season => {
+    const on = season.id === Store.sid,link = linkFor(season.id);
+    const role = Store.roles[season.id],isOwner = role === "owner";
+    const teamLabel = link ? link.team_name : season.name;
+    const locationLabel = link ? link.club_name + " · " + season.name : (season.club || "Equipo independiente");
+    let controls = "";
+    if (!accessReady) controls = '<span class="muted small">Comprobando permisos…</span>';
+    else if (link?.manager) {
+      controls = btn("Gestionar club","openClubPanel",{id:link.club_id},"ghost small");
+      if(!link.archived){
+        controls += btn("Retirar equipo","archiveTeamFromSeasonAsk",{id:link.team_id},"ghost danger-t small");
+        if(isOwner) controls += btn("Eliminar club","deleteClubFromSeasonAsk",{id:link.club_id},"ghost danger-t small");
+        controls += btn("Abandonar club","leaveClubFromSeasonAsk",{id:link.club_id},"ghost small");
+      }
+    } else if (link) {
+      controls = link.archived?'<span class="muted small">Equipo archivado · historial conservado</span>':
+        btn("Abandonar equipo","leaveTeamAsk",{id:link.team_id,sid:season.id},"ghost danger-t small");
+    } else if (isOwner) {
+      controls = btn("Eliminar equipo","seasonDelAsk",{id:season.id},"ghost danger-t small");
+    } else {
+      controls = btn("Abandonar equipo","leaveAsk",{id:season.id},"ghost danger-t small");
+    }
+    return '<li class="scard bq-access-season '+(on?"on":"")+'"><div class="sc-m">'+
+      '<b>'+esc(teamLabel)+'</b><small>'+esc(locationLabel)+'</small>'+
+      '<div class="bq-access-badges"><span class="tag">'+(link?(link.archived?"Equipo archivado":"Equipo de club"):"Independiente")+'</span>'+
+      '<span class="tag '+(isOwner?"ok":"")+'">'+esc(isOwner?"Responsable":link?.manager?"Dirección Deportiva":role==="editor"?"Entrenador":"Solo lectura")+'</span>'+
+      (season.status==="closed"?'<span class="tag">Cerrada</span>':'')+'</div></div>'+
+      '<div class="sc-a bq-season-controls">'+(on?'<span class="tag info">Abierta</span>':btn("Abrir equipo","openSeason",{id:season.id},"ghost small"))+
+      controls+'</div></li>';
   }).join("");
-  return `${pageHead("Temporadas", "Cada temporada guarda su plantilla, jornadas, estadísticas y entrenos.", `<div class="row gap wrap">${btn("Tengo un código de mi equipo", "openTeamJoin", {}, "ghost", "users")}${btn("Código de equipo independiente", "openJoin", {}, "ghost")}${btn("Crear equipo independiente", "wizStart", {}, "primary", "plus")}</div>`)}
-    <p class="muted small">¿Te ha invitado un director? Pulsa «Tengo un código de mi equipo». Si eres responsable de un equipo que no pertenece a un club, utiliza «Código de equipo independiente».</p>
-    <ul class="slist2">${cards}</ul>
-    <section class="card"><div class="card-h"><h3>Temporada abierta · ${esc(cur.name)}</h3></div>
-      <div class="row gap wrap">${btn("Compartir y miembros", "openShare", {}, "primary", "users")}${btn("Ajustes", "openSettings", {}, "ghost", "edit")}${btn(UI.ai.busyXlsx ? "Preparando…" : "Exportar Excel", "dlXlsx", {}, "ghost", "down")}${cur.status === "closed" ? btn("Reabrir temporada", "reopenSeason", {}, "ghost") : btn("Cerrar temporada", "closeSeasonAsk", {}, "ghost", "lock")}</div>
-      <p class="muted small">Cerrar la temporada no borra nada: solo la marca como terminada. Antes de cerrarla, prepara los informes individuales en <button type="button" class="link" data-act="go" data-to="informes">Informes</button>.</p></section>
-    <section class="card"><div class="card-h"><h3>Cómo empezar una temporada nueva</h3></div>
-      <ol class="steps"><li>Pulsa <b>Nueva temporada</b> y copia la plantilla de esta temporada.</li><li>Corrige los nombres, añade los jugadores nuevos y quita los que se van.</li><li>Pega el calendario de jornadas (fecha; rival; L o V) o añádelas a mano.</li><li>La app crea todo vacío y listo para usar. Si quieres, descarga el Excel de la temporada nueva.</li></ol></section>`;
+  const currentLink = cur && linkFor(cur.id);
+  const safeActions = !cur?"":!accessReady?'<span class="muted small">Comprobando permisos y vinculación del equipo…</span>':currentLink?
+    (currentLink.manager?'<a class="btn primary" href="clubes.html">Gestionar desde Dirección Deportiva</a>':
+     '<span class="muted small">Equipo vinculado a un club · Dirección Deportiva gestiona sus permisos.</span>')+
+    btn("Exportar Excel","dlXlsx",{},"ghost"):
+    btn("Compartir y miembros","openShare",{},"primary","users")+
+    btn("Ajustes","openSettings",{},"ghost","edit")+
+    btn(UI.ai.busyXlsx?"Preparando…":"Exportar Excel","dlXlsx",{},"ghost","down")+
+    (Store.role()==="owner"?(cur.status==="closed"?
+      btn("Reabrir temporada","reopenSeason",{},"ghost"):
+      btn("Cerrar temporada","closeSeasonAsk",{},"ghost","lock")):"");
+  return pageHead("Mis equipos y temporadas","Controla qué cuenta utilizas, a qué club pertenece cada equipo y qué permisos tienes.",
+    '<div class="row gap wrap">'+btn("Tengo un código de mi equipo","openTeamJoin",{},"ghost","users")+
+    btn("Código de equipo independiente","openJoin",{},"ghost")+
+    btn("Crear equipo independiente","wizStart",{},"primary","plus")+'</div>')+
+    '<section class="card bq-account-identity"><div class="row between gap wrap">'+
+    '<div><small class="bq-identity-eyebrow">CUENTA CONECTADA</small><strong>'+esc(Store.user?.email||"Sesión iniciada")+'</strong>'+
+    '<p class="muted small">Esta es tu identidad real en Banquillo. Cerrar sesión permite entrar con otra cuenta sin modificar ni eliminar datos.</p></div>'+
+    btn("Cambiar de cuenta","signOut",{},"ghost")+'</div></section>'+
+    '<p class="muted small">¿Te han invitado desde un club? Utiliza el código de <b>tu equipo</b>. El director deportivo debe aprobar la solicitud. Los botones de abandonar y eliminar solo aparecen según tus permisos.</p>'+
+    (typeof TeamRequests!=="undefined"?TeamRequests.panel():"")+
+    '<ul class="slist2 bq-seasons-list">'+(cards||'<li class="card">Todavía no tienes equipos vinculados.</li>')+'</ul>'+
+    (cur?'<section class="card"><div class="card-h"><h3>Equipo abierto · '+esc(cur.name)+'</h3></div>'+
+      '<div class="row gap wrap">'+safeActions+'</div>'+
+      '<p class="muted small">'+(currentLink?
+      'Los equipos del club se administran desde Dirección Deportiva. No se borra una plantilla al retirar un equipo.':
+      'Al cerrar una temporada independiente, sus datos se conservan para consultas e informes.')+'</p></section>':"")+
+    '<section class="card"><div class="card-h"><h3>Ayuda rápida</h3></div><p class="muted small">Si aparecen temporadas que no reconoces, comprueba el correo de la cuenta conectada antes de modificar nada. Un entrenador puede abandonar su equipo; Dirección Deportiva puede retirar equipos y gestionar el club; el responsable de un equipo independiente puede eliminarlo con confirmación.</p>'+
+    '<div class="row gap wrap">'+btn("Actualizar permisos","refreshSeasonLinks",{},"ghost")+
+    '<a class="btn ghost" href="clubes.html">Ir a Dirección Deportiva</a></div></section>';
 };
-ACT.openSeason = el => { Store.selectSeason(el.dataset.id); go("inicio"); toast("Temporada abierta."); };
+ACT.openSeason = el => { Store.selectSeason(el.dataset.id); go("inicio"); toast("Equipo abierto."); };
+ACT.openClubPanel = () => { location.href = "clubes.html"; };
+ACT.refreshSeasonLinks = async () => {
+  await Store.loadRoles();
+  await Store.loadClubLinks();
+  await Store.db.refreshNow("seasons");
+  toast("Cuentas y permisos actualizados.","ok");
+};
 ACT.closeSeasonAsk = () => confirmSheet("¿Cerrar la temporada?", "Se marcará como terminada. Seguirás pudiendo ver y descargar todo, y podrás reabrirla cuando quieras.", "Cerrar temporada", "closeSeason", {}, false);
-ACT.closeSeason = () => { const s = Store.season(); s.status = "closed"; Store.save("season", s); UI.sheet = null; toast("Temporada cerrada.", "ok"); };
-ACT.reopenSeason = () => { const s = Store.season(); s.status = "active"; Store.save("season", s); toast("Temporada reabierta.", "ok"); };
+ACT.closeSeason = () => { const season = Store.season(); if(Store.clubLinks.some(x=>x.season_id===season?.id)){toast("Las temporadas de club se cierran desde Dirección Deportiva.","err");return;}season.status="closed";Store.save("season",season);UI.sheet=null;toast("Temporada cerrada.","ok"); };
+ACT.reopenSeason = () => { const season = Store.season();if(Store.clubLinks.some(x=>x.season_id===season?.id)){toast("Gestiona esta temporada desde Dirección Deportiva.","err");return;}season.status="active";Store.save("season",season);toast("Temporada reabierta.","ok"); };
 
 /* ---------- AJUSTES de la temporada ---------- */
 ACT.openSettings = () => {
