@@ -68,14 +68,14 @@ begin
  -- sin alterar los permisos de las cuentas.
  delete from public.banquillo_team_staff
  where team_id in(
-  select (item->>'id')::uuid
-  from jsonb_array_elements(p_snapshot->'teams') item
+  select (item.value->>'id')::uuid
+  from jsonb_array_elements(p_snapshot->'teams') as item(value)
  );
  for v in select value from jsonb_array_elements(p_snapshot->'staff')
  loop
   -- No importar cargos de equipos que no están en la copia.
-  if not exists(select 1 from jsonb_array_elements(p_snapshot->'teams') t
-   where t->>'id'=v->>'team_id') then raise exception 'backup_staff_team_missing';end if;
+  if not exists(select 1 from jsonb_array_elements(p_snapshot->'teams') as t(value)
+   where t.value->>'id'=v->>'team_id') then raise exception 'backup_staff_team_missing';end if;
   insert into public.banquillo_team_staff(team_id,display_name,position,role_detail)
   values((v->>'team_id')::uuid,btrim(v->>'display_name'),
     v->>'position',coalesce(v->>'role_detail',''));
