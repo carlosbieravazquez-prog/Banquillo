@@ -212,3 +212,10 @@
 .bq-workspace-all{background:#254b5e;color:#d9f0e8;font:inherit;font-weight:800;font-size:11px;border:1px solid #4b7785;border-radius:9px;width:100%;padding:10px;cursor:pointer}
 .bq-workspace-all:hover,.bq-workspace-all:focus-visible{background:#367267;color:#fff;outline:2px solid #a2e2c7}
 @media(max-width:760px){.app-shell>.sidebar{overflow-y:auto}.bq-workspace-menu{max-height:45vh}}
+
+
+/* Cada tarjeta de temporada abre el club correspondiente sin cambiar de identidad. */
+.bq-period-select{appearance:none;width:100%;text-align:left;font:inherit;cursor:pointer;transition:border-color .16s,transform .16s,background .16s}
+.bq-period-select:hover{background:#eefaf4;border-color:#6cbea1;transform:translateY(-1px)}
+.bq-period-select:focus-visible{outline:3px solid #3ba681;outline-offset:2px}
+.bq-period-select .muted{font-size:11px}
