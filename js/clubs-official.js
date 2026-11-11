@@ -95,6 +95,22 @@ function deletedSection(){
  return '<section class="panel bq-recovery"><h3>Clubes eliminados recuperables</h3><p class="muted">Los datos deportivos se conservan. Puedes recuperar un club si no tienes otro activo.</p>'+
  state.deletedClubs.map(c=>'<div class="bq-recovery-row"><span>'+esc(c.name)+'</span>'+button("Recuperar club","restoreClub",c.id,"ghost")+'</div>').join("")+'</section>';
 }
+function clubKits(){
+ const prev=state.settings?.colors?.kits||{};
+ const defaults={first:["#21598b","#ffffff","#21598b"],second:["#ffffff","#21598b","#ffffff"],third:["#e4b752","#163748","#e4b752"]};
+ return [["first","Primera equipación"],["second","Segunda equipación"],["third","Tercera equipación"]].map(([id,label])=>{
+  const x=prev[id]||{},p=defaults[id],valid=(v,def)=>/^#[0-9a-fA-F]{6}$/.test(String(v||""))?v:def;
+  return {id,label,shirt:valid(x.shirt,p[0]),shorts:valid(x.shorts,p[1]),socks:valid(x.socks,p[2])};
+ });
+}
+function clubKitPreview(){
+ return '<section class="panel bq-kit-panel"><div class="ux-box-title"><h3>Equipaciones del club</h3>'+
+ '<span>Colores definidos para los partidos</span></div><div class="bq-kit-preview">'+clubKits().map(k=>
+ '<div class="bq-kit-item"><div class="bq-kit-icon"><span style="background:'+esc(k.shirt)+'"></span>'+
+ '<span style="background:'+esc(k.shorts)+'"></span><span style="background:'+esc(k.socks)+'"></span></div>'+
+ '<b>'+esc(k.label)+'</b></div>').join("")+'</div>'+
+ '<div class="ux-actions">'+button("Editar equipaciones","editClub","","ghost")+'</div></section>';
+}
 function openClubSettings(){
  const v=state.settings,available=Math.min(12,Math.max(0,Number(v.fields_f11)||0));
  const checked=Array.isArray(v.divisible)?v.divisible:[];
@@ -109,6 +125,11 @@ function openClubSettings(){
  '<div class="bq-form-grid">'+
  input("fields_f11","Campos de F11",v.fields_f11||0,"number",true,'min="0" max="12"')+
  input("fields_f7","Campos independientes de F7",v.fields_f7||0,"number",true,'min="0" max="12"')+'</div>'+
+ '<fieldset class="bq-field-options"><legend>Colores de las equipaciones</legend>'+
+ clubKits().map(k=>'<div class="bq-kit-form-row"><b>'+esc(k.label)+'</b>'+
+ '<label>Camiseta <input type="color" name="kit_'+k.id+'_shirt" value="'+esc(k.shirt)+'"></label>'+
+ '<label>Pantalón <input type="color" name="kit_'+k.id+'_shorts" value="'+esc(k.shorts)+'"></label>'+
+ '<label>Medias <input type="color" name="kit_'+k.id+'_socks" value="'+esc(k.socks)+'"></label></div>').join("")+'</fieldset>'+
  (available?'<fieldset class="bq-field-options"><legend>¿Qué campos F11 se pueden dividir?</legend>'+choices+'</fieldset>':
  '<p class="bq-hint">Al añadir campos F11 nuevos, serán divisibles por defecto. Podrás desactivar sus mitades en el siguiente ajuste.</p>')+
  '<p class="bq-hint">Cada F11 divisible ofrece dos medios campos F7. El calendario bloqueará que se utilicen sus mitades mientras se juega un partido completo de F11.</p>',
@@ -593,7 +614,7 @@ async function loadMessaging(silent=false){
 }
 
 function clubSettingsPage(){const w=state.wallet||{};return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+
- '<section class="panel bq-wallet"><div class="bq-wallet-head"><div><span>SILBATOS DE GESTIÓN</span><strong>'+esc(w.balance??"–")+' <small>/ 20</small></strong></div><div>🎺</div></div><h3>¿Para qué sirven?</h3><p>Son el saldo anual para organizar clubes y equipos individuales: <b>10 silbatos al crear un club</b> y <b>5 al crear un equipo independiente</b>. Añadir equipos dentro de un club no tiene otro coste.</p><p>El 1 de agosto se repone el saldo a <b>20 silbatos</b> sin acumular el remanente. Si cierras una temporada o eliminas el club durante la misma temporada en la que pagaste, se devuelve su coste una sola vez, hasta el límite de 20.</p><p class="muted">Saldo de gestión separado de los silbatos para informes de IA. Próxima recarga: '+esc(w.next_refill||"1 de agosto")+'.</p></section>'+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
+ '<section class="panel bq-wallet"><div class="bq-wallet-head"><div><span>SILBATOS DE GESTIÓN</span><strong>'+esc(w.balance??"–")+' <small>/ 20</small></strong></div><div>🎺</div></div><h3>¿Para qué sirven?</h3><p>Son el saldo anual para organizar clubes y equipos individuales: <b>10 silbatos al crear un club</b> y <b>5 al crear un equipo independiente</b>. Añadir equipos dentro de un club no tiene otro coste.</p><p>El 1 de agosto se repone el saldo a <b>20 silbatos</b> sin acumular el remanente. Si cierras una temporada o eliminas el club durante la misma temporada en la que pagaste, se devuelve su coste una sola vez, hasta el límite de 20.</p><p class="muted">Saldo de gestión separado de los silbatos para informes de IA. Próxima recarga: '+esc(w.next_refill||"1 de agosto")+'.</p></section>'+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+clubKitPreview()+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
 const titles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",temporadas:"Temporadas",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
 function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});const switcher=$("#clubSwitcher");if(switcher) switcher.classList.add("bq-switcher-clickable");
  $("#sideClubName").textContent=c?.name||"Mis equipos";$("#topClubName").textContent=c?.name||"BANQUILLO";
@@ -926,8 +947,13 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
   const before=Number(state.settings.fields_f11)||0;
   const selected=f.getAll("split_f11");
   const divisible=Array.from({length:fields11},(_,i)=>i<before?selected.includes(String(i)):true);
+  const kits=Object.fromEntries(["first","second","third"].map(id=>[id,{
+   shirt:get("kit_"+id+"_shirt"),shorts:get("kit_"+id+"_shorts"),socks:get("kit_"+id+"_socks")}]));
+  if(Object.values(kits).some(k=>Object.values(k).some(v=>!/^#[0-9a-fA-F]{6}$/.test(v))))
+    throw Error("Uno de los colores de las equipaciones no es válido.");
   const rec={club_id:state.clubId,town:get("town"),province:get("province"),
-    community:get("community"),fields_f11:fields11,fields_f7:fields7,divisible};
+    community:get("community"),fields_f11:fields11,fields_f7:fields7,divisible,
+    colors:{...(state.settings.colors||{}),kits}};
   const {error}=await state.sb.from("banquillo_club_settings").upsert(rec,{onConflict:"club_id"});
   if(error)throw error;
   closeModal();await refresh();notify("Instalaciones guardadas en Supabase.");return;
