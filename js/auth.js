@@ -265,14 +265,23 @@ const FORM = {};
       ${owner && sh.share ? `<section class="card flat"><div class="card-h"><h3>Código de la temporada</h3>${sh.share.enabled ? `<span class="tag ok">Activo</span>` : `<span class="tag">Desactivado</span>`}</div>
         <div class="codebox" aria-live="polite">${esc(fmtCode(code))}</div>
         <p class="muted small">El otro entrenador crea su cuenta en esta web, pulsa «Unirme con un código» y escribe esto. Entra como <b>Entrenador</b> (puede editar). Tú puedes dejarle solo en lectura o quitarle cuando quieras.</p>
-        <div class="row gap wrap">${btn("Copiar código", "copyCode", {}, "primary small")}${btn("Código nuevo", "codeNewAsk", {}, "ghost small")}${btn(sh.share.enabled ? "Desactivar código" : "Activar código", "codeToggle", {}, "ghost small")}</div></section>` : ""}
+        <div class="row gap wrap">${UI.copyFlash==="share"?btn("✓ Copiado", "copyCode", {}, "primary small bq-copied-success"):btn("Copiar código", "copyCode", {}, "primary small")}${btn("Código nuevo", "codeNewAsk", {}, "ghost small")}${btn(sh.share.enabled ? "Desactivar código" : "Activar código", "codeToggle", {}, "ghost small")}</div></section>` : ""}
       <section class="card flat"><div class="card-h"><h3>Quién tiene acceso</h3><span class="count">${(sh.members || []).length}</span></div>
         <ul class="mlist">${rows}</ul>${sh.err ? `<p class="err small">${esc(sh.err)}</p>` : ""}</section>
       <div class="row between gap wrap foot">${owner ? btn("Eliminar temporada", "seasonDelAsk", {}, "ghost danger-t") : btn("Salir de esta temporada", "leaveAsk", {}, "ghost danger-t")}${btn("Cerrar", "closeSheet", {}, "primary")}</div>`;
   };
   ACT.copyCode = async () => {
-    const c = UI.sheet && UI.sheet.share && UI.sheet.share.code; if (!c) return;
-    try { await navigator.clipboard.writeText(fmtCode(c)); toast("Código copiado.", "ok"); } catch (e) { toast("Selecciona el código y cópialo.", ""); }
+    const c = UI.sheet?.share?.code;if(!c)return;
+    try {
+      await navigator.clipboard.writeText(fmtCode(c));
+      UI.copyFlash="share";render(true);
+      toast("✓ Código copiado al portapapeles.","ok");
+      setTimeout(()=>{
+        if(UI.copyFlash==="share"){UI.copyFlash=null;render(true);}
+      },1900);
+    }catch(e){
+      toast("Tu navegador no ha permitido copiar. Selecciona el código de la pantalla para copiarlo.","err");
+    }
   };
   ACT.codeNewAsk = () => { UI.sheet.confirmNew = true; };
   ACT.codeToggle = async () => {
