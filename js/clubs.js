@@ -316,7 +316,51 @@ const ClubSpace = (() => {
       if(UI.sheet===sh)UI.sheet=null;await refresh();toast("Configuración del club guardada.","ok");
     }catch(_){sh.busy=false;toast("No se pudo guardar la configuración del club.","err");render(true);}
   };
-  const reset=()=>{state.clubs=null;state.selected=null;state.loading=false;state.error="";state.tab="teams";};
+  ACT.openCoachInbox=async()=>{
+    const sh={type:"coachInbox",wide:true,loading:true,items:[],error:""};
+    UI.sheet=sh;render(true);
+    try{
+      const items=await Cloud.rpc("bq_my_team_inbox");
+      if(UI.sheet!==sh)return;
+      sh.items=Array.isArray(items)?items:[];sh.loading=false;render(true);
+      if(sh.items.some(n=>n.resolved_at)){
+        // A la entrada: el aviso corregido se cubre de verde y desaparece.
+        setTimeout(()=>{
+          if(UI.sheet!==sh)return;
+          sh.items=sh.items.filter(n=>!n.resolved_at);
+          render(true);
+        },1100);
+      }
+    }catch(_){
+      if(UI.sheet===sh){sh.loading=false;sh.error="No se pudo abrir el buzón. Comprueba tu conexión.";render(true);}
+    }
+  };
+  V.sheet.coachInbox=sh=>'<h2>Avisos de Dirección Deportiva</h2>'+
+    '<p class="muted small">Solo mensajes de tus equipos. Abre uno para ir a la ficha de la jornada correspondiente.</p>'+
+    (sh.loading?'<p>Cargando avisos…</p>':sh.error?'<p class="err">'+e(sh.error)+'</p>':
+      sh.items.length?'<div class="club-coaches-list">'+sh.items.map(n=>
+       '<article class="club-live-notice '+(n.resolved_at?"bq-resolved":"")+'">'+
+       '<div class="club-team-top"><div><b>'+e(n.team)+'</b><p class="muted small">'+e(n.director)+' · '+e(n.created_at?.slice(0,10))+'</p></div>'+
+       '<span class="tag '+(n.read_at?"":"warn")+'">'+(n.resolved_at?"Corregido":n.delivery==="reminder"?"Recordatorio":"Aviso")+'</span></div>'+
+       '<p><b>Dirección deportiva:</b> no se ha cerrado el acta de la Jornada '+e(n.jornada)+' ('+e(n.rival)+').</p>'+
+       (!n.resolved_at?btn("Abrir acta de la jornada","coachOpenNotice",{id:n.id},"primary small"):"")+
+       '</article>').join("")+'</div>':'<p class="muted">No tienes avisos pendientes.</p>')+
+    '<div class="row end gap foot">'+btn("Cerrar","closeSheet",{},"ghost")+btn("Actualizar avisos","openCoachInbox",{},"primary")+'</div>';
+  ACT.coachOpenNotice=async el=>{
+    const sh=UI.sheet;if(!sh||sh.type!=="coachInbox")return;
+    const n=sh.items.find(n=>n.id===el.dataset.id);if(!n||n.resolved_at)return;
+    try{await Cloud.rpc("bq_read_team_notice",{p_inbox:n.id});}catch(_){/* el enlace sigue disponible */}
+    const allowed=Store.roles?.[n.season_id];
+    if(!allowed){toast("Ya no tienes acceso a este equipo.","err");return;}
+    UI.sheet=null;
+    if(Store.sid!==n.season_id)Store.selectSeason(n.season_id);
+    if(n.jornada){go("partido",n.jornada);UI.matchTab="ficha";render(true);}
+    else{go("partidos");toast("Busca la jornada pendiente para completar su acta.","");}
+  };
+  const reset=()=>{
+    state.clubs=null;state.selected=null;state.loading=false;state.error="";state.tab="teams";
+    state.notices=[];state.noticeLoading=false;state.noticeError="";state.noticeModality="todos";
+  };
   return {state,current,refresh,clubPage,reset};
 })();
 V.clubes=()=>ClubSpace.clubPage();
