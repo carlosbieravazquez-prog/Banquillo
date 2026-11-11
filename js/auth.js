@@ -209,25 +209,25 @@ const FORM = {};
 
   /* ---------- Código individual asignado por un director deportivo ---------- */
   ACT.openTeamJoin = () => { UI.sheet = { type: "teamJoin", code: "", busy: false, err: null }; };
-  V.sheet.teamJoin = sh => '<h2>Unirme a mi equipo</h2>'+
-    '<p class="muted">Introduce el código específico de tu equipo. Se enviará una solicitud con tu cuenta registrada. Dirección Deportiva deberá aprobarla y asignarte un cargo antes de poder trabajar con la plantilla y las actas.</p>'+
-    '<form data-form="teamJoinForm" class="form" novalidate><label class="fld"><span>Código del equipo</span>'+
-    '<input class="inp code-inp" type="text" name="code" maxlength="32" minlength="32" autocomplete="off" spellcheck="false" placeholder="32 caracteres" value="'+esc(sh.code||"")+'"></label>'+
+  V.sheet.teamJoin = sh => '<h2>Entrar en un equipo de mi club</h2>'+
+    '<p class="muted">Escribe el código de 8 caracteres que te ha dado el director deportivo de ese equipo. Tu solicitud quedará pendiente hasta que el director te apruebe y asigne un cargo.</p>'+
+    '<form data-form="teamJoinForm" class="form" novalidate><label class="fld"><span>Código de acceso del equipo</span>'+
+    '<input class="inp code-inp" type="text" name="code" maxlength="40" minlength="8" autocomplete="off" spellcheck="false" placeholder="ABCD-EFGH (8 caracteres)" value="'+esc(sh.code||"")+'"></label>'+
     (sh.err?'<p class="err small" role="alert">'+esc(sh.err)+'</p>':"")+
     '<div class="row end gap foot">'+btn("Cancelar","closeSheet",{},"ghost")+'<button class="btn primary" type="submit" '+(sh.busy?"disabled":"")+'>'+(sh.busy?"Comprobando…":"Unirme al equipo")+'</button></div></form>';
   FORM.teamJoinForm = async f => {
     const sh = UI.sheet;if(!sh||sh.type!=="teamJoin"||sh.busy)return;
     const code=String(f.elements.code.value||"").trim().toLowerCase().replace(/[\s-]/g,"");
     sh.code=code;
-    if(!/^[a-f0-9]{32}$/.test(code)){sh.err="Este código debe tener 32 caracteres válidos.";return render(true);}
+    if(!/^(?:[abcdefghjklmnpqrstuvwxyz23456789]{8}|[a-f0-9]{32})$/.test(code)){sh.err="Introduce el código de 8 caracteres de tu equipo (también se aceptan códigos antiguos).";return render(true);}
     sh.busy=true;sh.err=null;render(true);
     try {
       const result=await Cloud.rpc("banquillo_join_team",{p_code:code});
       sh.busy=false;
       if(!result?.ok){
-        const messages={too_many_attempts:"Demasiados intentos. Inténtalo más tarde.",
+        const messages={too_many_attempts:"Has introducido varios códigos de equipo incorrectos. Espera 10 minutos antes de intentarlo de nuevo.",
           email_not_verified:"Confirma tu correo electrónico antes de solicitar un puesto.",
-          invalid_or_inactive_code:"Código incorrecto, revocado o perteneciente a un equipo no activo.",
+          invalid_or_inactive_code:"Este código no corresponde a un equipo activo. Comprueba los 8 caracteres o pide un nuevo código al director.",
           team_season_missing:"El equipo aún no tiene su temporada configurada. Avisa a Dirección Deportiva.",
           season_owner_cannot_request:"Ya eres responsable de esta temporada. No necesitas solicitar acceso como entrenador."};
         sh.err=messages[result?.error]||"No se ha podido vincular la cuenta con el equipo.";

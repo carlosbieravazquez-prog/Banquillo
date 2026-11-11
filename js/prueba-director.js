@@ -9,6 +9,7 @@ const teams=[
  {name:"Alevín A",modality:"F7",category:"Alevín",competition:"3.ª Andaluza (ficticia)",count:15,minutes:50,shift:0},
  {name:"Cadete A",modality:"F11",category:"Cadete",competition:"2.ª Andaluza (ficticia)",count:20,minutes:90,shift:1}
 ];
+const prettyCode=c=>/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(String(c||""))?c.slice(0,4)+"-"+c.slice(4):String(c||"");
 const names=["Álex","Hugo","Leo","Mateo","Martín","Pablo","Daniel","Javi","Lucas","Rubén","Iván","Enzo","Adrián","Mario","Iker","Sergio","Marcos","Nico","David","Luis"];
 const rivals=["CD Estrella","UD Bellavista","San Roque","Atlético Sur","Náutico Sevilla","CD Libertad","Dos Hermanas CF","CD Portaceli","Deportivo Triana"];
 const dateKey=d=>d.toISOString().slice(0,10);
@@ -125,7 +126,7 @@ function makeCodeNode(parent,label,code,description){
  const heading=document.createElement("strong");heading.textContent=label;row.append(heading);
  if(description){const p=document.createElement("small");p.textContent=description;row.append(p);}
  const box=document.createElement("div");box.className="code";
- const text=document.createElement("code");text.textContent=code;box.append(text);
+ const text=document.createElement("code");text.textContent=prettyCode(code);box.append(text);
  const b=document.createElement("button");b.type="button";b.textContent="Copiar";
  b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(code);b.textContent="Copiado ✓";}catch(e){text.textContent=code;b.textContent="Selecciona el código";}});
  box.append(b);row.append(box);parent.append(row);

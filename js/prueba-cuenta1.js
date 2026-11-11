@@ -44,10 +44,10 @@ async function join(e,type){
  e.preventDefault();const btn=e.currentTarget.querySelector("button");btn.disabled=true;
  const code=normalize(new FormData(e.currentTarget).get("code"));
  try{
- if(!/^[0-9a-f]{32}$/.test(code))throw Error("El código debe tener 32 caracteres válidos.");
+ if(!/^(?:[abcdefghjklmnpqrstuvwxyz23456789]{8}|[a-f0-9]{32})$/.test(code))throw Error("Introduce los 8 caracteres del código. Puedes separar los bloques con un guion.");
  const answer=type==="director"?await rpc("banquillo_join_club",{p_code:code}):
  await rpc("banquillo_join_team",{p_code:code});
- if(!answer?.ok){const msg={too_many_attempts:"Demasiados intentos. Vuelve a probar más tarde.",invalid_or_expired_code:"El código ha caducado o ya ha sido usado.",director_limit:"El club ya tiene dos directores.",email_not_verified:"Primero verifica tu correo electrónico.",invalid_or_inactive_code:"Código de equipo incorrecto o inactivo.",invalid_code:"Código incorrecto."}[answer?.error]||"No se pudo realizar la solicitud ("+(answer?.error||"sin detalle")+").";throw Error(msg);}
+ if(!answer?.ok){const msg={too_many_attempts:"Se han introducido varios códigos incorrectos de este tipo. Espera 10 minutos y vuelve a probar.",invalid_or_expired_code:"El código ha caducado o ya ha sido usado.",director_limit:"El club ya tiene dos directores.",email_not_verified:"Primero verifica tu correo electrónico.",invalid_or_inactive_code:"Código de equipo incorrecto o inactivo.",invalid_code:"Código incorrecto."}[answer?.error]||"No se pudo realizar la solicitud ("+(answer?.error||"sin detalle")+").";throw Error(msg);}
  if(type==="director"){status("✓ Acceso de Dirección Deportiva concedido a tu cuenta real. Ya puedes abrir el club.","ok");$("accountState").textContent="Director deportivo autorizado.";const a=document.createElement("a");a.href="clubes.html";a.className="btn";a.textContent="Abrir Dirección Deportiva";$("accountPanel").querySelector(".actions").prepend(a);}
  else {status(answer.status==="pending"?"✓ Solicitud registrada para "+answer.team_name+". La Cuenta 2 debe aprobarte y asignarte el cargo en Entrenadores.":"✓ Ya tienes acceso a "+answer.team_name+".", "ok");$("accountState").textContent=answer.status==="pending"?"Pendiente de aprobación del director.":"Acceso de entrenador autorizado.";}
  }catch(e){status("No se ha completado: "+String(e.message||e),"err");}
