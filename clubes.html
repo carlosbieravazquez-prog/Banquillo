@@ -8,14 +8,15 @@
 <link rel="stylesheet" href="css/demo-club.css">
 <link rel="stylesheet" href="css/demo-club-ux.css">
 <link rel="stylesheet" href="css/clubs-beta.css">
-<link rel="stylesheet" href="css/clubs-official.css?v=20261111-gestion-v1">
+<link rel="stylesheet" href="css/clubs-official.css?v=20261111-navegacion-v2">
 <link rel="stylesheet" href="css/team-members.css">
 </head>
 <body>
 <div class="app-shell">
   <aside class="sidebar">
     <a class="brand" href="index.html"><span class="brand-mark">B</span><span><b>BANQUILLO</b><small>GESTIÓN DE CLUBES</small></span></a>
-    <div class="club-switch" id="clubSwitcher"><span class="club-crest">⚽</span><span><b id="sideClubName">Tu club</b><small id="sideSeason">Temporada</small></span></div>
+    <button type="button" class="club-switch bq-workspace-toggle" id="clubSwitcher" aria-expanded="false" aria-controls="bqWorkspaceMenu" aria-label="Cambiar de club, equipo o temporada"><span class="club-crest">⚽</span><span class="bq-switcher-label"><b id="sideClubName">Mis equipos</b><small id="sideSeason">Temporada</small></span><span class="bq-switcher-chevron" aria-hidden="true">⌄</span></button>
+    <div id="bqWorkspaceMenu" class="bq-workspace-menu" hidden></div>
     <div class="nav-label">CLUB</div>
     <nav id="mainNav" aria-label="Dirección deportiva">
       <button type="button" class="nav-item active" data-view="resumen"><span>▦</span> Resumen del club</button>
@@ -60,5 +61,5 @@
 <div id="bqToastRoot" role="status" aria-live="polite"></div>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js"></script>
-<script src="js/calc.js"></script><script src="js/club-planner.js"></script><script src="js/clubs-official.js?v=20261111-gestion-v1"></script>
+<script src="js/calc.js"></script><script src="js/club-planner.js"></script><script src="js/clubs-official.js?v=20261111-navegacion-v2"></script>
 </body></html>

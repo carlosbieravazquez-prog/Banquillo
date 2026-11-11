@@ -8,7 +8,7 @@ const prettyCode = code => /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(String
  const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
 const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],pendingByTeam:{},
   members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
-  clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
+  clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",workspaceTeams:[],workspaceIndependent:[],workspaceCoachTeams:[],workspaceOpen:false,workspaceError:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
 const calls = async query => {const {data,error}=await query;if(error)throw error;return data;};
 const rpc = (name,args) => calls(state.sb.rpc(name,args||{}));
@@ -180,25 +180,147 @@ function directorsPage(){
  '<p class="bq-hint">Expulsar a un director retira su permiso de dirección. Si el titular deja el club, el segundo director asume la titularidad. Los permisos independientes en temporadas deben revisarse aparte.</p></section>';
 }
 
+/* Navegador común: clubes dirigidos, equipos del club y equipos independientes.
+ * Nunca concede membresías; solo muestra temporadas ya autorizadas por RLS. */
+const seasonHref = sid => "index.html?season="+encodeURIComponent(sid)+"#inicio";
+async function loadWorkspaces(){
+ const uid=state.uid;
+ if(!uid)return;
+ const membershipsQ=state.sb.from("season_members").select("season_id,role").eq("user_id",uid);
+ const rootsQ=state.sb.from("docs").select("season_id,data").eq("parent","seasons");
+ const teamsQ=state.clubs.length?state.sb.from("banquillo_teams")
+   .select("id,club_id,season_id,name,category,modality,archived_at")
+   .in("club_id",state.clubs.map(c=>c.id)):null;
+ const results=await Promise.allSettled([
+   calls(membershipsQ),calls(rootsQ),rpc("banquillo_my_season_context"),
+   teamsQ?calls(teamsQ):Promise.resolve([])
+ ]);
+ if(uid!==state.uid)return;
+ const get=i=>results[i].status==="fulfilled"?(results[i].value||[]):[];
+ const [members,roots,contexts,teams]=[get(0),get(1),get(2),get(3)];
+ const rootById=new Map(roots.map(r=>[r.season_id,r.data||{}]));
+ const linked=new Set(contexts.map(x=>x.season_id));
+ const memberIds=new Set(members.map(m=>m.season_id));
+ state.workspaceTeams=teams.filter(t=>!t.archived_at)
+   .sort((a,b)=>a.name.localeCompare(b.name,"es"));
+ state.workspaceIndependent=results[2].status==="rejected"?[]:members.filter(m=>!linked.has(m.season_id))
+   .map(m=>{
+     const d=rootById.get(m.season_id)||{};
+     return {id:m.season_id,name:d.name||m.season_id,
+       club:d.club||"",category:d.category||"",
+       role:m.role,status:d.status||"active"};
+   }).sort((a,b)=>a.name.localeCompare(b.name,"es"));
+ state.workspaceCoachTeams=contexts.filter(x=>!x.manager&&!x.archived&&memberIds.has(x.season_id))
+   .map(x=>({...x,role:members.find(m=>m.season_id===x.season_id)?.role||"viewer"}))
+   .sort((a,b)=>a.team_name.localeCompare(b.team_name,"es"));
+ state.workspaceError=results[0].status==="rejected"||results[2].status==="rejected"?
+    "No se han podido recuperar todos tus equipos. Recarga la página.":"";
+}
+function workspaceMenuHTML(){
+ const clubRows=state.clubs.map(c=>{
+   const own=state.workspaceTeams.filter(t=>t.club_id===c.id);
+   return '<div class="bq-workspace-club">'+
+     '<button type="button" class="bq-workspace-option bq-workspace-club-head '+(state.clubId===c.id?"current":"")+'" data-action="switchClub" data-id="'+esc(c.id)+'">'+
+     '<span class="bq-workspace-symbol">🏟</span><span><b>'+esc(c.name)+'</b><small>Gestión de club</small></span>'+(state.clubId===c.id?'<span class="bq-workspace-tick">✓</span>':"")+'</button>'+
+     own.map(t=>'<button type="button" class="bq-workspace-option bq-workspace-team" data-action="openWorkspaceTeam" data-id="'+esc(t.id)+'">'+
+     '<span class="bq-workspace-symbol">⚽</span><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"Equipo")+' · '+esc(t.modality)+'</small></span></button>').join("")+
+   '</div>';
+ }).join("");
+ const standalone=state.workspaceIndependent.map(x=>
+   '<a class="bq-workspace-option" href="'+esc(seasonHref(x.id))+'">'+
+   '<span class="bq-workspace-symbol">⚽</span><span><b>'+esc(x.name)+'</b>'+
+   '<small>'+esc([x.club,x.category].filter(Boolean).join(" · ")||"Temporada individual")+' · '+(x.role==="owner"?"Responsable":x.role==="editor"?"Entrenador":"Solo lectura")+'</small></span>'+
+   '<span aria-hidden="true">↗</span></a>').join("");
+ const coached=state.workspaceCoachTeams.map(x=>
+   '<a class="bq-workspace-option" href="'+esc(seasonHref(x.season_id))+'">'+
+   '<span class="bq-workspace-symbol">👥</span><span><b>'+esc(x.team_name)+'</b>'+
+   '<small>'+esc(x.club_name)+' · Entrenador</small></span><span aria-hidden="true">↗</span></a>').join("");
+ return '<div class="bq-workspace-menu-head"><b>Cambiar de gestión</b><small>'+esc(state.accountEmail||"Cuenta conectada")+'</small></div>'+
+   (clubRows?'<div class="bq-workspace-group-title">Clubes y sus equipos</div>'+clubRows:"")+
+   (standalone?'<div class="bq-workspace-group-title">Mis equipos independientes</div>'+standalone:"")+
+   (coached?'<div class="bq-workspace-group-title">Equipos en los que entreno</div>'+coached:"")+
+   (!clubRows&&!standalone&&!coached?'<p class="bq-workspace-empty">Todavía no tienes equipos vinculados a esta cuenta.</p>':"")+
+   (state.workspaceError?'<p class="bq-workspace-empty">'+esc(state.workspaceError)+'</p>':"")+
+   '<button type="button" class="bq-workspace-all" data-view="temporadas">Ver todas mis temporadas</button>'+
+   '<a class="bq-workspace-create" href="index.html#temporadas">＋ Crear equipo independiente</a>';
+}
+function renderWorkspaceMenu(){
+ const trigger=$("#clubSwitcher"),menu=$("#bqWorkspaceMenu");
+ if(!trigger||!menu)return;
+ const expanded=!!state.workspaceOpen;
+ trigger.setAttribute("aria-expanded",String(expanded));
+ trigger.title="Ver y cambiar entre clubes, equipos y temporadas";
+ menu.hidden=!expanded;
+ if(expanded)menu.innerHTML=workspaceMenuHTML();
+}
+
 function seasonsPage(){
- const c=active(),isOwner=owner(),period=currentPeriod();
+ const c=active(),isOwner=owner();
  const actions=c?
    (isOwner?button("Cerrar temporada","closeClubSeason","","ghost")+
     button("Eliminar club","deleteClub","","ghost"):
     button("Abandonar club","leaveClub","","ghost")):
    button("Crear club","newClub");
- return head("Temporadas del club","Gestión ordenada del club, sus temporadas y sus equipos. Solo el titular puede eliminar el club.",actions)+
- '<section class="panel bq-director-session"><div class="bq-director-session-top"><span>CUENTA AUTENTICADA</span><strong>'+esc(state.accountEmail||state.profileName||"Mi cuenta")+'</strong></div>'+
- '<p>Estás gestionando <b>'+esc(c?.name||"ningún club")+'</b> como '+(isOwner?"director titular":"segundo director")+'. Para cambiar de persona, cierra sesión en tu cuenta: no es posible asumir la identidad de otro director desde esta web.</p>'+
- '<a class="btn ghost" href="index.html">Ver mi cuenta y mis equipos</a></section>'+
- '<div class="bq-seasons-grid">'+state.periods.map(p=>'<article class="panel bq-season-card"><span class="ux-pill '+(p.status==="active"?"good":"")+'">'+(p.status==="active"?"En curso":"Cerrada")+'</span><h3>'+esc(p.season_label)+'</h3><p>'+esc(c?.name||"Club")+'</p><p class="muted">'+(p.status==="active"?"Activa desde su creación":"Cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</p></article>').join("")+'</div>'+
- (c?'<section class="panel"><div class="ux-box-title"><h3>Equipos de esta temporada</h3><span>'+state.teams.length+' equipos activos</span></div>'+
- '<p class="muted">Para eliminar un equipo sin perder datos, utiliza «Eliminar equipo (recuperable)». El equipo se archivará y podrás recuperarlo desde Equipos.</p>'+
- '<div class="bq-season-team-actions">'+state.teams.map(t=>'<div class="bq-season-team-line"><span><b>'+esc(t.name)+'</b><small>'+esc(t.category||"")+" · "+esc(t.modality)+'</small></span>'+
- '<div class="ux-actions">'+button("Abrir","openTeam",t.id,"ghost")+button("Eliminar equipo","archiveTeam",t.id,"ghost")+'</div></div>').join("")+'</div>'+
- '</section>':"")+
- '<section class="panel"><h3>Inicio de una nueva temporada</h3><p>Para cambiar de club, cierra la temporada activa desde la cuenta titular. Al eliminar el club se conserva su historial para poder recuperarlo; abandonarlo solo retira tus permisos personales.</p>'+
- (c?'<div class="ux-actions">'+(isOwner?button("Eliminar club","deleteClub","","ghost"):"")+button("Abandonar club","leaveClub","","ghost")+'</div>':"")+'</section>'+deletedSection();
+ const groups=state.clubs.map(club=>{
+   const itsTeams=state.workspaceTeams.filter(t=>t.club_id===club.id);
+   const isCurrent=club.id===state.clubId;
+   return '<article class="panel bq-workspace-section">'+
+     '<div class="bq-workspace-section-head"><div><span class="bq-workspace-kind">DIRECCIÓN DEPORTIVA</span>'+
+     '<h3>🏟 '+esc(club.name)+'</h3><p>Club vinculado a tu cuenta · '+itsTeams.length+' equipo(s) activos</p></div>'+
+     (isCurrent?'<span class="ux-pill good">Club seleccionado</span>':
+       button("Abrir club","switchClub",club.id,"ghost"))+'</div>'+
+     '<div class="bq-workspace-team-list">'+itsTeams.map(t=>
+       '<button type="button" class="bq-workspace-team-row" data-action="openWorkspaceTeam" data-id="'+esc(t.id)+'">'+
+       '<span class="bq-workspace-team-icon">⚽</span><span><b>'+esc(t.name)+'</b>'+
+       '<small>'+esc(t.category||"Categoría pendiente")+' · '+esc(t.modality)+'</small></span>'+
+       '<span class="bq-workspace-arrow">Abrir gestión ↗</span></button>').join("")+
+     (itsTeams.length?"":'<p class="muted">Todavía no hay equipos activos en este club.</p>')+
+     '</div></article>';
+ }).join("");
+ const solo=state.workspaceIndependent.map(x=>
+   '<a class="bq-workspace-solo-card" href="'+esc(seasonHref(x.id))+'">'+
+   '<span class="bq-workspace-team-icon">⚽</span><span><b>'+esc(x.name)+'</b>'+
+   '<small>'+esc(x.club||"Equipo independiente")+' · '+esc(x.category||"Sin categoría")+'</small>'+
+   '<span class="bq-workspace-access">'+(x.role==="owner"?"Responsable":x.role==="editor"?"Entrenador":"Solo lectura")+'</span></span>'+
+   '<span class="bq-workspace-arrow">Abrir equipo ↗</span></a>').join("");
+ const coach=state.workspaceCoachTeams.map(x=>
+   '<a class="bq-workspace-solo-card" href="'+esc(seasonHref(x.season_id))+'">'+
+   '<span class="bq-workspace-team-icon">👥</span><span><b>'+esc(x.team_name)+'</b>'+
+   '<small>'+esc(x.club_name)+' · '+esc(x.role==="editor"?"Entrenador":"Miembro")+'</small></span>'+
+   '<span class="bq-workspace-arrow">Abrir equipo ↗</span></a>').join("");
+ return head("Todas mis temporadas y equipos",
+   "Abre cualquier gestión vinculada a tu cuenta: clubes, equipos independientes y equipos donde entrenas.",actions)+
+ '<section class="panel bq-director-session"><div class="bq-director-session-top"><span>CUENTA CONECTADA</span>'+
+ '<strong>'+esc(state.accountEmail||state.profileName||"Mi cuenta")+'</strong></div>'+
+ '<p>Solo se muestran equipos autorizados de esta cuenta. Entrar en otro equipo no cambia tu identidad ni sus permisos.</p>'+
+ '<a class="btn ghost" href="index.html#temporadas">Ver temporadas en mi área personal</a></section>'+
+ (groups?'<div class="bq-workspace-section-title"><h3>Clubes que gestionas</h3><span>'+state.clubs.length+' club(es)</span></div>'+groups:"")+
+ '<section class="panel bq-workspace-section"><div class="bq-workspace-section-head"><div>'+
+ '<span class="bq-workspace-kind">EQUIPOS INDEPENDIENTES</span><h3>Mis temporadas individuales</h3>'+
+ '<p>Se gestionan desde el área de entrenador, con la misma cuenta. No necesitan pertenecer a un club.</p></div>'+
+ '<a class="btn primary" href="index.html#temporadas">+ Crear equipo independiente</a></div>'+
+ '<div class="bq-workspace-team-list">'+
+ (solo||'<div class="bq-workspace-empty-large">Aún no tienes ningún equipo independiente en esta cuenta. Puedes crearlo sin abandonar tu club.</div>')+
+ '</div></section>'+
+ (coach?'<section class="panel bq-workspace-section"><div class="bq-workspace-section-head"><div>'+
+ '<span class="bq-workspace-kind">CUERPO TÉCNICO</span><h3>Equipos donde participas</h3>'+
+ '<p>Acceso según los permisos que te haya concedido cada director.</p></div></div>'+
+ '<div class="bq-workspace-team-list">'+coach+'</div></section>':"")+
+ (state.workspaceError?'<section class="panel"><p class="muted">'+esc(state.workspaceError)+'</p>'+
+ button("Actualizar equipos","refreshWorkspaces","","ghost")+'</section>':"")+
+ '<section class="panel"><div class="ux-box-title"><h3>Temporadas del club seleccionado</h3></div>'+
+ '<div class="bq-seasons-grid">'+state.periods.map(p=>
+ '<button type="button" class="bq-period-item bq-period-select" data-action="switchClub" data-id="'+esc(p.club_id||c?.id||"")+'">'+
+ '<span class="ux-pill '+(p.status==="active"?"good":"")+'">'+
+ (p.status==="active"?"En curso":"Cerrada")+'</span><b>'+esc(p.season_label)+'</b>'+
+ '<small>'+esc(c?.name||"Club")+'</small><span class="muted">'+(p.status==="active"?
+ "Abrir gestión del club":"Temporada cerrada · "+showDate(p.closed_at?.slice(0,10)))+'</span></button>').join("")+
+ (state.periods.length?"":'<p class="muted">No hay una temporada de club seleccionada.</p>')+
+ '</div></section>'+
+ '<section class="panel"><h3>¿Quieres empezar la siguiente temporada?</h3>'+
+ '<p>Puedes mantener equipos independientes mientras gestionas un club. Para crear un club distinto, primero cierra la temporada activa del anterior; los datos históricos se conservan.</p>'+
+ (c?'<div class="ux-actions">'+(isOwner?button("Eliminar club","deleteClub","","ghost"):"")+
+ button("Abandonar club","leaveClub","","ghost")+'</div>':"")+'</section>'+deletedSection();
 }
 function facilitiesPage(){const v=state.settings;return head("Instalaciones","Configura el número de campos que dispone el club.",button("Editar instalaciones","editClub"))+
  '<div class="stats"><article class="stat"><div class="stat-label">Campos completos F11</div><div class="stat-value">'+(v.fields_f11||0)+'</div></article><article class="stat"><div class="stat-label">Campos independientes F7</div><div class="stat-value">'+(v.fields_f7||0)+'</div></article><article class="stat"><div class="stat-label">Capacidad F7 si F11 divisible</div><div class="stat-value">'+((v.fields_f11||0)*2+(v.fields_f7||0))+'</div></article></div>'+
@@ -270,7 +392,8 @@ async function loadMessaging(silent=false){
 function clubSettingsPage(){const w=state.wallet||{};return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+
  '<section class="panel bq-wallet"><div class="bq-wallet-head"><div><span>SILBATOS DE GESTIÓN</span><strong>'+esc(w.balance??"–")+' <small>/ 20</small></strong></div><div>🎺</div></div><h3>¿Para qué sirven?</h3><p>Son el saldo anual para organizar clubes y equipos individuales: <b>10 silbatos al crear un club</b> y <b>5 al crear un equipo independiente</b>. Añadir equipos dentro de un club no tiene otro coste.</p><p>El 1 de agosto se repone el saldo a <b>20 silbatos</b> sin acumular el remanente. Si cierras una temporada o eliminas el club durante la misma temporada en la que pagaste, se devuelve su coste una sola vez, hasta el límite de 20.</p><p class="muted">Saldo de gestión separado de los silbatos para informes de IA. Próxima recarga: '+esc(w.next_refill||"1 de agosto")+'.</p></section>'+'<section class="panel"><div class="bq-detail-grid">'+[["Club",active()?.name],["Localidad",state.settings.town],["Provincia",state.settings.province],["Comunidad autónoma",state.settings.community],["Temporada",currentPeriod()?.season_label]].map(([k,v])=>'<div><span>'+k+'</span><b>'+esc(v||"Pendiente")+'</b></div>').join("")+'</div><div class="ux-actions">'+button("Guardar copia de configuración","saveBackup","","ghost")+button("Restaurar copia","restoreBackup","","ghost")+'</div></section>'+(owner()?'<section class="panel bq-danger-zone"><h3>Eliminar club</h3><p>Retira el club y revoca los accesos de dirección. Las temporadas y actas se mantienen para su recuperación.</p>'+button("Eliminar club","deleteClub","","ghost")+'</section>':'')+deletedSection();}
 const titles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",temporadas:"Temporadas",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
-function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});const switcher=$("#clubSwitcher");if(switcher){switcher.classList.toggle("bq-switcher-clickable",state.clubs.length>1);switcher.title=state.clubs.length>1?"Cambiar de club":"Club seleccionado";}$("#sideClubName").textContent=c?.name||"Tu club";$("#topClubName").textContent=c?.name||"BANQUILLO";
+function render(){if(!state.loaded)return;const c=active(),t=team();document.querySelectorAll(".bq-backup-action").forEach(x=>{x.hidden=!c;});const switcher=$("#clubSwitcher");if(switcher) switcher.classList.add("bq-switcher-clickable");
+ $("#sideClubName").textContent=c?.name||"Mis equipos";$("#topClubName").textContent=c?.name||"BANQUILLO";
  $("#sideSeason").textContent=currentPeriod()?.season_label||"Sin temporada activa";$("#teamCount").textContent=state.teams.length;
  $("#activeDirectorName").textContent=state.profileName||"Mi cuenta";$("#pageTitle").textContent=state.view==="equipo"&&t?t.name:(titles[state.view]||"Banquillo");
  $("#topSituation").innerHTML=dayBanner();
@@ -281,6 +404,7 @@ function render(){if(!state.loaded)return;const c=active(),t=team();document.que
  document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===state.view));
  let body=state.view==="resumen"?summary():state.view==="equipos"?teamsPage():state.view==="equipo"?teamPage():state.view==="directores"?directorsPage():state.view==="temporadas"?seasonsPage():state.view==="instalaciones"?facilitiesPage():state.view==="calendario"?calendarPage():state.view==="calendarioMes"?calendarPage(true):state.view==="comunicaciones"?communicationsPage():state.view==="avisos"?noticesPage():clubSettingsPage();
  rview().innerHTML=body;
+ renderWorkspaceMenu();
 }
 async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs").select("id,name,owner_id,created_at").order("created_at",{ascending:true}))||[];
  if(!state.clubs.some(x=>x.id===state.clubId)){
@@ -299,7 +423,9 @@ async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs"
   ]);
   state.allTeams=ts||[];state.teams=state.allTeams.filter(x=>!x.archived_at);state.periods=periods||[];state.settings=settings||{};state.members=members||[];
  }else{state.teams=[];state.allTeams=[];state.periods=[];state.settings={};state.members=[];}
- if(!state.teams.some(t=>t.id===state.teamId)){state.teamId=state.teams[0]?.id||null;state.staff=[];state.teamRoster=[];}
+ await loadWorkspaces();
+  if(!state.clubId && state.view==="resumen" && (state.workspaceIndependent.length||state.workspaceCoachTeams.length))state.view="temporadas";
+  if(!state.teams.some(t=>t.id===state.teamId)){state.teamId=state.teams[0]?.id||null;state.staff=[];state.teamRoster=[];}
  state.pendingByTeam={};
  if(state.teams.length){
   const requests=await calls(state.sb.from("banquillo_team_members")
@@ -370,8 +496,26 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id,sourceEl){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.workspaceOpen=false;state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="openWorkspaceTeam"){
+   const target=state.workspaceTeams.find(t=>t.id===id);
+   if(!target){notify("Este equipo no está disponible para tu cuenta.","error");return;}
+   state.workspaceOpen=false;closeModal();
+   if(target.club_id!==state.clubId){
+     state.clubId=target.club_id;state.teamId=null;
+     state.staff=[];state.teamRoster=[];state.docs=[];state.messages=[];
+     state.events=[];state.messagingInitialized=false;state.directorInvite=null;
+     state.view="resumen";
+     await refresh();
+   }
+   if(!state.teams.some(t=>t.id===id)){
+     notify("El equipo está archivado o ya no tienes acceso a él.","error");return;
+   }
+   state.teamId=id;state.teamTab="overview";state.staff=[];state.teamRoster=[];state.teamCode=null;
+   return changeView("equipo");
+ }
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
+ if(name==="refreshWorkspaces"){await loadWorkspaces();render();notify("Gestiones actualizadas.");return;}
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
  if(name==="restoreBackup")return openBackupForm();
@@ -522,17 +666,33 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
 document.addEventListener("click",e=>{
  const close=e.target.closest("[data-modal-close]");if(close&&(e.target===close||e.target.matches("button[data-modal-close]"))){closeModal();return;}
  const acceptBtn=e.target.closest("[data-accept-action]");if(acceptBtn){accept(acceptBtn.dataset.acceptAction,acceptBtn.dataset.id);return;}
- const switcher=e.target.closest("#clubSwitcher");if(switcher&&state.clubs.length>1){action("chooseClub","");return;}
- const nav=e.target.closest("[data-view]");if(nav){changeView(nav.dataset.view);return;}
+ const switcher=e.target.closest("#clubSwitcher");
+ if(switcher){state.workspaceOpen=!state.workspaceOpen;renderWorkspaceMenu();return;}
+ if(state.workspaceOpen&&!e.target.closest("#bqWorkspaceMenu")){
+   state.workspaceOpen=false;renderWorkspaceMenu();
+ }
+ const nav=e.target.closest("[data-view]");if(nav){state.workspaceOpen=false;changeView(nav.dataset.view);return;}
  const mod=e.target.closest("[data-modality]");if(mod){state.modality=mod.dataset.modality;render();return;}
  const tab=e.target.closest("[data-tab]");if(tab){state.teamTab=tab.dataset.tab;state.teamCode=null;render();if(state.teamTab==="code")loadTeamCode();return;}
  const act=e.target.closest("[data-action]");if(act){action(act.dataset.action,act.dataset.id||"",act);return;}
+});
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape"&&state.workspaceOpen){state.workspaceOpen=false;renderWorkspaceMenu();$("#clubSwitcher")?.focus();}
 });
 document.addEventListener("submit",e=>{if(!e.target.closest("form"))return;e.preventDefault();const f=e.target;const submitBtn=f.querySelector('button[type="submit"]');if(submitBtn)submitBtn.disabled=true;submit(f).finally(()=>{if(submitBtn?.isConnected)submitBtn.disabled=false;});});
 async function start(){try{const cfg=window.BQ_CONFIG||{};if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||!window.supabase)throw Error("Falta configurar Supabase.");
  state.sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
  const {data:{user},error}=await state.sb.auth.getUser();if(error||!user){notify("Inicia sesión desde Banquillo antes de entrar al club.","error");rview().innerHTML='<div class="panel"><h2>Accede a tu cuenta</h2><a href="index.html" class="btn primary">Entrar o registrarme</a></div>';return;}
- state.uid=user.id;state.accountEmail=user.email||"";state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});if(state.teamId&&state.view==="equipo"&&state.teamTab==="coaches")loadTeamData().catch(()=>{});},20000);
+ state.uid=user.id;state.accountEmail=user.email||"";state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();
+ const incoming=new URLSearchParams(window.location.search);
+ const deepClub=incoming.get("club"),deepTeam=incoming.get("team");
+ if(deepClub&&state.clubs.some(c=>c.id===deepClub)){
+   if(state.clubId!==deepClub){state.clubId=deepClub;await refresh();}
+   if(deepTeam&&state.teams.some(t=>t.id===deepTeam)){
+     state.teamId=deepTeam;state.teamTab="overview";await changeView("equipo");
+   }
+ }
+ notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});if(state.teamId&&state.view==="equipo"&&state.teamTab==="coaches")loadTeamData().catch(()=>{});},20000);
 }catch(e){notify(errText(e),"error");}}
 start();
 })();

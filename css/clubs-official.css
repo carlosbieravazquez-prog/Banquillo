@@ -152,3 +152,70 @@
 .bq-season-team-line small{display:block;font-size:11px;color:#7892a2;margin-top:4px}
 .bq-season-team-line .ux-actions{display:flex;flex-wrap:wrap;gap:7px}
 @media(max-width:680px){.bq-season-team-line .ux-actions{width:100%;justify-content:flex-start}.bq-team-card-actions .btn{flex-basis:100%}}
+
+
+/* Navegación de contextos: misma cuenta, varias gestiones autorizadas */
+.club-switch.bq-workspace-toggle{width:100%;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:9px;border:1px solid #3c6980;transition:background .16s,border .16s,box-shadow .16s}
+.club-switch.bq-workspace-toggle:hover,.club-switch.bq-workspace-toggle[aria-expanded="true"]{background:#25526b;border-color:#79b4b4;box-shadow:0 0 0 2px #75c0ab29}
+.bq-workspace-toggle:focus-visible{outline:3px solid #76d4ac;outline-offset:2px}
+.bq-switcher-label{flex:1;min-width:0}
+.bq-switcher-label b{overflow:hidden;text-overflow:ellipsis;display:block;white-space:nowrap}
+.bq-switcher-chevron{font-size:20px;transition:transform .18s;opacity:.9}
+.bq-workspace-toggle[aria-expanded="true"] .bq-switcher-chevron{transform:rotate(180deg)}
+.bq-workspace-menu[hidden]{display:none!important}
+.bq-workspace-menu{display:grid;gap:4px;max-height:min(49vh,490px);overflow-y:auto;overscroll-behavior:contain;border:1px solid #456a7b;border-radius:13px;background:#103045;color:#ecf7fa;margin:8px 0 16px;padding:8px;box-shadow:0 14px 25px #071e304a}
+.bq-workspace-menu-head{padding:8px 10px 11px;border-bottom:1px solid #3c6571;display:grid;gap:3px}
+.bq-workspace-menu-head b{font-size:13px}
+.bq-workspace-menu-head small{color:#aac5d1;font-size:10px;overflow-wrap:anywhere}
+.bq-workspace-group-title{font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:.1em;color:#b7d4d5;padding:13px 9px 4px}
+.bq-workspace-club{display:grid;gap:3px}
+.bq-workspace-option{display:flex;align-items:center;gap:9px;text-align:left;width:100%;color:#ecf5f7!important;border:1px solid transparent;background:transparent;border-radius:9px;padding:10px 9px;text-decoration:none!important;cursor:pointer;font:inherit;transition:background .13s,border .13s}
+.bq-workspace-option:hover,.bq-workspace-option:focus-visible{background:#2b556a;border-color:#537a87;color:white!important;outline:0}
+.bq-workspace-option.current{background:#214e63;border-color:#397a80}
+.bq-workspace-option>span:nth-child(2){flex:1;min-width:0}
+.bq-workspace-option b{display:block;font-size:12px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
+.bq-workspace-option small{display:block;font-size:10px;color:#b5cbd1;margin-top:3px;line-height:1.4}
+.bq-workspace-symbol{font-size:18px;min-width:24px;text-align:center}
+.bq-workspace-team{padding-left:25px}
+.bq-workspace-tick{color:#7fe5b3;font-weight:800}
+.bq-workspace-create{display:block;margin-top:8px;border-radius:9px;padding:12px;background:#d5f3e3;color:#14563d!important;font-weight:800;font-size:11px;text-decoration:none!important;text-align:center}
+.bq-workspace-create:hover{background:#b7e9cd}
+.bq-workspace-empty{font-size:11px;color:#bed0d9;padding:10px}
+.bq-workspace-section-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:15px 0 10px}
+.bq-workspace-section-title h3{font-size:16px;color:#24485b;margin:0}
+.bq-workspace-section-title span{font-size:11px;color:#7691a1}
+.bq-workspace-section{padding:20px!important}
+.bq-workspace-section-head{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.bq-workspace-kind{font-weight:800;letter-spacing:.12em;font-size:10px;color:#2f9481}
+.bq-workspace-section-head h3{font-size:18px!important;color:#1e4055;margin:6px 0 5px}
+.bq-workspace-section-head p{font-size:12px;margin:0;color:#69899a}
+.bq-workspace-team-list{display:grid;gap:9px}
+.bq-workspace-team-row,.bq-workspace-solo-card{display:flex;align-items:center;gap:13px;border:1px solid #e0eaf0;border-radius:12px;background:#f9fcfd;color:#1e4156!important;padding:13px 15px;text-decoration:none!important;width:100%;font:inherit;cursor:pointer;text-align:left;transition:transform .14s,background .14s,border .14s}
+.bq-workspace-team-row:hover,.bq-workspace-solo-card:hover,.bq-workspace-team-row:focus-visible,.bq-workspace-solo-card:focus-visible{transform:translateY(-1px);background:#effaf5;border-color:#72bfa5;outline:0}
+.bq-workspace-team-row>span:nth-child(2),.bq-workspace-solo-card>span:nth-child(2){flex:1;min-width:0}
+.bq-workspace-team-row b,.bq-workspace-solo-card b{display:block;font-size:13px;color:#1e4258}
+.bq-workspace-team-row small,.bq-workspace-solo-card small{display:block;color:#708d9d;font-size:11px;margin-top:4px;line-height:1.4}
+.bq-workspace-team-icon{display:grid;place-items:center;min-width:38px;height:38px;background:#e8f4f0;border-radius:11px;font-size:20px}
+.bq-workspace-arrow{font-size:11px;font-weight:800;color:#278265;white-space:nowrap}
+.bq-workspace-access{font-size:10px;color:#17754d;font-weight:800;display:inline-block;margin-top:6px}
+.bq-workspace-empty-large{border:1px dashed #c8dce2;border-radius:11px;color:#75909f;font-size:12px;padding:20px;text-align:center;background:#fafcfd}
+.bq-period-item{background:#f7fafc;border:1px solid #e0e9ef;border-radius:12px;padding:18px;display:grid;gap:7px}
+.bq-period-item>b{font-size:20px;color:#1e425a}
+.bq-period-item small{font-size:11px;color:#7795a2}
+.bq-period-item p{margin:0}
+@media(max-width:720px){.bq-workspace-menu{max-height:36vh}.bq-workspace-section{padding:15px!important}.bq-workspace-section-head>.btn{width:100%}.bq-workspace-team-row,.bq-workspace-solo-card{padding:12px 10px;gap:9px}.bq-workspace-arrow{max-width:76px;white-space:normal;text-align:right}.bq-workspace-symbol{font-size:16px}}
+
+/* El desplegable puede desplazarse sin dejar inaccesible el menú de la izquierda. */
+.app-shell>.sidebar{overflow-y:auto;overscroll-behavior:contain}
+.club-switch.bq-workspace-toggle{margin-bottom:7px;flex-shrink:0}
+.bq-workspace-menu{flex-shrink:0}
+.bq-workspace-all{background:#254b5e;color:#d9f0e8;font:inherit;font-weight:800;font-size:11px;border:1px solid #4b7785;border-radius:9px;width:100%;padding:10px;cursor:pointer}
+.bq-workspace-all:hover,.bq-workspace-all:focus-visible{background:#367267;color:#fff;outline:2px solid #a2e2c7}
+@media(max-width:760px){.app-shell>.sidebar{overflow-y:auto}.bq-workspace-menu{max-height:45vh}}
+
+
+/* Cada tarjeta de temporada abre el club correspondiente sin cambiar de identidad. */
+.bq-period-select{appearance:none;width:100%;text-align:left;font:inherit;cursor:pointer;transition:border-color .16s,transform .16s,background .16s}
+.bq-period-select:hover{background:#eefaf4;border-color:#6cbea1;transform:translateY(-1px)}
+.bq-period-select:focus-visible{outline:3px solid #3ba681;outline-offset:2px}
+.bq-period-select .muted{font-size:11px}

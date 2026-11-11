@@ -133,6 +133,15 @@ const Store = {
 
   S.selectSeason = id => {
     try { localStorage.setItem("bq.season", id); } catch (e) { /* noop */ }
+    // Los enlaces del panel DD usan ?season=<id>. Actualizarlo al cambiar evita
+    // que un F5 vuelva a abrir una temporada antigua.
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("season") && id) {
+        url.searchParams.set("season", id);
+        history.replaceState(history.state, "", url.pathname+url.search+url.hash);
+      }
+    } catch(e) { /* Navegador sin historial disponible */ }
     if (id !== S.sid) S.subscribeSeason(id);
   };
 
@@ -177,7 +186,10 @@ const Store = {
       if (!S.seasons.length) { if (S.sid) S.subscribeSeason(null); S.onChange("data"); return; }
       if (!S.sid || !S.season()) {
         let want = null;
-        try { want = localStorage.getItem("bq.season"); } catch (e) { /* noop */ }
+        try {
+          const requested = new URLSearchParams(window.location.search).get("season");
+          want = S.seasons.some(s=>s.id===requested)?requested:localStorage.getItem("bq.season");
+        } catch (e) { try { want=localStorage.getItem("bq.season"); }catch(_){} }
         const pickS = S.seasons.find(s => s.id === want) || S.seasons.find(s => s.status !== "closed") || S.seasons[0];
         S.subscribeSeason(pickS.id);
       }
