@@ -7,7 +7,7 @@ const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo e
 const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
 const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],
   members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
-  clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",messages:[],events:[],modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
+  clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
 const calls = async query => {const {data,error}=await query;if(error)throw error;return data;};
 const rpc = (name,args) => calls(state.sb.rpc(name,args||{}));
@@ -207,7 +207,7 @@ async function loadMessaging(silent=false){
  if(cid!==state.clubId)return;
  const oldId=state.events[0]?.id;
  state.messages=messages||[];state.events=events||[];
- if(silent&&oldId&&state.events.length&&state.events[0].id!==oldId){notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");if(state.view==="avisos")await loadAllData();}
+ if(silent&&state.messagingInitialized&&state.events.length&&state.events[0].id!==oldId){notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");if(state.view==="avisos")await loadAllData();}state.messagingInitialized=true;
  if(["comunicaciones","avisos"].includes(state.view))render();
 }
 
@@ -293,7 +293,7 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.messages=[];state.events=[];state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.clubId=id;state.teamId=null;state.staff=[];state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
  if(name==="chooseClub")return modal("Selecciona tu club",'<p>Solo un club puede estar activo por temporada. Puedes consultar los clubes históricos que todavía tengas vinculados.</p><div class="bq-club-picker">'+state.clubs.map(c=>button(esc(c.name),"switchClub",c.id,"ghost")).join("")+'</div>');
  if(name==="newClub")return openClubForm();
  if(name==="deleteClub")return openDeleteClubForm();
