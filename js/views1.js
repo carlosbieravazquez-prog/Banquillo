@@ -45,6 +45,8 @@ V.inicio = () => {
 
   return `${pageHead(esc(s.club || "Tu equipo"), `${esc(s.category || "")} · Temporada ${esc(s.name)}`)}
     ${nextCard}
+    <section class="card"><div class="card-h"><h3>Mensajes de Dirección Deportiva</h3>${btn("Abrir buzón", "openCoachInbox", {}, "ghost", "bell")}</div>
+      <p class="muted small">Consulta avisos de tus equipos y abre directamente el acta de la jornada indicada. Los recordatorios internos solo se crean si sigue pendiente.</p></section>
     <section class="tiles">
       <div class="tile"><b>${rec.pj}</b><span>Jugados</span></div>
       <div class="tile win"><b>${rec.v}</b><span>Victorias</span></div>
