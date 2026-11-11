@@ -391,9 +391,72 @@ function openPlannerForm(key){
   help+(slot?'<div class="bq-planner-remove">'+button("Quitar horario asignado","removeSchedule",row.key,"ghost")+'</div>':""),
   "Guardar horario y campo");
 }
-function calendarPage(monthly=false){const list=fixtures().filter(x=>!monthly||String(x.m.date||"").startsWith(state.year+"-"+String(state.month+1).padStart(2,"0")));return head(monthly?"Planificador mensual":"Calendario del club","Jornadas visibles según los permisos de las temporadas vinculadas.",monthly?button("Mes anterior","prevMonth","","ghost")+button("Mes siguiente","nextMonth","","ghost"):"")+
- (monthly?'<h3 class="bq-month-title">'+new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(new Date(state.year,state.month,1))+'</h3>':"")+
- '<section class="panel"><div class="bq-fixtures">'+(list.map(x=>'<div class="bq-fixture"><span>'+esc(showDate(x.m.date))+'</span><span><b>'+esc(x.t.name)+'</b><small>Jornada '+esc(x.m.n||"—")+' · '+(x.m.home?"🏠 Local":"✈️ Visitante")+'</small></span><b>'+esc(x.m.rival||"Rival por definir")+'</b></div>').join("")||'<p class="muted">No hay encuentros registrados en las temporadas a las que tienes acceso.</p>')+'</div></section><p class="bq-hint">Este calendario utiliza las jornadas reales de cada temporada. La asignación de instalaciones aún se realiza en el planificador demostrativo.</p>';}
+function calendarPage(monthly=false){
+ const all=plannerRows(),fac=plannerFacilities(),day=state.plannerDate||new Date().toISOString().slice(0,10);
+ const dd=new Date(day+"T12:00:00");
+ const weekStart=new Date(dd);weekStart.setDate(dd.getDate()-(dd.getDay()+6)%7);
+ const key=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+ const change=(d,n)=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+n);return key(x)};
+ const from=monthly?state.year+"-"+String(state.month+1).padStart(2,"0")+"-01":key(weekStart);
+ const to=monthly?key(new Date(state.year,state.month+1,0)):change(from,6);
+ const list=all.filter(x=>x.m.date>=from&&x.m.date<=to);
+ const selected=monthly?all.filter(x=>x.m.date===day):list;
+ const pending=list.filter(x=>x.m.home&&!x.slot),scheduled=list.filter(x=>x.m.home&&x.slot);
+ const label=monthly?new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(new Date(state.year,state.month,1)):
+  showDate(from)+" — "+showDate(to);
+ const rangeButtons=monthly?button("← Mes anterior","prevMonth","","ghost")+button("Mes siguiente →","nextMonth","","ghost"):
+  button("← Semana anterior","plannerPrevWeek","","ghost")+button("Semana siguiente →","plannerNextWeek","","ghost");
+ const detail=x=>{
+  const home=!!x.m.home,slot=x.slot;
+  return '<article class="bq-real-fixture '+(home&&!slot?"pending":"")+'">'+
+   '<div class="bq-real-fixture-day"><b>'+esc(showDate(x.m.date))+'</b><small>Jornada '+esc(x.m.n||"—")+'</small></div>'+
+   '<div class="bq-real-fixture-description"><b>'+esc(x.t.name)+' <span>vs</span> '+esc(x.m.rival||"Rival pendiente")+'</b>'+
+   '<small>'+(home?"🏠 Local":"✈️ Visitante")+' · '+esc(x.t.modality)+
+    (home?" · "+esc(slot?plannerFieldLabel(slot.resource):"Campo por asignar"):"")+'</small></div>'+
+   '<div class="bq-real-fixture-action"><strong>'+(home?(slot?esc(String(slot.kickoff).slice(0,5)):"Sin horario"):"Fuera")+'</strong>'+
+   (home?button(slot?"Cambiar":"Asignar","scheduleMatch",x.key,slot?"ghost":"primary"):"")+'</div></article>';
+ };
+ let monthHtml="";
+ if(monthly){
+  const first=new Date(state.year,state.month,1),offset=(first.getDay()+6)%7;
+  const start=new Date(state.year,state.month,1-offset);
+  const length=Math.ceil((offset+new Date(state.year,state.month+1,0).getDate())/7)*7;
+  const count=new Map();
+  for(const x of all)count.set(x.m.date,(count.get(x.m.date)||0)+1);
+  const cells=[];
+  for(let j=0;j<length;j++){
+   const d=new Date(start);d.setDate(start.getDate()+j);const iso=key(d),n=count.get(iso)||0;
+   cells.push('<button type="button" class="bq-real-day '+(d.getMonth()!==state.month?"faded ":"")+
+    (day===iso?"selected":"")+'" data-action="plannerPickDay" data-id="'+esc(iso)+'">'+
+    '<b>'+d.getDate()+'</b>'+(n?'<small>'+n+' partido'+(n===1?"":"s")+'</small>':"")+'</button>');
+  }
+  monthHtml='<section class="panel bq-real-month"><div class="bq-real-weeknames">'+
+  ["L","M","X","J","V","S","D"].map(x=>'<b>'+x+'</b>').join("")+
+  '</div><div class="bq-real-calendar-grid">'+cells.join("")+'</div></section>';
+ }
+ const rows=selected.map(detail).join("")||'<p class="muted">No hay encuentros registrados para este período.</p>';
+ const side=pending.map(x=>'<div class="bq-real-waiting"><div><b>'+esc(x.t.name)+'</b><small>'+
+  esc(showDate(x.m.date))+' · '+esc(x.m.rival||"Rival")+'</small></div>'+
+  button("Asignar","scheduleMatch",x.key,"primary")+'</div>').join("")||
+  '<p class="muted">Todos los partidos locales de este período tienen campo y horario.</p>';
+ return head(monthly?"Planificador mensual":"Calendario semanal",
+  "Planificación real compartida entre los directores. Los partidos proceden de las temporadas autorizadas.",
+  button("Semana","viewWeek","","ghost")+button("Mes","viewMonth","","ghost")+
+  button("Copiar planificación","copyFixtures","","ghost")+button("Descargar imagen","downloadPlanImage","","ghost"))+
+  '<div class="bq-real-metrics"><div><strong>'+list.length+'</strong><span>Partidos</span></div>'+
+  '<div><strong>'+scheduled.length+'</strong><span>Locales asignados</span></div>'+
+  '<div><strong>'+pending.length+'</strong><span>Locales pendientes</span></div>'+
+  '<div><strong>'+list.filter(x=>!x.m.home).length+'</strong><span>Visitantes ✈️</span></div></div>'+
+  '<div class="bq-real-datebar">'+rangeButtons+'<b>'+esc(label)+'</b></div>'+
+  (fac.f11+fac.f7===0?'<div class="bq-info-note">Configura al menos un campo en Instalaciones para poder asignar horarios.</div>':"")+
+  '<div class="bq-real-layout"><div>'+monthHtml+
+  '<section class="panel"><div class="bq-real-panel-title"><h3>'+(monthly?"Partidos del "+esc(showDate(day)):"Jornadas de la semana")+
+  '</h3><small>🏠 Local · ✈️ Visitante</small></div>'+rows+'</section></div>'+
+  '<aside class="panel bq-real-side"><h3>Partidos pendientes</h3>'+side+
+  '<hr><h3>Instalaciones</h3><p class="muted">'+fac.f11+' campo(s) F11 · '+fac.f7+' campo(s) F7 independientes. Un F11 divisible dispone de dos mitades F7.</p>'+
+  button("Configurar campos","viewFacilities","","ghost")+'</aside></div>'+
+  '<p class="bq-hint">Banquillo bloquea en Supabase los solapamientos entre partidos del mismo equipo o instalaciones. Los horarios se comparten entre directores del club.</p>';
+}
 function openMessageForm(teamId,kind="manual",matchN=null){
  const available=state.teams.filter(t=>t.season_id&&!t.archived_at);
  if(!available.length)return notify("Primero vincula un equipo a su temporada y añade al entrenador autorizado.","error");
