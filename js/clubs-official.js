@@ -7,7 +7,7 @@ const POS = [["head_coach","Entrenador principal"],["assistant_coach","Segundo e
 const prettyCode = code => /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(String(code||"")) ? code.slice(0,4)+"-"+code.slice(4) : String(code||"");
  const labelPos = p => POS.find(x=>x[0]===p)?.[1] || "Personal técnico";
 const state = { sb:null,uid:null,clubs:[],clubId:null,teams:[],allTeams:[],periods:[],settings:{},staff:[],teamRoster:[],pendingByTeam:{},
-  members:[],docs:[],cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
+  members:[],docs:[],schedules:[],plannerDate:new Date().toLocaleDateString("en-CA"),cache:{},view:"resumen",teamId:null,teamTab:"overview",modality:"todos",
   clubDirectors:[],clubCode:null,teamCode:null,deletedClubs:[],directorInvite:null,wallet:null,profileName:"",workspaceTeams:[],workspaceIndependent:[],workspaceCoachTeams:[],workspaceOpen:false,workspaceError:"",messages:[],events:[],messagingInitialized:false,modal:null,loaded:false,loading:false,error:"",month:new Date().getMonth(),
   year:new Date().getFullYear() };
 const calls = async query => {const {data,error}=await query;if(error)throw error;return data;};
@@ -462,9 +462,14 @@ async function loadTeamData(){
  }catch(e){notify(errText(e),"error");}
 }
 
+async function loadSchedules(){
+ const cid=state.clubId;if(!cid){state.schedules=[];return;}
+ try{const rows=await calls(state.sb.from("banquillo_match_schedules").select("id,club_id,team_id,season_id,match_path,match_n,match_date,kickoff,duration_minutes,resource").eq("club_id",cid).order("match_date",{ascending:true}));if(state.clubId===cid)state.schedules=rows||[];}
+ catch(e){state.schedules=[];notify("No se ha podido cargar el planificador: "+errText(e),"error");}
+}
 async function loadAllData(){const teams=state.teams.filter(t=>t.season_id&&state.members.some(m=>m.season_id===t.season_id));let all=[];
  for(const t of teams){try{const rows=await calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id));all.push(...(rows||[]).map(x=>{const p=x.path.split("/");return{team:t,type:p[2]==="matches"?"match":p[2]==="players"?"player":"other",id:p[3],data:x.data}}).filter(x=>x.type!=="other"));}catch(e){/* no access */}}
- state.docs=all;render();}
+ state.docs=all;await loadSchedules();render();}
 async function loadDirectors(){if(!active())return;
  try{
  const clubId=state.clubId;
@@ -496,14 +501,14 @@ async function changeView(v){state.view=v;state.teamCode=null;render();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id,sourceEl){try{
- if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.workspaceOpen=false;state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
+ if(name==="switchClub"){if(!state.clubs.some(c=>c.id===id))return;closeModal();state.workspaceOpen=false;state.clubId=id;state.teamId=null;state.staff=[];state.teamRoster=[];state.pendingByTeam={};state.docs=[];state.schedules=[];state.messages=[];state.events=[];state.messagingInitialized=false;state.directorInvite=null;state.view="resumen";await refresh();return;}
  if(name==="openWorkspaceTeam"){
    const target=state.workspaceTeams.find(t=>t.id===id);
    if(!target){notify("Este equipo no está disponible para tu cuenta.","error");return;}
    state.workspaceOpen=false;closeModal();
    if(target.club_id!==state.clubId){
      state.clubId=target.club_id;state.teamId=null;
-     state.staff=[];state.teamRoster=[];state.docs=[];state.messages=[];
+     state.staff=[];state.teamRoster=[];state.docs=[];state.schedules=[];state.messages=[];
      state.events=[];state.messagingInitialized=false;state.directorInvite=null;
      state.view="resumen";
      await refresh();
