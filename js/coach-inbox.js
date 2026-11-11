@@ -1,10 +1,17 @@
 /* Bandeja del entrenador: mensajes dirigidos únicamente a la temporada activa. */
 const CoachInbox=(()=>{
  "use strict";
- let cache=[],sid=null,loading=false,lastFetch=0;
+ let cache=[],sid=null,loading=false,lastFetch=0,uid=null;
+ function reset(){cache=[];sid=null;lastFetch=0;uid=null;}
+ function ensureIdentity(){
+   const next=Store.user?.uid||null;
+   if(uid!==next){reset();uid=next;}
+   return next;
+ }
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  async function fetch(s,force=false){
-   if(!s||!Cloud?.sb||!Store.user?.uid||loading)return;
+   const person=ensureIdentity();
+   if(!s||!Cloud?.sb||!person||loading)return;
    if(!force&&s===sid&&Date.now()-lastFetch<20000)return;
    loading=true;
    try{
@@ -13,7 +20,7 @@ const CoachInbox=(()=>{
        .eq("recipient_id",Store.user.uid).eq("season_id",s)
        .is("resolved_at",null).order("created_at",{ascending:false}).limit(30);
      if(error)throw error;
-     if(Store.sid!==s)return;
+     if(Store.sid!==s||Store.user?.uid!==person)return;
      const incoming=data||[];
      const different=s!==sid||JSON.stringify(cache.map(m=>[m.id,m.read_at,m.resolved_at]))!==
        JSON.stringify(incoming.map(m=>[m.id,m.read_at,m.resolved_at]));
@@ -25,6 +32,8 @@ const CoachInbox=(()=>{
    finally{loading=false;}
  }
  function panel(){
+   const person=ensureIdentity();
+   if(!person)return"";
    const season=Store.sid;
    if(!season){sid=null;cache=[];return"";}
    if(sid!==season||Date.now()-lastFetch>=20000){
@@ -38,6 +47,8 @@ const CoachInbox=(()=>{
      '<p class="muted small">Los mensajes solo llegan a los entrenadores autorizados de esta temporada. No hay enlaces a WhatsApp.</p></section>';
  }
  async function open(el){
+   const person=ensureIdentity();
+   if(!person)return;
    const m=cache.find(x=>x.id===el.dataset.id);
    if(!m||m.season_id!==Store.sid)return;
    try{
@@ -56,5 +67,5 @@ const CoachInbox=(()=>{
    window.setInterval(()=>{if(Store.sid&&Store.user?.uid&&Auth?.state==="in")fetch(Store.sid,true);},20000);
    window.addEventListener("focus",()=>{if(Store.sid&&Store.user?.uid)fetch(Store.sid,true);});
  }
- return {panel,fetch};
+ return {panel,fetch,reset};
 })();
