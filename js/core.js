@@ -63,6 +63,7 @@ function bodyView() {
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">⚽</div><h2>Crear equipo</h2><p>Configura categoría, plantilla, calendario y entrenadores desde tu primera temporada.</p>'+btn("Crear mi equipo","wizStart",{first:1},"primary","plus")+'</article>'+
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">🏟️</div><h2>Crear club</h2><p>Organiza equipos, temporadas y dirección deportiva. Completa la configuración poco a poco.</p><a class="btn primary" href="clubes.html">Gestionar mi club →</a></article>'+
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">◈</div><h2>Mostrar prueba</h2><p>Explora una demostración profesional con jornadas, estadísticas y datos ficticios.</p>'+btn("Ver demostraciones","openDemoChooser",{},"ghost")+'</article></div>'+
+      (typeof TeamRequests!=="undefined"?TeamRequests.panel():"")+
       '<div class="bq-onboard-join"><span>¿Te han invitado a un equipo?</span>'+btn("Introducir código de equipo","openTeamJoin",{},"ghost")+btn("Código antiguo de temporada","openJoin",{},"ghost")+'</div></div>';
   }
   const fn = V[UI.route.name] || V.inicio;
