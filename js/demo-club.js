@@ -38,7 +38,7 @@
  DemoClubUX.init(state);
  const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
  const visibleTeams=()=>state.modality==="todos"?state.teams:state.teams.filter(t=>t.modality===state.modality);
- const active=()=>state.directors.find(d=>d.id===state.activeDirector)||state.directors[0];
+ const active=()=>state.directors[0];
  const viewTitles={resumen:"Resumen del club",equipos:"Equipos del club",equipo:"Configurar equipo",directores:"Directores deportivos",instalaciones:"Instalaciones",calendario:"Calendario del club",calendarioMes:"Planificador mensual",comunicaciones:"Comunicaciones",avisos:"Avisos de actividad",ajustes:"Ajustes del club"};
  const pad=n=>String(n).padStart(2,"0");
  const parseDate=s=>{const p=String(s||"").split("-").map(Number);return new Date(p[0],p[1]-1,p[2]||1)};
@@ -291,7 +291,6 @@
   if(a.dataset.action==="go"){UI.view=a.dataset.view;render();return}
   if(a.dataset.action==="edit-team"){UI.teamId=id;UI.teamTab="overview";UI.view="equipo";render();return}
   if(a.dataset.action==="back-teams"){UI.view="equipos";render();return}
-  if(a.dataset.action==="switch-director"){return;}
   if(a.dataset.action==="add-director"&&state.directors.length<2){state.directors.push({id:"d2",name:"Marta León",initials:"ML",preferred:"F11"});save();render()}
   if(a.dataset.action==="new-team"){const newTeam=await DemoDialog.team();if(!newTeam)return;state.teams.push({id:"t"+Date.now(),name:newTeam.name,category:"Por definir",modality:newTeam.modality,competition:"Pendiente de asignar",players:0,coach:"Por asignar"});save();render()}
   if(a.dataset.action==="remove-club-crest"){state.club.crest="";save();render();return}
