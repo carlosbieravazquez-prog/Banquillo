@@ -226,20 +226,6 @@
       DemoClubUX.details(state,t).code=DemoClubUX.randomCode();save();render();
     }return;
   }
-  if(a.dataset.action==="demo-change-coach"){
-    const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
-    const name=await DemoDialog.prompt("Nombre del nuevo entrenador (ficticio)",t.coach==="Por asignar"?"":t.coach);
-    if(name===null)return;
-    const n=name.trim().slice(0,60);if(!n)return;
-    t.coach=n;const d=DemoClubUX.details(state,t);d.coachStatus="active";d.code=DemoClubUX.randomCode();
-    save();render();return;
-  }
-  if(a.dataset.action==="demo-remove-coach"){
-    const t=state.teams.find(t=>t.id===UI.teamId);if(!t)return;
-    if(!await DemoDialog.confirm("¿Dar de baja a "+t.coach+" y renovar el código del "+t.name+"? Es una simulación local, no revoca cuentas reales."))return;
-    t.coach="Por asignar";const d=DemoClubUX.details(state,t);d.coachStatus="vacant";d.code=DemoClubUX.randomCode();
-    save();render();return;
-  }
   if(a.dataset.action==="demo-ignore-notice"){
     const n=state.notifications.find(n=>n.id===id);if(!n)return;
     if(!n.ignoredAt)n.ignoredAt=Date.now();
