@@ -204,3 +204,11 @@
 .bq-period-item small{font-size:11px;color:#7795a2}
 .bq-period-item p{margin:0}
 @media(max-width:720px){.bq-workspace-menu{max-height:36vh}.bq-workspace-section{padding:15px!important}.bq-workspace-section-head>.btn{width:100%}.bq-workspace-team-row,.bq-workspace-solo-card{padding:12px 10px;gap:9px}.bq-workspace-arrow{max-width:76px;white-space:normal;text-align:right}.bq-workspace-symbol{font-size:16px}}
+
+/* El desplegable puede desplazarse sin dejar inaccesible el menú de la izquierda. */
+.app-shell>.sidebar{overflow-y:auto;overscroll-behavior:contain}
+.club-switch.bq-workspace-toggle{margin-bottom:7px;flex-shrink:0}
+.bq-workspace-menu{flex-shrink:0}
+.bq-workspace-all{background:#254b5e;color:#d9f0e8;font:inherit;font-weight:800;font-size:11px;border:1px solid #4b7785;border-radius:9px;width:100%;padding:10px;cursor:pointer}
+.bq-workspace-all:hover,.bq-workspace-all:focus-visible{background:#367267;color:#fff;outline:2px solid #a2e2c7}
+@media(max-width:760px){.app-shell>.sidebar{overflow-y:auto}.bq-workspace-menu{max-height:45vh}}
