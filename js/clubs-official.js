@@ -138,7 +138,7 @@ function openClubSettings(){
 function localDayISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function dayBanner(){
  const today=localDayISO();
- const list=state.docs.filter(x=>x.type==="match"&&x.data&&!x.data.rest&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.data.date||""))
+ const list=state.docs.filter(x=>x.type==="match"&&x.data&&!x.data.rest&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.data.date||""))
   .map(x=>({t:x.team,m:x.data}));
  const next=list.filter(x=>x.m.date>=today&&!Calc.matchInfo(x.m).played)
   .sort((a,b)=>String(a.m.date).localeCompare(String(b.m.date)))[0];
