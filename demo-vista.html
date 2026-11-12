@@ -1,0 +1,27 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Demo de Banquillo · Solo lectura</title><style>
+:root{font-family:system-ui,sans-serif;color:#102a43;background:#f2f5f9}*{box-sizing:border-box}body{margin:0}header{background:#102a43;color:white;padding:20px clamp(16px,4vw,50px);display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}a{color:inherit}header a{color:white}main{max-width:1160px;margin:auto;padding:30px 18px}h1{font-size:clamp(27px,4vw,40px);line-height:1.2}p{line-height:1.6}.notice{background:#e3f4eb;color:#11613c;padding:14px 18px;border-radius:12px;margin:20px 0}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.tabs button{background:white;border:1px solid #cbd7e2;border-radius:10px;padding:12px 16px;color:#102a43;font-weight:700;cursor:pointer}.tabs button[aria-selected=true]{background:#102a43;color:white}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}.card{background:white;border:1px solid #dde5ec;border-radius:15px;padding:22px;box-shadow:0 5px 16px #102a4310}.card strong{display:block;font-size:22px;margin-bottom:8px}.card small{color:#52657a}.muted{color:#52657a}.back{font-weight:700}.panel{min-height:220px}button:focus-visible{outline:3px solid #16845b;outline-offset:3px}
+</style></head><body><header><strong>⚽ Banquillo · Demostración</strong><a href="index.html">Volver a inicio</a></header><main><p class="back"><a href="demo-vista.html?tipo=club">Demo club</a> · <a href="demo-vista.html?tipo=equipo">Demo equipo</a></p><h1 id="title">Demostración</h1><p id="subtitle"></p><div class="notice">🔒 Modo solo lectura. Datos ficticios. Puedes visitar todas las pestañas, pero no editar, crear, eliminar ni guardar datos.</div><nav class="tabs" id="tabs" aria-label="Secciones de la demostración"></nav><section class="panel" id="content" aria-live="polite"></section></main><script>
+const team= new URLSearchParams(location.search).get('tipo')==='equipo';
+const views=team?['Resumen','Plantilla','Convocatorias','Partidos','Entrenamientos','Estadísticas','Cuerpo técnico']:['Resumen','Equipos','Entrenadores','Calendario','Instalaciones','Estadísticas','Comunicaciones'];
+const clubTeams=['Prebenjamín A','Benjamín A','Benjamín B','Alevín A','Alevín B','Infantil A','Cadete A','Juvenil A'];
+const players=['Juan','Carlos','Antonio','Enrique','Lucas','Joaquín','Yago','Miguel','Luis','Felipe','Fernando'];
+document.getElementById('title').textContent=team?'Demo de un equipo':'Demo de club completo';
+document.getElementById('subtitle').textContent=team?'Explora un equipo de fútbol base con información ficticia.':'Explora las áreas de un club de fútbol base con información ficticia.';
+function card(a,b){return '<article class="card"><strong>'+a+'</strong><small>'+b+'</small></article>'}
+function render(v){document.getElementById('tabs').innerHTML=views.map(x=>'<button type="button" data-tab="'+x+'" aria-selected="'+(x===v)+'">'+x+'</button>').join('');
+let items=[];
+if(v==='Resumen')items=team?[['Equipo','Prebenjamín A'],['Jugadores','11'],['Partidos jugados','6'],['Próximo partido','Jornada 7']]:[['Club','Atlético Monteverde CF'],['Equipos',String(clubTeams.length)],['Modalidades','Fútbol 7 y 11'],['Temporada','2026/27']];
+if(v==='Equipos')items=clubTeams.map((x,i)=>[x,i<5?'Fútbol 7':'Fútbol 11']);
+if(v==='Plantilla')items=players.map((x,i)=>[x,'Dorsal '+(i+1)]);
+if(v==='Entrenadores'||v==='Cuerpo técnico')items=[['Entrenador principal','Personal de ejemplo'],['Segundo entrenador','Personal de ejemplo'],['Delegado','Personal de ejemplo']];
+if(v==='Convocatorias')items=[['Jornada 7','Convocatoria de ejemplo'],['Jornada 6','Convocatoria cerrada'],['Jornada 5','Convocatoria cerrada']];
+if(v==='Partidos')items=[['Jornada 5','Victoria 3-1'],['Jornada 6','Empate 2-2'],['Jornada 7','Próximo encuentro']];
+if(v==='Calendario')items=[['Lunes','Entrenamientos'],['Miércoles','Entrenamientos'],['Sábado','Partidos de liga']];
+if(v==='Instalaciones')items=[['Campo principal','Fútbol 11'],['Campo auxiliar','Fútbol 7']];
+if(v==='Entrenamientos')items=[['Lunes','Control y pase'],['Miércoles','Posesión y finalización'],['Asistencia','Registro de ejemplo']];
+if(v==='Estadísticas')items=[['Victorias','4'],['Empates','1'],['Derrotas','1'],['Goles a favor','18']];
+if(v==='Comunicaciones')items=[['Aviso semanal','Información de ejemplo'],['Circular deportiva','Información de ejemplo']];
+document.getElementById('content').innerHTML='<h2>'+v+'</h2><div class="cards">'+items.map(x=>card(x[0],x[1])).join('')+'</div>';
+}
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)render(b.dataset.tab)});render('Resumen');
+</script></body></html>
