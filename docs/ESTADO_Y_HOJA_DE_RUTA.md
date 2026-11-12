@@ -385,3 +385,33 @@ Se mantiene fuera de Fase 1 cualquier cobro o suscripción. Se mantienen en la h
 7. Repetir los asesores de seguridad y revisar la configuración Auth y las funciones SECURITY DEFINER pendientes. No dar por disponibles servicios IA no desplegados.
 
 **Decisión de producto:** puede compartirse la web para un piloto beta con usuarios informados de su estado. La apertura a clubes en producción a gran escala queda condicionada a superar las pruebas anteriores.
+
+## 13. Auditoría visual y corrección de contraste — 12 de noviembre de 2026
+
+**Integrado en producción (código `main`):** Pull Request [#23](https://github.com/carlosbieravazquez-prog/Banquillo/pull/23), commit `c69b9985fdd79c4f121196909c43956fb1b24572`.
+
+### Incidencia reportada
+
+Captura de la pantalla de primera entrada con sesión iniciada: el fondo radial azul oscuro se superponía al título, el botón de demostración y las invitaciones se veían prácticamente blancos sobre tarjetas claras y el botón «Mi cuenta» ocupaba casi toda la cabecera.
+
+### Causa identificada y solución
+
+- La pantalla de bienvenida combinaba superficies blancas con variables de texto del modo oscuro automático según el sistema operativo. El degradado radial oscuro cruzaba los encabezados. Se ha adoptado un **tema claro estable por defecto**; el bloque CSS de tema oscuro explícito queda conservado para un futuro soporte completo.
+- Se rediseñó `css/onboarding.css`: fondo claro continuo, cabecera compacta, cuenta de anchura natural, títulos de altura flexible, botones con contraste suficiente y tarjetas en rejillas de tres, dos o una columna según el ancho.
+- En `index.html` se reorganizó la cabecera pública para que el formulario de registro/login preceda a la demo y se eliminaron disposiciones de cuadrícula que podían dejar el acceso en una fila incorrecta.
+- Se mejoraron tamaños de letra, line-height, flexibilidad de botones, tratamiento de textos largos, diálogos, avisos, invitaciones, equipaciones, selección de archivos y barras laterales en las dos áreas y ambas demostraciones.
+- En móviles, los calendarios mensuales oficial y demo permiten **desplazamiento horizontal** para mantener legibles las siete columnas en lugar de reducir el texto a 8–9 píxeles.
+- Se versionaron los enlaces CSS en las cuatro páginas HTML para evitar caché obsoleta.
+
+### Comprobaciones efectuadas
+
+- Validación de equilibrio de llaves/comentarios/comillas de las 12 hojas CSS enlazadas por las cuatro páginas principales.
+- Verificación de que todas las hojas de estilo referenciadas existen en GitHub.
+- 17 verificaciones estructurales de los problemas específicos (fondo, botones, cuenta, filtros, breakpoints, calendarios, recursos).
+- Cálculo de **10 pares representativos de contraste** (texto/fondo) con relaciones entre 4,68:1 y 11,75:1, superando 4,5:1 en esas muestras. **Esto no constituye una auditoría WCAG completa de todas las combinaciones de colores.**
+- Comprobación posterior a la fusión de los archivos relevantes en `main`.
+- **Sin cambios en JavaScript funcional, tablas, políticas RLS, Auth ni datos reales.**
+
+### Validación pendiente
+
+No se ha podido completar una prueba visual real en un navegador autenticado ni una inspección exhaustiva de todas las rutas en dispositivos y tamaños de letra ampliados. Antes del lanzamiento general, verificar en escritorio y móvil: primera entrada sin temporadas, registro/login, menús de entrenador, club, formularios, calendarios y mensajes, con zoom 100 % y 200 %. Registrar capturas y corregir cualquier regresión detectada.
