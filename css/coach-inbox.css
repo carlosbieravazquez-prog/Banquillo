@@ -12,3 +12,11 @@
 .bq-coach-message p{font-size:13px;line-height:1.55;color:#48697e;margin:7px 0 0;white-space:pre-wrap}
 .bq-coach-message button{flex-shrink:0}
 @media(max-width:640px){.bq-coach-message{flex-direction:column;align-items:stretch}.bq-coach-message button{align-self:flex-start}}
+
+
+/* Avisos del entrenador: contraste y botones flexibles. */
+.bq-coach-message{min-width:0;flex-wrap:wrap}
+.bq-coach-message small{font-size:12px;color:#516d7f;line-height:1.5}
+.bq-coach-message b{line-height:1.4;overflow-wrap:anywhere}
+.bq-coach-message p{overflow-wrap:anywhere}
+.bq-coach-message button{white-space:normal;line-height:1.4}
