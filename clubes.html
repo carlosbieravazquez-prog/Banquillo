@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="css/demo-club.css">
 <link rel="stylesheet" href="css/demo-club-ux.css">
 <link rel="stylesheet" href="css/clubs-beta.css">
-<link rel="stylesheet" href="css/clubs-official.css?v=20261111-planificador-v3">
+<link rel="stylesheet" href="css/clubs-official.css?v=20261112-resumen-v1">
 <link rel="stylesheet" href="css/team-members.css">
 </head>
 <body>
@@ -17,19 +17,21 @@
     <a class="brand" href="index.html"><span class="brand-mark">B</span><span><b>BANQUILLO</b><small>GESTIÓN DE CLUBES</small></span></a>
     <button type="button" class="club-switch bq-workspace-toggle" id="clubSwitcher" aria-expanded="false" aria-controls="bqWorkspaceMenu" aria-label="Cambiar de club, equipo o temporada"><span class="club-crest">⚽</span><span class="bq-switcher-label"><b id="sideClubName">Mis equipos</b><small id="sideSeason">Temporada</small></span><span class="bq-switcher-chevron" aria-hidden="true">⌄</span></button>
     <div id="bqWorkspaceMenu" class="bq-workspace-menu" hidden></div>
-    <div class="nav-label">CLUB</div>
-    <nav id="mainNav" aria-label="Dirección deportiva">
-      <button type="button" class="nav-item active" data-view="resumen"><span>▦</span> Resumen del club</button>
+    <nav id="mainNav" aria-label="Menú de Dirección Deportiva">
+      <div class="nav-label">MI CLUB</div>
+      <button type="button" class="nav-item active" data-view="resumen"><span>▦</span> Inicio y resumen</button>
       <button type="button" class="nav-item" data-view="equipos"><span>⚽</span> Equipos <i id="teamCount">0</i></button>
-      <button type="button" class="nav-item" data-view="directores"><span>♙</span> Directores deportivos</button>
       <button type="button" class="nav-item" data-view="temporadas"><span>▤</span> Temporadas</button>
+      <button type="button" class="nav-item" data-view="directores"><span>♙</span> Directores deportivos</button>
+      <div class="nav-label space-top">PLANIFICACIÓN</div>
+      <button type="button" class="nav-item" data-view="calendario"><span>▦</span> Calendario semanal</button>
+      <button type="button" class="nav-item" data-view="calendarioMes"><span>▤</span> Calendario mensual</button>
       <button type="button" class="nav-item" data-view="instalaciones"><span>◫</span> Instalaciones</button>
-      <button type="button" class="nav-item" data-view="calendario"><span>▦</span> Calendario</button>
-      <button type="button" class="nav-item" data-view="calendarioMes"><span>▤</span> Planificador mensual</button>
       <div class="nav-label space-top">COMUNICACIÓN</div>
-      <button type="button" class="nav-item" data-view="comunicaciones"><span>✉</span> Comunicaciones</button>
-      <button type="button" class="nav-item" data-view="avisos"><span>⚑</span> Avisos de actividad</button>
-      <button type="button" class="nav-item" data-view="ajustes"><span>⚙</span> Ajustes del club</button>
+      <button type="button" class="nav-item" data-view="comunicaciones"><span>✉</span> Mensajes internos</button>
+      <button type="button" class="nav-item" data-view="avisos"><span>⚑</span> Incidencias y avisos</button>
+      <div class="nav-label space-top">CONFIGURACIÓN</div>
+      <button type="button" class="nav-item" data-view="ajustes"><span>⚙</span> Ajustes y silbatos</button>
     </nav>
     <div class="sidebar-bottom"><span class="demo-dot"></span> Datos reales en Supabase<br><small>Tu club y tus equipos, sincronizados</small></div>
   </aside>
@@ -61,5 +63,5 @@
 <div id="bqToastRoot" role="status" aria-live="polite"></div>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js"></script>
-<script src="js/calc.js"></script><script src="js/club-planner.js"></script><script src="js/clubs-official.js?v=20261111-planificador-v3"></script>
+<script src="js/calc.js"></script><script src="js/club-planner.js"></script><script src="js/clubs-official.js?v=20261112-resumen-v1"></script>
 </body></html>
