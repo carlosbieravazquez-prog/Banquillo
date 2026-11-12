@@ -60,3 +60,22 @@
 .settings-visual-tabs button{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px}
 .settings-visual-tabs button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 @media(max-width:550px){.club-kit-layout{grid-template-columns:1fr}.club-kit-model{min-height:180px}.kit-mockup{width:min(72%,180px)}.club-theme-options{grid-template-columns:1fr}}
+
+
+/* Editor de equipaciones: etiquetas y controles accesibles al ampliar texto. */
+.club-kit-panel,.club-kit-grid,.club-kit-set,.club-kit-controls{min-width:0}
+.club-kit-head h3{line-height:1.3}
+.club-kit-head p,.club-kit-note{font-size:13px;line-height:1.55}
+.club-kit-tag{font-size:12px;line-height:1.35}
+.club-kit-part span{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.club-kit-part small{font-size:12px}
+.club-kit-hint{font-size:12px;line-height:1.5}
+.club-kit-theme-option,.club-theme-option{min-width:0;overflow-wrap:anywhere}
+.club-kit-sample-inner{flex-wrap:wrap}
+.club-kit-layout{grid-template-columns:minmax(0,1fr) minmax(170px,1fr)}
+@media(max-width:620px){
+ .club-kit-layout{grid-template-columns:1fr}
+ .club-kit-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .club-kit-part span{font-size:12px}
+ .club-kit-theme-options,.club-theme-options{grid-template-columns:1fr}
+}
