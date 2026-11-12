@@ -411,3 +411,28 @@
  #viewRoot .bq-upcoming-match .btn{margin-left:0;width:100%}
  .bq-dialog-foot .btn{flex:1 1 130px}
 }
+
+
+/* Planificador oficial: no comprimir las siete columnas hasta 8px. */
+.bq-real-panel-title small{font-size:12px;color:#526d7e}
+.bq-real-fixture-day small,.bq-real-fixture-description small{font-size:12px;color:#526d7e}
+.bq-real-fixture-description>b{font-size:14px;overflow-wrap:anywhere}
+.bq-real-fixture-description>b span{font-size:12px;color:#526d7e}
+.bq-real-fixture-action .btn{font-size:12px;line-height:1.35}
+.bq-real-waiting small{font-size:12px;color:#526d7e}
+.bq-real-waiting .btn{font-size:12px}
+.bq-real-weeknames{font-size:11px;color:#526d7e}
+.bq-real-day small{font-size:11px;line-height:1.35;color:#176d50}
+.bq-real-day b{font-size:13px}
+@media(max-width:640px){
+ .bq-real-month{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:12px!important}
+ .bq-real-month::before{content:"Desliza para ver todos los días →";display:block;color:#526d7e;font-size:12px;margin-bottom:9px}
+ .bq-real-weeknames,.bq-real-calendar-grid{min-width:620px;gap:5px}
+ .bq-real-day{min-height:75px;padding:8px;border-radius:8px}
+ .bq-real-day small{font-size:11px;line-height:1.35}
+}
+@media print{
+ .bq-real-month{overflow:visible!important}
+ .bq-real-month::before{display:none!important}
+ .bq-real-weeknames,.bq-real-calendar-grid{min-width:0!important}
+}
