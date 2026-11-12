@@ -1,7 +1,7 @@
 # Banquillo — Documento maestro de proyecto
 
 > Documento vivo de continuidad. Se actualizará al cerrar cada bloque de análisis, implementación y pruebas.
-> Última actualización: 11 de noviembre de 2026.
+> Última actualización: 12 de noviembre de 2026.
 > Estado: Fase 1 parcialmente implementada en main y Supabase; auditoría y validación pendientes.
 
 ## 1. Propósito y visión
@@ -355,3 +355,33 @@ Se mantiene fuera de Fase 1 cualquier cobro o suscripción. Se mantienen en la h
 | 2026-11-11 | Código y documentación | Revisados SQL de clubes, directores, seguridad y personal técnico; identificadas funciones parciales y pendientes |
 | 2026-11-11 | Cambios de esta revisión | Solo documento maestro; sin escrituras en Supabase ni cambios funcionales |
 
+## 12. Preparación de lanzamiento beta — 12 de noviembre de 2026
+
+### 12.1 Enlaces oficiales y estado de entrega
+
+- **Web de registro e inicio de sesión:** https://carlosbieravazquez-prog.github.io/Banquillo/
+- **Dirección Deportiva con cuenta:** https://carlosbieravazquez-prog.github.io/Banquillo/clubes.html
+- **Repositorio de producción:** https://github.com/carlosbieravazquez-prog/Banquillo (rama `main`).
+- **Documento maestro:** `docs/ESTADO_Y_HOJA_DE_RUTA.md`.
+- **Estado recomendado:** beta pública controlada / pilotos con clubes, **no lanzamiento general sin una prueba real de extremo a extremo y revisión de privacidad**. La publicación del código no equivale a una certificación de seguridad ni a una prueba de navegador.
+
+### 12.2 Pulido de las dos áreas integrado en main
+
+- **Pull Request #22, fusionada el 12-11:** https://github.com/carlosbieravazquez-prog/Banquillo/pull/22; commit de integración `7dc385262490eb7a8dde8d63d106a6d1e6754ded`.
+- **Entrenador:** eliminado «Clubes · Beta» de la barra lateral; se conserva el acceso a Dirección Deportiva desde Temporadas cuando corresponda. Ajustes de menú, estados activos, contraste en tarjetas de temporadas y estilos de móvil/escritorio.
+- **Dirección Deportiva:** eliminados los botones duplicados de guardar/restaurar configuración de la cabecera. La descarga/restauración JSON permanece en Ajustes, con aclaración de alcance: incluye configuración de club/equipos, **no** jugadores, actas, personal ni permisos; **no** sustituye una copia de seguridad completa de Supabase. Filtro F7/F11 limitado a la vista Equipos; el resumen lista todos los equipos sin aplicar silenciosamente ese filtro. Franja de fecha/próxima jornada limitada a Inicio y calendarios. Mejoras de menú, contraste, navegación móvil y atributos accesibles `aria-current` y `aria-pressed`.
+- **Página pública:** nombre corto Banquillo y acceso más claro a Dirección Deportiva; versiones de recursos CSS/JS actualizadas para reducir problemas de caché.
+- **Archivos modificados:** `js/core.js`, `css/app.css`, `js/clubs-official.js`, `css/clubs-official.css`, `index.html`, `clubes.html`.
+- **Pruebas ejecutadas:** validación sintáctica de los dos JavaScript; 16 comprobaciones de estructura/comportamiento; simulación del render de Avisos, Equipos e Inicio; validación del balance de etiquetas HTML de Ajustes; comprobación de que los seis archivos están en `main`. No se modificó Supabase en este bloque. **No se realizaron pruebas reales de navegador autenticado ni de móvil físico.**
+
+### 12.3 Puertas de salida para un lanzamiento general
+
+1. Registrar una cuenta de prueba, confirmar correo si está habilitado, cerrar sesión, volver a entrar y recuperar contraseña.
+2. Probar dos cuentas distintas: entrenador y director; verificar aislamiento entre clubes y que un miembro sin permiso no puede leer ni modificar temporadas ajenas.
+3. Crear un club y un equipo ficticios; comprobar el flujo de invitación, cargos, archivado/restauración y calendario sin alterar datos deportivos reales.
+4. Verificar que los datos de jugadores menores no se exponen a cuentas no autorizadas; revisar textos de privacidad, consentimiento y retención aplicables.
+5. Probar navegación, accesibilidad y formularios en móvil y escritorio con una sesión real; corregir errores antes de anunciar lanzamiento general.
+6. Comprobar respaldo completo y restauración de Supabase; el JSON de configuración de Ajustes **no** es una copia completa.
+7. Repetir los asesores de seguridad y revisar la configuración Auth y las funciones SECURITY DEFINER pendientes. No dar por disponibles servicios IA no desplegados.
+
+**Decisión de producto:** puede compartirse la web para un piloto beta con usuarios informados de su estado. La apertura a clubes en producción a gran escala queda condicionada a superar las pruebas anteriores.
