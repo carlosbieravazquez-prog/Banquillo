@@ -13,3 +13,21 @@ html{overflow-x:hidden}body{overflow-wrap:break-word}*,*::before,*::after{box-si
 .l-demo-choices{display:flex;flex-wrap:wrap;gap:10px}.l-demo-choices a{padding:10px 14px;border-radius:10px;background:#16845b;color:#fff;text-decoration:none;font-weight:700}
 .l-demo-choices a:nth-child(2){background:#16345a}
 @media(max-width:700px){.topbar,.top-actions,.modality-bar{align-items:stretch}.topbar h1{font-size:clamp(24px,7vw,32px)}.top-actions{width:100%}.top-actions>*{max-width:100%}.modality-bar .segmented{width:100%}.segmented button{flex:1 1 auto}.l-mode-grid{grid-template-columns:minmax(0,1fr)!important}.l-demo-choices{width:100%}.l-demo-choices a{flex:1 1 150px;justify-content:center}}
+
+/* Ajustes específicos para la página pública: sin solapamientos ni duplicados. */
+#landing .l-hero-g{align-items:start;grid-auto-rows:min-content}
+#landing .l-demo-access{width:100%;max-width:100%;padding:clamp(18px,2.2vw,25px);background:#1b4b52;color:#fff;border:1px solid #447c75;border-radius:16px;box-shadow:none}
+#landing .l-demo-access strong{display:block;color:#fff;font-size:clamp(17px,1.8vw,20px);line-height:1.4}
+#landing .l-demo-access>span{display:block;color:#e1f1ee;font-size:14px;line-height:1.6}
+#landing .l-demo-access small{color:#d3e8e5;font-size:12px;line-height:1.5}
+#landing .l-demo-choices{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#landing .l-demo-choices a{display:flex;justify-content:center;align-items:center;text-align:center;min-height:48px;padding:12px 14px;border:1px solid transparent;border-radius:11px;background:#187f59;color:#fff!important;font-weight:700;text-decoration:none;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+#landing .l-demo-choices a:nth-child(2){background:#fff;color:#143d4a!important;border-color:#c7e5df}
+#landing .l-demo-choices a:hover{filter:brightness(.94)}
+#landing .l-mode-card{gap:12px;min-height:0;justify-content:flex-start}
+#landing .l-mode-card h3{font-size:clamp(22px,2.3vw,27px);line-height:1.22}
+#landing .l-mode-card p{line-height:1.6}
+#landing .l-auth,#landing .l-auth *{max-width:100%}
+#landing .l-auth button,#landing .l-auth a{position:relative;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+#landing .l-auth h2,#landing .l-auth h3{line-height:1.25}
+@media(max-width:540px){#landing .l-demo-choices{grid-template-columns:1fr}#landing .l-demo-access{padding:17px}#landing .l-demo-choices a{width:100%}}
