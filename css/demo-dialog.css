@@ -2,3 +2,13 @@
 .dd-error{min-height:1.1em;color:#a23b38;font-size:12px;font-weight:700}
 .dd-tip{font-size:12px;color:#58788b;margin-top:12px;line-height:1.6}
 .dd-content input[type="file"]{height:auto;cursor:pointer;padding:13px;background:#f6fafb;border:1px dashed #9cbac8}
+
+
+/* Diálogos de demostración: altura adaptable y texto sin recortes. */
+.dd-overlay{padding:clamp(10px,3vw,20px)}
+.dd-card{max-width:100%;max-height:calc(100dvh - 20px);overflow-y:auto;overflow-x:hidden;color:#173b53}
+.dd-card header h2{line-height:1.3;overflow-wrap:anywhere}
+.dd-content{overflow-wrap:anywhere}
+.dd-card footer{flex-wrap:wrap}
+.dd-card button{font-size:13px;line-height:1.35;white-space:normal}
+@media(max-width:440px){.dd-card header,.dd-content{padding:17px}.dd-card footer{padding:0 17px 17px}}
