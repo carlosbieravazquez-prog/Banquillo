@@ -9,7 +9,7 @@ document.getElementById('title').textContent=team?'Demo de un equipo':'Demo de c
 document.getElementById('subtitle').textContent=team?'Explora un equipo de fútbol base con información ficticia.':'Explora las áreas de un club de fútbol base con información ficticia.';
 function esc(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 let active='Resumen';let notes={};
-function card(a,b){return '<article class="card"><strong>'+esc(a)+'</strong><small>'+esc(b)</small></article>'}
+function card(a,b){return '<article class="card"><strong>'+esc(a)+'</strong><small>'+esc(b)+'</small></article>'}
 function render(v){active=v;document.getElementById('tabs').innerHTML=views.map(x=>'<button type="button" data-tab="'+x+'" aria-selected="'+(x===v)+'">'+x+'</button>').join('');
 let items=[];
 if(v==='Resumen')items=team?[['Equipo','Prebenjamín A'],['Jugadores','11'],['Partidos jugados','6'],['Próximo partido','Jornada 7']]:[['Club','Atlético Monteverde CF'],['Equipos',String(clubTeams.length)],['Modalidades','Fútbol 7 y 11'],['Temporada','2026/27']];
