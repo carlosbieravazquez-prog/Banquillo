@@ -25,7 +25,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Banquillo","alternateName":"El Banquillo del Entrenador","applicationCategory":"SportsApplication","operatingSystem":"Web","inLanguage":"es","description":"Aplicación web para entrenadores de fútbol base: plantilla, convocatorias, partidos, entrenamientos e informes individuales en PDF.","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}
 </script>
-</head>
+<link rel="stylesheet" href="css/visual-fixes.css?v=20261112-final"></head>
 <body>
 
 <!-- Página de inicio (visible sin iniciar sesión; también es lo que lee Google) -->
@@ -48,7 +48,7 @@
         </ul>
       </div>
       <div class="l-auth" id="authSlot" aria-live="polite"><noscript>Necesitas activar JavaScript para entrar en Banquillo.</noscript></div>
-      <div class="l-demo-access"><strong>¿Quieres conocer Banquillo antes de registrarte?</strong><span>Explora la demostración con datos ficticios, sin modificar ninguna cuenta.</span><a class="l-demo-access-link" href="demo-club.html#equipos">Ver demostración de club →</a><small>Modo demo · Datos de ejemplo · Sin acceso a datos reales</small></div>
+      <div class="l-demo-access"><strong>Explora Banquillo antes de registrarte</strong><span>Dos demostraciones con datos ficticios, navegación libre y cambios de prueba que se descartan al recargar.</span><div class="l-demo-choices"><a href="demo-vista.html?tipo=club">Ver demo de club →</a><a href="demo-vista.html?tipo=equipo">Ver demo de equipo →</a></div><small>Puedes probar las funciones sin guardar cambios ni acceder a datos reales.</small></div>
     </div></section>
 
 
@@ -66,10 +66,8 @@
           <span class="l-mode-label">Para clubes</span>
           <h3>Gestiona un club completo</h3>
           <p>Organiza varios equipos, asigna entrenadores y permite que la dirección deportiva tenga una visión conjunta de las categorías y temporadas.</p>
-          <span class="l-mode-note">Prototipo interactivo · Datos ficticios</span>
-          <a class="l-mode-link" href="demo-club.html">Explorar demo de club <span aria-hidden="true">→</span></a>
-          <a class="l-mode-link" href="clubes.html">Abrir Dirección Deportiva <span aria-hidden="true">→</span></a>
-          <span class="l-mode-note">Área de clubes con cuenta · Versión beta</span>
+          <span class="l-mode-note">Demostración interactiva · Datos ficticios</span>
+          <a class="l-mode-link" href="demo-vista.html?tipo=club">Explorar demo de club <span aria-hidden="true">→</span></a>
         </article>
       </div>
     </div></section>
