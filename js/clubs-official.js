@@ -147,9 +147,29 @@ function dayBanner(){
  (next?(next.m.home?"🏠 ":"✈️ ")+esc(next.t.name)+' · '+esc(next.m.rival||"Rival por definir"):'Sin próximos partidos registrados')+
  '</strong>'+(next?'<small>Jornada '+esc(next.m.n||"—")+' · '+esc(showDate(next.m.date))+'</small>':'')+'</div></div>';
 }
+function upcomingMatchesPanel(){
+ const today=localDayISO();
+ const next=state.docs.filter(x=>x.type==="match"&&x.team&&x.data&&!x.data.rest&&
+  /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.data.date||"")&&x.data.date>=today&&
+  !Calc.matchInfo(x.data).played)
+  .sort((a,b)=>String(a.data.date).localeCompare(String(b.data.date))).slice(0,4);
+ return '<section class="panel bq-upcoming-panel"><div class="panel-head"><div><h3>Próximos partidos</h3>'+
+ '<p class="muted">Jornadas de los equipos a los que tienes acceso</p></div>'+
+ button("Ver calendario","viewWeek","","ghost")+'</div>'+
+ (next.length?'<div class="bq-upcoming-grid">'+next.map(x=>
+  '<article class="bq-upcoming-match"><span class="bq-upcoming-icon" aria-label="'+
+  (x.data.home?"Local":"Visitante")+'">'+(x.data.home?"🏠":"✈️")+'</span>'+
+  '<div><b>'+esc(x.team.name)+'</b><span>'+esc(x.data.rival||"Rival pendiente")+'</span>'+
+  '<small>Jornada '+esc(x.data.n||"—")+' · '+esc(showDate(x.data.date))+
+  ' · '+(x.data.home?"En casa":"Fuera")+'</small></div>'+
+  button("Abrir equipo","openTeam",x.team.id,"ghost")+'</article>').join("")+'</div>':
+  '<p class="muted bq-upcoming-empty">Todavía no hay próximos partidos registrados en las temporadas a las que tienes acceso.</p>')+
+ '</section>';
+}
 function summary(){const c=active();if(!c)return emptyClub();const teams=state.teams;const f7=teams.filter(x=>x.modality==="F7").length;const f11=teams.length-f7;
 return head("Resumen del club","Organización deportiva de "+c.name,button("+ Añadir equipo","newTeam"))+
  '<div class="stats"><article class="stat"><span class="stat-icon">⚽</span><div class="stat-label">Equipos activos</div><div class="stat-value">'+teams.length+'</div><div class="stat-foot">En la temporada</div></article><article class="stat"><span class="stat-icon">◫</span><div class="stat-label">Fútbol 7</div><div class="stat-value">'+f7+'</div><div class="stat-foot">Equipos F7</div></article><article class="stat"><span class="stat-icon">◧</span><div class="stat-label">Fútbol 11</div><div class="stat-value">'+f11+'</div><div class="stat-foot">Equipos F11</div></article><article class="stat"><span class="stat-icon">▤</span><div class="stat-label">Temporada</div><div class="stat-value bq-season-value">'+esc(currentPeriod()?.season_label||"Cerrada")+'</div><div class="stat-foot">'+(currentPeriod()?"En curso":"Histórica")+'</div></article></div>'+
+ upcomingMatchesPanel()+
  '<div class="two-col"><section class="panel"><div class="panel-head"><h3>Equipos del club</h3>'+button("Ver todos","viewTeams","","ghost")+'</div>'+teamRows()+'</section><section class="panel"><div class="panel-head"><h3>Plan de trabajo</h3></div><p class="muted">Personaliza el cuerpo técnico, vincula las temporadas de cada equipo y comparte su código de acceso. Puedes completar las instalaciones cuando lo necesites.</p><div class="bq-inline-actions">'+button("Temporadas","viewSeasons","","ghost")+button("Instalaciones","viewFacilities","","ghost")+'</div></section></div>';}
 function emptyClub(){return head("Bienvenido a Banquillo","Empieza desde el club o incorpora un equipo a tu cuenta.")+'<div class="bq-choice-grid">'+
  '<article class="panel"><h3>Crear un club</h3><p>Configúralo progresivamente: equipos, campos, cuerpo técnico y temporadas.</p>'+button("Crear club","newClub")+'</article>'+
@@ -624,7 +644,7 @@ async function loadMessaging(silent=false){
  const updated=previous!==JSON.stringify([state.messages.map(m=>[m.id,m.read_at,m.resolved_at]),state.events.map(e=>e.id)]);
  if(silent&&state.messagingInitialized&&state.events.length&&state.events[0].id!==oldId){
   notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");
-  if(state.view==="avisos")await loadAllData();
+  if(["avisos","resumen"].includes(state.view))await loadAllData();
  }
  state.messagingInitialized=true;
  // No reconstruir la pantalla cada 20 segundos si nada ha cambiado.
