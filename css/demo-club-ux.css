@@ -108,3 +108,55 @@ button.ux-month-day:hover,button.ux-month-day:focus-visible{border-color:#258667
   .ux-print-foot{text-align:right;color:#697c8b;font-size:9px;margin-top:8px}
   #printCalendar *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+
+/* Tarjetas avanzadas y calendario: tipografía y desbordamientos controlados. */
+.ux-team-header>div:nth-child(2)>strong{line-height:1.3;overflow-wrap:anywhere}
+.ux-team-header>div:nth-child(2)>span{line-height:1.5}
+.ux-team-coaches>span{font-size:11px}
+.ux-team-coaches>small{font-size:12px}
+.ux-tabs button{font-size:13px;line-height:1.4;white-space:normal}
+.ux-metric{min-width:0}
+.ux-metric>span{font-size:12px;color:#526e7e;line-height:1.4}
+.ux-metric>b{line-height:1.15;overflow-wrap:anywhere}
+.ux-box-title>span{font-size:12px;color:#526d7e}
+.ux-rank-line{font-size:12px;min-width:0}
+.ux-rank-line>b{font-size:12px}
+.ux-fixture{font-size:12px;grid-template-columns:minmax(65px,80px) minmax(0,1fr) minmax(70px,125px)}
+.ux-fixture span,.ux-fixture small{color:#526d7e}
+.ux-fixture b{font-size:13px;overflow-wrap:anywhere}
+.ux-data-table th{font-size:12px}
+.ux-caution{font-size:12px!important;line-height:1.6}
+.ux-team-code span{font-size:11px}
+.ux-team-code strong{font-size:clamp(20px,3vw,30px);overflow-wrap:anywhere}
+.ux-person{min-width:0;flex-wrap:wrap}
+.ux-person>div{min-width:0;overflow-wrap:anywhere}
+.ux-person>div small{color:#526d7e;font-size:12px}
+.ux-pill{font-size:11px;white-space:normal;line-height:1.35}
+.ux-notice-head small,.ux-notice-footer>small{font-size:12px;color:#526d7e}
+.ux-notice .ux-actions .btn{font-size:12px;line-height:1.35}
+.ux-calendar-tools{flex-wrap:wrap}
+.ux-calendar-tools>div{min-width:0}
+.ux-calendar-tools p{font-size:12px;color:#526d7e}
+.ux-month-weekday{font-size:11px;color:#526d7e}
+.ux-month-event{font-size:10px;line-height:1.35}
+.ux-month-day small{font-size:10px;color:#526d7e}
+.ux-planner-side p{font-size:12px;line-height:1.5}
+.ux-week-team{font-size:12px}
+.ux-week-team small{color:#526d7e}
+@media(max-width:720px){
+ /* El calendario mantiene celdas legibles; se desplaza en horizontal
+    en vez de comprimir siete columnas hasta superponer las jornadas. */
+ .ux-month-box{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+ .ux-month-box::before{content:"Desliza para ver todos los días →";display:block;font-size:12px;color:#526d7e;margin-bottom:8px}
+ .ux-month-grid{min-width:690px;gap:6px}
+ .ux-month-day{min-height:102px;padding:8px 6px}
+ .ux-month-event{font-size:11px;padding:4px}
+ .ux-month-weekday{font-size:11px}
+ .ux-fixture{grid-template-columns:minmax(58px,75px) minmax(0,1fr) minmax(60px,90px)}
+}
+@media print{
+ .ux-month-box{overflow:visible!important}
+ .ux-month-box::before{display:none!important}
+ .ux-month-grid{min-width:0!important}
+}
