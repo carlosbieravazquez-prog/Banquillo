@@ -415,3 +415,34 @@ Captura de la pantalla de primera entrada con sesión iniciada: el fondo radial 
 ### Validación pendiente
 
 No se ha podido completar una prueba visual real en un navegador autenticado ni una inspección exhaustiva de todas las rutas en dispositivos y tamaños de letra ampliados. Antes del lanzamiento general, verificar en escritorio y móvil: primera entrada sin temporadas, registro/login, menús de entrenador, club, formularios, calendarios y mensajes, con zoom 100 % y 200 %. Registrar capturas y corregir cualquier regresión detectada.
+
+## 14. Revisión de continuidad — 12 de noviembre de 2026 (tarde)
+
+### 14.1 GitHub: nuevas demostraciones y ajustes
+
+- Comparación desde la integración visual `c69b9985fdd79c4f121196909c43956fb1b24572` hasta `main` consultado: **11 commits adicionales**, **9 archivos** añadidos o modificados: `css/demo-temporal.css`, `css/visual-fixes.css`, `demo-club-vista.html`, `demo-club.html`, `demo-equipo-vista.html`, `demo-vista.html`, `docs/ESTADO_Y_HOJA_DE_RUTA.md`, `index.html`, `js/demo-temporal.js`. La comparación incluye cambios documentales anteriores a esta revisión.
+- Las páginas `demo-club-vista.html` y `demo-equipo-vista.html` presentan vistas de ejemplo separadas, con formularios de notas temporales. `js/demo-temporal.js` agrega y elimina elementos en el DOM, sin llamadas a Supabase ni almacenamiento persistente en ese módulo. Esto **no acredita** que todos los flujos de la aplicación real estén simulados o probados.
+- `demo-vista.html` enlaza ambas vistas. `css/visual-fixes.css` contiene ajustes de legibilidad, flexibilidad de cabeceras y diseño móvil. Revisar visualmente en navegador antes de afirmar que los solapamientos están corregidos.
+- La rama `feature/fase-1-clubes-equipos` permanece divergente: **59 commits por delante y 55 por detrás** de `main`. No se ha fusionado ni desplegado nada durante esta revisión.
+
+### 14.2 Supabase: crecimiento del esquema y seguridad
+
+- Proyecto `ACTIVE_HEALTHY`, PostgreSQL 17.11. **19 tablas públicas**, todas con RLS habilitado; **29 migraciones registradas** (frente a 4 en la revisión del 11-11); **25 políticas RLS**; **43 funciones SECURITY DEFINER ejecutables por authenticated**, **0 por anon**. No hay Edge Functions desplegadas. Los recuentos se han comprobado con metadatos y consulta SQL de solo lectura.
+- Recuentos de tablas del conector: perfiles 3, temporadas 2, miembros de temporada 2, documentos 54, intentos de código 11; clubes 1, equipos 1, vinculación club-temporada 1, código de club 1, código de equipo 1, personal técnico 1. Son recuentos puntuales; no se han leído datos personales.
+- Tablas nuevas respecto a la revisión anterior: `banquillo_club_seasons`, `banquillo_team_codes`, `banquillo_club_settings`, `banquillo_management_wallet`, `banquillo_management_charges`, `banquillo_team_messages`, `banquillo_director_events`, `banquillo_team_members`, `banquillo_match_schedules`.
+- Entre las migraciones añadidas figuran gestión de códigos, vinculación de temporadas, personal técnico, invitaciones y revocación de directores, mensajería privada, actas, gestión de abandonos, planificador de partidos y actualización de reservas. **La existencia de migraciones no demuestra el funcionamiento de sus flujos ni su seguridad**. Es prioritario revisar el SQL y los controles de autorización antes de incorporar usuarios externos.
+- El esquema incorpora tablas `banquillo_management_wallet` y `banquillo_management_charges` y una migración con nombre de gestión de Silbatos. Son elementos existentes observados, **no una autorización para desarrollar cobros o suscripciones**; la Fase 1 sigue excluyéndolos.
+- Asesor de seguridad: **6 tablas RLS sin políticas** (`banquillo_club_codes`, `banquillo_management_charges`, `banquillo_management_wallet`, `banquillo_team_codes`, `join_attempts`, `seasons_meta`), **43 RPC SECURITY DEFINER ejecutables por authenticated** y advertencia de protección de contraseñas filtradas desactivada. Las tablas sin políticas no deben abrirse automáticamente: primero comprobar privilegios directos y uso previsto mediante RPC. [Guía de SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+- Asesor de rendimiento: **8 claves externas sin índice de cobertura**, `join_attempts` sin clave primaria y un índice sin uso observado. [Guía de claves externas sin índice](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys). Asesor de salud sin avisos.
+- **No se han ejecutado migraciones ni escrituras SQL en esta revisión**, ni se han modificado Auth, permisos, RLS, datos o código funcional.
+
+### 14.3 Riesgos y siguientes pasos priorizados
+
+1. **Bloqueante para un lanzamiento general:** verificar copia restaurable y plan de rollback de las 29 migraciones ya aplicadas; no asumir que una exportación JSON de configuración es un respaldo de base de datos.
+2. Auditar primero las RPC SECURITY DEFINER sensibles (borrado/restauración de club, expulsión de director, asignación de personal, códigos de invitación, restauración de configuración, mensajes y reservas) con revisión de sus verificaciones de identidad, permisos y aislamiento entre clubes. No revocar masivamente las RPC necesarias.
+3. Revisar políticas y privilegios efectivos de las 19 tablas; probar con dos cuentas ficticias independientes, sin tocar clubes, temporadas o jugadores reales.
+4. Contrastar las 29 migraciones registradas con los scripts versionados del repositorio y preparar pruebas de recuperación y regresión, incluidas invitaciones, cierres, calendarios y conservación de temporadas.
+5. Completar **auditoría persistente con valores anterior/nuevo** y **notificaciones agrupadas con lectura**: la existencia de mensajes/eventos no prueba que cumplan estos requisitos. Verificar vinculación del Prebenjamín existente sin alterar sus datos y mantener límite de 12 equipos activos por club.
+6. Probar en navegador real ambas demostraciones y el acceso autenticado desde móvil/escritorio. Revisar que los datos de muestra sean enteramente ficticios y no reproduzcan identidades reales de menores.
+
+Se mantienen para fases posteriores los avisos IA, identidad e historial de jugadores entre categorías y deshacer cambios. **No hay pruebas extremo a extremo ni validación visual realizadas por esta revisión.**
