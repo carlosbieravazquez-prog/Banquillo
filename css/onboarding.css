@@ -1,35 +1,130 @@
-/* Primera entrada sin temporadas: una pantalla y tres decisiones. */
-.bq-entry-shell{min-height:100vh;background:radial-gradient(ellipse at 85% -15%,#214f6c 0,#0f293f 37%,#eef4f7 37.1%,#eef4f7 100%)}
-.bq-entry-header{background:#102d44;display:flex;align-items:center;justify-content:space-between;padding:17px max(22px,calc((100vw - 1150px)/2));color:#fff}
-.bq-entry-brand{display:flex;gap:11px;align-items:center}
-.bq-entry-brand b{font-size:21px;letter-spacing:.06em}
-.bq-entry-brand small{opacity:.65;font-size:11px}
-.bq-entry-header .acc{background:#244960;color:#fff}
-.bq-entry-main{max-width:1150px;margin:0 auto;padding:50px 22px 70px}
-.bq-onboard-head{text-align:center;margin:0 auto 34px;max-width:730px}
-.bq-onboard-head>span{font-size:11px;font-weight:800;letter-spacing:.17em;color:#27805f}
-.bq-onboard-head h1{font-size:clamp(30px,4vw,48px);font-weight:800;letter-spacing:-.045em;color:#173950;line-height:1.12;margin:11px 0 16px}
-.bq-onboard-head p{font-size:15px;color:#6e8090;line-height:1.6}
+/* Banquillo · entrada con sesión, accesible y consistente con la paleta del producto.
+   Esta pantalla usa fondo claro deliberadamente para que no mezcle textos de modo
+   oscuro con tarjetas blancas según las preferencias del sistema operativo. */
+.bq-entry-shell{
+ --entry-navy:#12324b;--entry-ink:#173b53;--entry-muted:#506c7d;
+ --entry-green:#16845b;--entry-line:#d8e5eb;
+ min-height:100vh;min-height:100dvh;
+ background:linear-gradient(180deg,#f4f8fa 0%,#edf3f6 100%);
+ color:var(--entry-ink);color-scheme:light;
+}
+.bq-entry-header{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+ gap:14px;padding:16px max(22px,calc((100vw - 1160px)/2));
+ background:var(--entry-navy);color:#fff;
+}
+.bq-entry-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.bq-entry-brand .mark{width:36px;height:36px;flex:none}
+.bq-entry-brand b{font:700 23px/1.15 var(--f-display);letter-spacing:.055em}
+.bq-entry-brand small{display:block;max-width:175px;color:#c3d5df;font-size:12px;line-height:1.35}
+.bq-entry-header .acc{
+ flex:0 0 auto;width:auto;max-width:min(310px,100%);min-height:48px;
+ display:flex;align-items:center;gap:11px;margin:0;padding:7px 13px;
+ background:#254b63;border:1px solid #45677b;border-radius:12px;color:#fff;
+}
+.bq-entry-header .acc:hover{background:#2e5b74}
+.bq-entry-header .acc-t b{color:#fff;font-size:13px}
+.bq-entry-header .acc-t small{color:#c6d6df;font-size:12px;margin-top:4px}
+.bq-entry-header .avatar{background:#3fc18a;color:#0b2f23}
+.bq-entry-main{max-width:1200px;margin:0 auto;padding:clamp(34px,5vw,62px) 24px 72px}
+.bq-onboard-head{text-align:center;margin:0 auto 32px;max-width:850px}
+.bq-onboard-head>span{display:block;color:#176d50;font-size:12px;font-weight:800;letter-spacing:.15em}
+.bq-onboard-head h1{
+ max-width:850px;margin:12px auto 16px;color:var(--entry-ink);
+ font:700 clamp(34px,4.5vw,52px)/1.13 var(--f-display);
+ letter-spacing:-.015em;text-wrap:balance;overflow-wrap:break-word;
+}
+.bq-onboard-head p{
+ max-width:670px;margin:0 auto;color:var(--entry-muted);
+ font-size:16px;line-height:1.6;overflow-wrap:anywhere;
+}
 .bq-onboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.bq-onboard-card{display:flex;flex-direction:column;align-items:flex-start;min-height:305px;padding:30px;border-radius:20px;background:white;box-shadow:0 16px 45px #19395411;border:1px solid #dde9ee}
-.bq-onboard-card h2{font-size:21px;color:#183e58;margin:17px 0 7px}
-.bq-onboard-card p{color:#6a8497;line-height:1.6;font-size:14px;flex:1}
-.bq-onboard-icon{width:56px;height:56px;display:grid;place-items:center;font-size:27px;background:#eaf4ef;border-radius:16px}
-.bq-onboard-card .btn{margin-top:22px;text-decoration:none}
-.bq-onboard-join{background:#e7eff4;border:1px solid #d6e3ec;border-radius:14px;margin-top:24px;padding:17px 21px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.bq-onboard-join span{font-weight:700;font-size:13px;margin-right:auto}
+.bq-onboard-card{
+ display:flex;flex-direction:column;align-items:flex-start;min-width:0;
+ min-height:310px;padding:clamp(22px,2.4vw,30px);
+ border-radius:18px;background:#fff;border:1px solid var(--entry-line);
+ box-shadow:0 10px 30px rgba(22,55,78,.055);
+}
+.bq-onboard-card h2{
+ margin:18px 0 9px;color:var(--entry-ink);
+ font:700 24px/1.18 var(--f-display);overflow-wrap:anywhere;
+}
+.bq-onboard-card p{flex:1;margin:0;color:var(--entry-muted);font-size:14.5px;line-height:1.6;overflow-wrap:anywhere}
+.bq-onboard-icon{
+ width:54px;height:54px;display:grid;place-items:center;flex:none;
+ border-radius:15px;background:#e8f4ef;color:#176d50;font-size:27px;
+}
+.bq-entry-shell .btn{
+ min-height:46px;padding:10px 16px;white-space:normal;text-align:center;
+ font-size:14px;line-height:1.3;text-decoration:none;overflow-wrap:anywhere;
+}
+.bq-onboard-card .btn{margin-top:24px}
+.bq-entry-shell .btn.primary{background:var(--entry-green);border-color:var(--entry-green);color:#fff}
+.bq-entry-shell .btn.primary:hover{background:#126c4b;border-color:#126c4b;color:#fff}
+.bq-entry-shell .btn.ghost{
+ background:#f5f9fb;border:1px solid #b9cbd6;color:#173b53;
+}
+.bq-entry-shell .btn.ghost:hover{background:#e8f2f5;border-color:#7ca6b4;color:#10334b}
+.bq-entry-shell .btn:focus-visible,.bq-entry-shell .acc:focus-visible,
+.bq-demo-option:focus-visible{outline:3px solid #3b9475;outline-offset:3px}
+.bq-onboard-join{
+ display:flex;align-items:center;flex-wrap:wrap;gap:12px;
+ margin-top:24px;padding:19px 22px;border:1px solid var(--entry-line);
+ border-radius:15px;background:#e7eff4;
+}
+.bq-onboard-join>span{
+ flex:1 1 240px;min-width:0;color:var(--entry-ink);
+ font-size:14px;font-weight:700;line-height:1.4;
+}
+.bq-onboard-join .btn{flex:0 1 auto;max-width:100%}
 .bq-demo-modes{display:grid;gap:12px;margin-top:20px}
-.bq-demo-option{border:1px solid #dbe6ed;border-radius:13px;padding:18px;text-decoration:none;background:#f5f9fb;display:flex;flex-direction:column;gap:6px;color:#1b4861}
+.bq-demo-option{
+ display:flex;flex-direction:column;gap:7px;min-width:0;padding:18px;
+ border:1px solid #dbe6ed;border-radius:13px;background:#f5f9fb;
+ color:#1b4861;text-decoration:none;overflow-wrap:anywhere;
+}
 .bq-demo-option:hover{background:#eaf4f3;border-color:#b9d9cd}
-.bq-demo-option b{font-size:17px}
-.bq-demo-option span{font-size:12px;opacity:.7}
-@media(max-width:850px){.bq-onboard-grid{grid-template-columns:1fr}.bq-onboard-card{min-height:220px}.bq-onboard-card p{flex:unset}.bq-entry-header{padding:15px 18px}.bq-entry-brand small{display:none}}
-
-/* Inicio del entrenador: fecha y próximo rival en la misma línea visual. */
-.bq-coach-today{display:grid;grid-template-columns:1fr 1.2fr;gap:12px;margin:13px 0 16px}
-.bq-coach-today>div{background:linear-gradient(110deg,#e8f5f0,#f5fbfa);border:1px solid #d4e9e2;border-radius:13px;padding:16px 20px;display:flex;flex-direction:column;gap:5px}
-.bq-coach-today>div:last-child{background:linear-gradient(110deg,#163952,#255b72);color:white;border-color:#255b72}
-.bq-coach-today small{font-size:10px;letter-spacing:.11em;font-weight:800;opacity:.7}
-.bq-coach-today strong{font-size:15px;line-height:1.3}
-.bq-coach-today span{font-size:12px;opacity:.8}
+.bq-demo-option b{font-size:17px;line-height:1.3}
+.bq-demo-option span{font-size:13px;line-height:1.5;color:#506c7d}
+@media(max-width:1040px){
+ .bq-onboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bq-onboard-card{min-height:280px}
+ .bq-onboard-card:last-child{grid-column:1/-1;min-height:240px}
+}
+@media(max-width:670px){
+ .bq-entry-header{padding:14px 18px}
+ .bq-entry-brand small{display:none}
+ .bq-entry-brand b{font-size:21px}
+ .bq-entry-main{padding:32px 16px 54px}
+ .bq-onboard-head{margin-bottom:25px}
+ .bq-onboard-head h1{font-size:clamp(31px,8vw,42px);line-height:1.15}
+ .bq-onboard-head p{font-size:14px}
+ .bq-onboard-grid{grid-template-columns:1fr;gap:14px}
+ .bq-onboard-card,.bq-onboard-card:last-child{grid-column:auto;min-height:0;padding:23px}
+ .bq-onboard-card p{flex:0 1 auto}
+ .bq-onboard-card .btn{margin-top:20px;width:100%}
+ .bq-onboard-join{padding:18px;flex-direction:column;align-items:stretch}
+ .bq-onboard-join>span{flex:0 0 auto}
+ .bq-onboard-join .btn{width:100%}
+}
+@media(max-width:360px){
+ .bq-entry-header{gap:10px}
+ .bq-entry-header .acc{padding:6px 9px}
+ .bq-entry-header .acc-t b{font-size:12px}
+ .bq-entry-brand b{font-size:18px}
+}
+/* Inicio del entrenador: fecha y próximo rival. */
+.bq-coach-today{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;margin:13px 0 16px}
+.bq-coach-today>div{
+ min-width:0;padding:16px 20px;display:flex;flex-direction:column;gap:6px;
+ border:1px solid #d4e9e2;border-radius:13px;
+ background:linear-gradient(110deg,#e8f5f0,#f5fbfa);color:#173b53;
+}
+.bq-coach-today>div:last-child{
+ background:linear-gradient(110deg,#163952,#255b72);color:#fff;border-color:#255b72;
+}
+.bq-coach-today small{font-size:11px;letter-spacing:.09em;font-weight:800;opacity:.82}
+.bq-coach-today strong{font-size:16px;line-height:1.35;overflow-wrap:anywhere}
+.bq-coach-today span{font-size:13px;line-height:1.5;opacity:.9}
 @media(max-width:600px){.bq-coach-today{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.bq-entry-shell .btn{transition:none!important}}
