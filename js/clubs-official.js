@@ -135,10 +135,41 @@ function openClubSettings(){
  '<p class="bq-hint">Cada F11 divisible ofrece dos medios campos F7. El calendario bloqueará que se utilicen sus mitades mientras se juega un partido completo de F11.</p>',
  "Guardar instalaciones");
 }
-function dayBanner(){const list=state.docs.filter(x=>x.type==="match" && x.data && !x.data.rest).map(x=>({t:x.team,m:x.data}));const next=list.filter(x=>x.m.date>=new Date().toISOString().slice(0,10)&&!Calc.matchInfo(x.m).played).sort((a,b)=>String(a.m.date).localeCompare(String(b.m.date)))[0];return'<div class="bq-date-strip"><div><span>HOY</span><strong>'+esc(nowLabel())+'</strong></div><div><span>PRÓXIMA JORNADA</span><strong>'+(next?(next.m.home?"🏠 ":"✈️ ")+esc(next.t.name)+' · '+esc(next.m.rival||"Rival por definir"):'Pendiente de calendario')+'</strong>'+(next?'<small>Jornada '+esc(next.m.n||"—")+' · '+esc(showDate(next.m.date))+'</small>':'')+'</div></div>';}
+function localDayISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function dayBanner(){
+ const today=localDayISO();
+ const list=state.docs.filter(x=>x.type==="match"&&x.data&&!x.data.rest&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.data.date||""))
+  .map(x=>({t:x.team,m:x.data}));
+ const next=list.filter(x=>x.m.date>=today&&!Calc.matchInfo(x.m).played)
+  .sort((a,b)=>String(a.m.date).localeCompare(String(b.m.date)))[0];
+ return '<div class="bq-date-strip"><div><span>HOY</span><strong>'+esc(nowLabel())+'</strong></div>'+
+ '<div><span>PRÓXIMA JORNADA</span><strong>'+
+ (next?(next.m.home?"🏠 ":"✈️ ")+esc(next.t.name)+' · '+esc(next.m.rival||"Rival por definir"):'Sin próximos partidos registrados')+
+ '</strong>'+(next?'<small>Jornada '+esc(next.m.n||"—")+' · '+esc(showDate(next.m.date))+'</small>':'')+'</div></div>';
+}
+function upcomingMatchesPanel(){
+ const today=localDayISO();
+ const next=state.docs.filter(x=>x.type==="match"&&x.team&&x.data&&!x.data.rest&&
+  /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.data.date||"")&&x.data.date>=today&&
+  !Calc.matchInfo(x.data).played)
+  .sort((a,b)=>String(a.data.date).localeCompare(String(b.data.date))).slice(0,4);
+ return '<section class="panel bq-upcoming-panel"><div class="panel-head"><div><h3>Próximos partidos</h3>'+
+ '<p class="muted">Jornadas de los equipos a los que tienes acceso</p></div>'+
+ button("Ver calendario","viewWeek","","ghost")+'</div>'+
+ (next.length?'<div class="bq-upcoming-grid">'+next.map(x=>
+  '<article class="bq-upcoming-match"><span class="bq-upcoming-icon" aria-label="'+
+  (x.data.home?"Local":"Visitante")+'">'+(x.data.home?"🏠":"✈️")+'</span>'+
+  '<div><b>'+esc(x.team.name)+'</b><span>'+esc(x.data.rival||"Rival pendiente")+'</span>'+
+  '<small>Jornada '+esc(x.data.n||"—")+' · '+esc(showDate(x.data.date))+
+  ' · '+(x.data.home?"En casa":"Fuera")+'</small></div>'+
+  button("Abrir equipo","openTeam",x.team.id,"ghost")+'</article>').join("")+'</div>':
+  '<p class="muted bq-upcoming-empty">Todavía no hay próximos partidos registrados en las temporadas a las que tienes acceso.</p>')+
+ '</section>';
+}
 function summary(){const c=active();if(!c)return emptyClub();const teams=state.teams;const f7=teams.filter(x=>x.modality==="F7").length;const f11=teams.length-f7;
 return head("Resumen del club","Organización deportiva de "+c.name,button("+ Añadir equipo","newTeam"))+
  '<div class="stats"><article class="stat"><span class="stat-icon">⚽</span><div class="stat-label">Equipos activos</div><div class="stat-value">'+teams.length+'</div><div class="stat-foot">En la temporada</div></article><article class="stat"><span class="stat-icon">◫</span><div class="stat-label">Fútbol 7</div><div class="stat-value">'+f7+'</div><div class="stat-foot">Equipos F7</div></article><article class="stat"><span class="stat-icon">◧</span><div class="stat-label">Fútbol 11</div><div class="stat-value">'+f11+'</div><div class="stat-foot">Equipos F11</div></article><article class="stat"><span class="stat-icon">▤</span><div class="stat-label">Temporada</div><div class="stat-value bq-season-value">'+esc(currentPeriod()?.season_label||"Cerrada")+'</div><div class="stat-foot">'+(currentPeriod()?"En curso":"Histórica")+'</div></article></div>'+
+ upcomingMatchesPanel()+
  '<div class="two-col"><section class="panel"><div class="panel-head"><h3>Equipos del club</h3>'+button("Ver todos","viewTeams","","ghost")+'</div>'+teamRows()+'</section><section class="panel"><div class="panel-head"><h3>Plan de trabajo</h3></div><p class="muted">Personaliza el cuerpo técnico, vincula las temporadas de cada equipo y comparte su código de acceso. Puedes completar las instalaciones cuando lo necesites.</p><div class="bq-inline-actions">'+button("Temporadas","viewSeasons","","ghost")+button("Instalaciones","viewFacilities","","ghost")+'</div></section></div>';}
 function emptyClub(){return head("Bienvenido a Banquillo","Empieza desde el club o incorpora un equipo a tu cuenta.")+'<div class="bq-choice-grid">'+
  '<article class="panel"><h3>Crear un club</h3><p>Configúralo progresivamente: equipos, campos, cuerpo técnico y temporadas.</p>'+button("Crear club","newClub")+'</article>'+
@@ -608,9 +639,16 @@ async function loadMessaging(silent=false){
  ]);
  if(cid!==state.clubId)return;
  const oldId=state.events[0]?.id;
+ const previous=JSON.stringify([state.messages.map(m=>[m.id,m.read_at,m.resolved_at]),state.events.map(e=>e.id)]);
  state.messages=messages||[];state.events=events||[];
- if(silent&&state.messagingInitialized&&state.events.length&&state.events[0].id!==oldId){notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");if(state.view==="avisos")await loadAllData();}state.messagingInitialized=true;
- if(["comunicaciones","avisos"].includes(state.view))render();
+ const updated=previous!==JSON.stringify([state.messages.map(m=>[m.id,m.read_at,m.resolved_at]),state.events.map(e=>e.id)]);
+ if(silent&&state.messagingInitialized&&state.events.length&&state.events[0].id!==oldId){
+  notify("✅ "+state.events[0].title+" · Notificación de Dirección Deportiva.");
+  if(["avisos","resumen"].includes(state.view))await loadAllData();
+ }
+ state.messagingInitialized=true;
+ // No reconstruir la pantalla cada 20 segundos si nada ha cambiado.
+ if(updated&&["comunicaciones","avisos"].includes(state.view))render();
 }
 
 function clubSettingsPage(){const w=state.wallet||{};return head("Ajustes del club","Completa los datos opcionales cuando los necesites.",button("Editar datos","editClub"))+
@@ -659,7 +697,7 @@ async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs"
  state.loaded=true;render();
  if(state.view==="directores")await loadDirectors();
  if(state.view==="equipo")await loadTeamData();
- if(["calendario","calendarioMes","avisos","comunicaciones"].includes(state.view))await loadAllData();
+ if(["resumen","calendario","calendarioMes","avisos","comunicaciones"].includes(state.view))await loadAllData();
  if(["avisos","comunicaciones","resumen"].includes(state.view))await loadMessaging();
 }
 async function loadTeamData(){
@@ -689,11 +727,27 @@ async function loadTeamData(){
 async function loadSchedules(){
  const cid=state.clubId;if(!cid){state.schedules=[];return;}
  try{const rows=await calls(state.sb.from("banquillo_match_schedules").select("id,club_id,team_id,season_id,match_path,match_n,match_date,kickoff,duration_minutes,resource").eq("club_id",cid).order("match_date",{ascending:true}));if(state.clubId===cid)state.schedules=rows||[];}
- catch(e){state.schedules=[];notify("No se ha podido cargar el planificador: "+errText(e),"error");}
+ catch(e){if(state.clubId===cid){state.schedules=[];notify("No se ha podido cargar el planificador: "+errText(e),"error");}}
 }
-async function loadAllData(){const teams=state.teams.filter(t=>t.season_id&&state.members.some(m=>m.season_id===t.season_id));let all=[];
- for(const t of teams){try{const rows=await calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id));all.push(...(rows||[]).map(x=>{const p=x.path.split("/");return{team:t,type:p[2]==="matches"?"match":p[2]==="players"?"player":"other",id:p[3],data:x.data}}).filter(x=>x.type!=="other"));}catch(e){/* no access */}}
- state.docs=all;await loadSchedules();render();}
+async function loadAllData(){
+ const cid=state.clubId;
+ const teams=state.teams.filter(t=>t.season_id&&state.members.some(m=>m.season_id===t.season_id));
+ // Cargar los equipos en paralelo: la cabecera y el calendario no deben esperar
+ // a que cada petición termine antes de empezar la siguiente.
+ const batches=await Promise.all(teams.map(async t=>{
+  try{
+   const rows=await calls(state.sb.from("docs").select("path,data").eq("season_id",t.season_id));
+   return (rows||[]).map(x=>{const p=x.path.split("/");return{
+    team:t,type:p[2]==="matches"?"match":p[2]==="players"?"player":"other",
+    id:p[3],data:x.data
+   };}).filter(x=>x.type!=="other");
+  }catch(e){return [];} // RLS: no mostrar datos de una temporada sin permiso.
+ }));
+ if(cid!==state.clubId)return; // Evitar resultados de un club anterior.
+ state.docs=batches.flat();
+ await loadSchedules();
+ if(cid===state.clubId)render();
+}
 async function loadDirectors(){if(!active())return;
  try{
  const clubId=state.clubId;
@@ -721,7 +775,7 @@ async function loadTeamCode(){const t=team();if(!t?.season_id)return;try{state.t
 async function changeView(v){state.view=v;state.teamCode=null;render();
  if(v==="directores")await loadDirectors();
  if(v==="equipo")await loadTeamData();
- if(["calendario","calendarioMes","avisos"].includes(v))await loadAllData();
+ if(["resumen","calendario","calendarioMes","avisos"].includes(v))await loadAllData();
  if(["comunicaciones","avisos"].includes(v))await loadMessaging();
 }
 async function action(name,id,sourceEl){try{
