@@ -90,7 +90,7 @@ function shell() {
   return `<div class="shell ${Store.readOnly() ? "ro" : ""}">
     <aside class="side">
       <div class="brand"><span class="mark">${icon("ball")}</span><div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
-      <nav class="snav">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Temporadas</span></button><a class="sitem" href="clubes.html" aria-label="Abrir gestión de clubes">${icon("layers")}<span>Clubes · Beta</span></a></nav>
+      <nav class="snav" aria-label="Menú del entrenador">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas" ${activeKey === "temporadas" ? 'aria-current="page"' : ""}>${icon("layers")}<span>Temporadas</span></button></nav>
       <div class="side-foot">${seasonChip}${syncBadge()}${accountBtn()}</div>
     </aside>
     <div class="col">
