@@ -1,5 +1,5 @@
 /* Banquillo: panel real con el lenguaje visual del prototipo avanzado. */
-:root{--navy:#102a43;--green:#16845b;--ink:#152b3b;--muted:#6b7c89;--line:#e2e8ef}
+:root{--navy:#102a43;--green:#16845b;--ink:#152b3b;--muted:#5c7180;--line:#e2e8ef}
 *{box-sizing:border-box}
 body{margin:0}
 .app-shell{min-height:100vh}
@@ -90,3 +90,15 @@ body{margin:0}
 #root .bq-archive-row{padding:10px 0;border-bottom:1px solid #e2e8ee;font-size:13px}
 #root .bq-archive-row:last-child{border-bottom:0}
 #root #teamAccess{margin-top:22px}
+
+
+/* Panel conectado: tarjetas y formularios sin desbordamientos. */
+#root,#root .layout,#root .panel,#root .stack,#root .cards{min-width:0}
+#root .metric-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,112px),1fr))}
+#root .cards{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+#root .row{min-width:0}
+#root .row>div{overflow-wrap:anywhere}
+#root button{line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+#root .bq-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:620px){#root .bq-summary{grid-template-columns:1fr 1fr}}
+@media(max-width:380px){#root .bq-summary{grid-template-columns:1fr}}

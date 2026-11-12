@@ -46,3 +46,41 @@
 .de-work span{font-size:12px;color:#71879a;line-height:1.5}
 @media(max-width:820px){.de-columns{grid-template-columns:1fr}.de-work{grid-template-columns:1fr}}
 @media(max-width:650px){.demo-today{grid-template-columns:1fr}.de-lead{align-items:flex-start;flex-direction:column}.de-match{grid-template-columns:70px 1fr}.de-match>strong{grid-column:2}.de-metrics{grid-template-columns:1fr 1fr}}
+
+
+/* Legibilidad y tamaños adaptables de la demostración de entrenador. */
+.demo-today{grid-template-columns:repeat(2,minmax(0,1fr))}
+.demo-today>div{min-width:0}
+.demo-today small{font-size:11px;opacity:.85}
+.demo-today b{font-size:17px;line-height:1.4;overflow-wrap:anywhere}
+.demo-today span{font-size:12px;line-height:1.5;opacity:.9}
+.demo-team-toggle span{font-size:12px;color:#536f80}
+.demo-team-toggle button{font-size:13px;line-height:1.35}
+.de-lead{flex-wrap:wrap}
+.de-lead>div{min-width:0}
+.de-lead h2{font-size:clamp(23px,2.5vw,29px);line-height:1.25}
+.de-lead div>span,.de-lead>span{font-size:11px;opacity:.9}
+.de-lead p{font-size:13px;line-height:1.55;opacity:.95}
+.de-metrics{grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}
+.de-metric{min-width:0}
+.de-metric small{font-size:12px;color:#567181}
+.de-metric strong{font-size:clamp(23px,3vw,29px);line-height:1.2;overflow-wrap:anywhere}
+.de-columns{grid-template-columns:repeat(2,minmax(0,1fr))}
+.de-panel{min-width:0}
+.de-match{grid-template-columns:minmax(80px,115px) minmax(0,1fr) auto}
+.de-match b{font-size:14px;line-height:1.4}
+.de-match small{font-size:12px;color:#536d7e;line-height:1.45}
+.de-match>strong{white-space:normal;line-height:1.4}
+.de-muted{font-size:13px;color:#536d7e}
+.de-table{min-width:460px}
+.de-table th{font-size:12px}
+.de-work span{font-size:13px;color:#536d7e}
+@media(max-width:820px){.de-columns{grid-template-columns:1fr}}
+@media(max-width:650px){
+ .demo-today{grid-template-columns:1fr}
+ .de-lead{align-items:flex-start;flex-direction:column}
+ .de-match{grid-template-columns:70px minmax(0,1fr)}
+ .de-match>strong{grid-column:2}
+ .de-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:380px){.de-metrics{grid-template-columns:1fr 1fr}.de-metric{padding:13px}}
