@@ -446,3 +446,51 @@ No se ha podido completar una prueba visual real en un navegador autenticado ni 
 6. Probar en navegador real ambas demostraciones y el acceso autenticado desde móvil/escritorio. Revisar que los datos de muestra sean enteramente ficticios y no reproduzcan identidades reales de menores.
 
 Se mantienen para fases posteriores los avisos IA, identidad e historial de jugadores entre categorías y deshacer cambios. **No hay pruebas extremo a extremo ni validación visual realizadas por esta revisión.**
+
+## 10. Auditoría de seguridad y recuperación — 13 de noviembre de 2026
+
+### Estado y respaldo
+- Supabase está ACTIVE_HEALTHY, PostgreSQL 17.11, región eu-central-1. La organización tiene plan Free y no hay ramas Supabase de desarrollo ni staging.
+- 19 tablas públicas, todas con RLS activado; 25 políticas; 29 migraciones remotas; 0 Edge Functions desplegadas.
+- En plan Free no se incluyen las copias diarias gestionadas de los planes Pro/Team/Enterprise. Supabase recomienda exportaciones periódicas con CLI y guardarlas fuera del proyecto. No hay herramienta conectada para listar/descargar/restaurar backups; no se ha probado recuperación.
+- El archivo supabase/backup_config_club_20261111.sql restaura una configuración de club desde JSON, no es una copia completa de la base de datos.
+- supabase/schema.sql es un snapshot antiguo (5 tablas, 6 políticas y 19 funciones SECURITY DEFINER) frente al estado vivo (19 tablas, 25 políticas y 43 funciones SECURITY DEFINER ejecutables por authenticated). No usarlo como backup ni como esquema actual.
+
+### Inventario de migraciones
+- La base remota registra 29 versiones aplicadas el 11-11-2026. En supabase/ hay 30 archivos SQL: 29 scripts asociados a migraciones y schema.sql como snapshot.
+- Los scripts están en la raíz de supabase/, no en supabase/migrations/. El primer registro, banquillo_clubes_fase1_base_20261111, parece corresponder a clubes_fase1_borrador.sql; hay discrepancia de nombre. Se requiere mapa versionado antes de automatizar despliegues.
+- Se hizo inventario estático de los 29 scripts (SECURITY DEFINER, GRANT/REVOKE, políticas, RLS y operaciones DROP) y se inspeccionaron selectivamente funciones sensibles en la base viva. No es una auditoría formal línea por línea ni una prueba de ejecución.
+- No se ejecutó ninguna migración.
+
+### Hallazgo prioritario: privilegios por defecto
+- pg_default_acl confirma que postgres y supabase_admin tienen privilegios por defecto en public para anon y authenticated: SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER y MAINTAIN.
+- ACL efectivos observados: anon tiene INSERT/SELECT/TRUNCATE en banquillo_clubs; SELECT/UPDATE/DELETE/TRUNCATE en banquillo_teams; SELECT/TRUNCATE en banquillo_club_directors. authenticated también conserva TRUNCATE en estas tablas y DELETE en banquillo_teams.
+- Las políticas RLS actuales están dirigidas a authenticated y no hay políticas anon para esas tablas, por lo que RLS filtra las operaciones de filas de anon. Sin embargo, RLS no protege frente a TRUNCATE. No se ha demostrado una vía de explotación a través de PostgREST; sí existe una configuración de privilegios excesiva que debe corregirse.
+- Acción propuesta, no aplicada: corregir los default privileges de postgres y supabase_admin y revocar privilegios de cliente innecesarios en tablas existentes, concediendo solo lo que requieran los flujos probados.
+
+### RLS, aislamiento y funciones
+- Seis tablas no tienen políticas: banquillo_club_codes, banquillo_management_charges, banquillo_management_wallet, banquillo_team_codes, join_attempts y seasons_meta. Las consultas de privilegios no muestran acceso directo de anon/authenticated a ellas; parecen reservadas a funciones privilegiadas.
+- Las políticas de clubes/equipos/staff/configuración relacionan los registros con el propietario o director del club. Mensajes y miembros aplican reglas de destinatario/temporada. El diseño parece orientado al aislamiento, pero no se han ejecutado pruebas con dos clubes y dos cuentas ficticias.
+- El asesor informa de 43 funciones SECURITY DEFINER ejecutables por authenticated y ninguna por anon. Se revisaron selectivamente create_club_team, delete_club, eject_director, join_club, join_team, list_directors, mark_message_read, provision_team_season, remove_team_member, schedule_home_match, send_team_message y team_roster.
+- Las funciones de temporada regenerate_join_code, remove_member, season_share, set_code_enabled y set_member_role delegan la autorización en is_owner(), que valida auth.uid() frente al propietario de la temporada; no deben considerarse desprotegidas solo por carecer de una comprobación textual directa.
+- Falta revisar exhaustivamente las 43 funciones y sus cadenas de llamadas, incluidas invitaciones, códigos, restauraciones y bajas. No se han hecho pruebas de API ni impersonación de roles.
+
+### Cobros fuera de alcance
+- banquillo_create_club() llama a banquillo_charge_management('club', ..., 10), que descuenta saldo de Silbatos y registra un cargo. Esto contradice la decisión de Fase 1 sin cobros ni suscripciones.
+- No se ejecutó la función ni se modificó ningún saldo. Preparar una corrección para eliminar el cargo de las altas de club/equipo, con pruebas de regresión, antes de cerrar Fase 1.
+
+### Estado adicional y siguientes pasos
+- Proyecto: 1 club, 1 equipo activo y 1 equipo con temporada vinculada; 0 directores adicionales, 1 registro de staff y 0 mensajes. Recuentos agregados, sin exponer datos personales.
+- Asesores: protección de contraseñas filtradas desactivada; 8 claves externas sin índice; join_attempts sin clave primaria; índice seasons_meta_owner_id_idx sin uso observado.
+- No se modificaron código funcional, datos, permisos, políticas, configuración Auth ni migraciones.
+- Prioridad: exportar backup lógico completo con Supabase CLI, conservarlo fuera del proyecto y probar restauración local/aislada. Después preparar corrección de default ACL y permisos, revisar funciones, eliminar el cargo de Silbatos y probar aislamiento entre dos clubes ficticios.
+- Bloqueo: no se considera verificada la recuperación hasta restaurar una copia fuera de producción. No cambiar permisos, políticas, DDL ni datos de producción sin copia/rollback y autorización explícita.
+
+| Fecha | Trabajo | Resultado |
+|---|---|---|
+| 2026-11-13 | Estado Supabase | ACTIVE_HEALTHY, plan Free, 19 tablas con RLS, 25 políticas y 29 migraciones |
+| 2026-11-13 | Inventario SQL | 29 scripts de migración identificados; schema.sql obsoleto como snapshot |
+| 2026-11-13 | ACL/default privileges | Privilegios de cliente excesivos confirmados; sin cambios aplicados |
+| 2026-11-13 | Funciones privilegiadas | 43 SECURITY DEFINER accesibles por authenticated; revisión selectiva |
+| 2026-11-13 | Cobros | Alta de club descuenta 10 Silbatos; fuera de alcance, pendiente de corrección |
+| 2026-11-13 | Backup/rollback | No verificado; pendiente exportación y restauración de prueba |
