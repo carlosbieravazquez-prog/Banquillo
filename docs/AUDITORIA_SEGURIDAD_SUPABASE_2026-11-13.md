@@ -9,7 +9,7 @@ Alcance: inspección de solo lectura de esquema, políticas RLS, privilegios y f
 - Las seis tablas que el Security Advisor señala como «RLS enabled, no policy» tienen RLS activado, ninguna política y ningún privilegio directo concedido a `anon`, `authenticated` o `PUBLIC` en `information_schema.role_table_grants`: `banquillo_club_codes`, `banquillo_management_charges`, `banquillo_management_wallet`, `banquillo_team_codes`, `join_attempts` y `seasons_meta`.
 - Por tanto, esos seis avisos no demuestran exposición directa por PostgREST. La ausencia de grants directos parece coherente con un diseño donde las tablas se gestionan mediante RPC SECURITY DEFINER controladas. Debe mantenerse así salvo que se diseñen políticas explícitas y se justifique acceso directo.
 - Las políticas de `docs` separan lectura y escritura: `docs_select` exige `is_member(season_id)`; INSERT/UPDATE/DELETE exigen `can_edit(season_id)` (DELETE también impide borrar la raíz `seasons/<id>`). La migración de permisos de dirección amplía únicamente `can_edit` para directores del club asociado a un equipo activo.
-- Se inventariaron 53 funciones SECURITY DEFINER (43 advertencias de Advisor en la ejecución previa). Todas las funciones inventariadas tienen `search_path` fijado a cadena vacía, salvo `rls_auto_enable`, que lo fija a `pg_catalog`. Esto es una defensa importante contra la suplantación de objetos por el search_path, pero no sustituye la revisión de autorización de cada función.
+- Se inventariaron 64 funciones SECURITY DEFINER: 43 son ejecutables por authenticated y ninguna por anon. Ninguna de las 64 carece de un search_path fijado. Todas las funciones inventariadas tienen `search_path` fijado a cadena vacía, salvo `rls_auto_enable`, que lo fija a `pg_catalog`. Esto es una defensa importante contra la suplantación de objetos por el search_path, pero no sustituye la revisión de autorización de cada función.
 - Las funciones SECURITY DEFINER de tipo trigger/helper que no usan `auth.uid()` no tienen EXECUTE concedido a `anon` ni `authenticated` en la inspección. Las RPC antiguas expuestas sin una referencia directa a `auth.uid()` revisan titularidad mediante `public.is_owner(sid)` antes de cambiar datos o revelar códigos.
 - El Security Advisor informa de que la protección frente a contraseñas filtradas está desactivada. No se cambió la configuración Auth desde esta auditoría.
 
@@ -23,6 +23,8 @@ Alcance: inspección de solo lectura de esquema, políticas RLS, privilegios y f
 | banquillo_team_codes | Sí | Ninguna | Ninguno |
 | join_attempts | Sí | Ninguna | Ninguno |
 | seasons_meta | Sí | Ninguna | Ninguno |
+
+Comprobaciones adicionales: tampoco hay privilegios por columna para `anon` ni `authenticated` en esas seis tablas. Los roles `anon` y `authenticated` no tienen `BYPASSRLS` ni son superusuarios. En el esquema public no se encontraron tablas sin RLS.
 
 No crear políticas `USING (true)` ni grants generales para silenciar el aviso. Los códigos de invitación, intentos de acceso, saldo y cargos de gestión y metadatos de temporadas son datos especialmente sensibles para la lógica de autorización.
 
@@ -43,7 +45,7 @@ El aviso de Supabase es deliberadamente conservador: informa de toda función SE
 Comprobaciones realizadas:
 1. Inventario de funciones y argumentos.
 2. Revisión de `proconfig`: todas las funciones inventariadas fijan un search_path seguro (`''` o `pg_catalog`).
-3. Comprobación de EXECUTE para `anon` y `authenticated` en helpers internos.
+3. Comprobación de EXECUTE para `anon` y `authenticated` en helpers internos: 0 funciones SECURITY DEFINER ejecutables por anon; 43 ejecutables por authenticated; 5 de estas últimas no mencionan `auth.uid()` directamente y delegan la comprobación en `public.is_owner(sid)`. Los helpers internos sin `auth.uid()` no son ejecutables por authenticated ni anon.
 4. Revisión de funciones antiguas expuestas `regenerate_join_code`, `remove_member`, `season_share`, `set_code_enabled` y `set_member_role`: comprueban `public.is_owner(sid)`; varias bloquean expresamente las temporadas gestionadas desde Dirección Deportiva para evitar rutas de administración antiguas.
 
 Pendiente: auditoría manual función por función de los argumentos, control de filas afectadas, validación de estados y efectos laterales; test de autorización con cuentas de prueba. El inventario y el search_path no equivalen a una auditoría formal de seguridad.
