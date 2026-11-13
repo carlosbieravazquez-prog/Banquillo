@@ -686,8 +686,6 @@ async function refresh(){state.clubs=await calls(state.sb.from("banquillo_clubs"
   state.allTeams=ts||[];state.teams=state.allTeams.filter(x=>!x.archived_at);state.periods=periods||[];state.settings=settings||{};state.members=members||[];
  }else{state.teams=[];state.allTeams=[];state.periods=[];state.settings={};state.members=[];}
  await loadWorkspaces();
- // Sincronizar el permiso visual del entrenador cuando cambia la dirección del club.
- if(typeof Store!=="undefined" && Store.user?.uid===state.uid && typeof Store.loadClubLinks==="function") await Store.loadClubLinks();
   if(!state.clubId && state.view==="resumen" && (state.workspaceIndependent.length||state.workspaceCoachTeams.length))state.view="temporadas";
   if(!state.teams.some(t=>t.id===state.teamId)){state.teamId=state.teams[0]?.id||null;state.staff=[];state.teamRoster=[];}
  state.pendingByTeam={};
