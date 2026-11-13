@@ -87,3 +87,24 @@ Estado: preparada y versionada en GitHub, **no aplicada a producción**. La UI c
 - No se ha activado ni desactivado RLS adicional.
 - No se ha aplicado la migración de directores a producción.
 - No se ha confirmado una restauración de backup ni se ha creado una rama Supabase, para evitar costes o cambios no autorizados. La organización está en Free; la cotización actual de una rama es 0,01344 USD por hora (coste recurrente por hora mientras exista). Una rama nueva recibe migraciones pero no copia los datos de producción.
+
+## Storage y funciones Edge
+
+- No hay Edge Functions desplegadas en este proyecto en la inspección actual.
+- El esquema Storage tiene RLS activado en las tablas revisadas; actualmente `storage.buckets` y `storage.objects` tienen 0 registros. No se han encontrado ficheros guardados en Supabase Storage en esta revisión. Si Banquillo incorpora almacenamiento de actas escaneadas, habrá que crear un bucket privado, limitar MIME/tamaño y aplicar políticas por club/equipo/temporada antes de subir archivos.
+
+## Hallazgos de rendimiento (no son vulnerabilidades)
+
+Security Advisor detecta 8 claves foráneas sin índice de cobertura:
+- `banquillo_director_events(message_id)`
+- `banquillo_director_events(team_id)`
+- `banquillo_management_charges(user_id)`
+- `banquillo_team_members(approved_by)`
+- `banquillo_team_members(season_id)`
+- `banquillo_team_messages(club_id)`
+- `banquillo_team_messages(season_id)`
+- `banquillo_team_messages(sender_id)`
+
+Se ha preparado `supabase/indexar_claves_foraneas_banquillo_20261113.sql` (commit `5de417d3c8ed298b6b4dbabdaf5bc1049bb2e20c`) con índices no únicos y sin cambios de datos o permisos. No se ha aplicado a producción. Debe probarse primero en una rama aislada y luego volver a consultar Advisor.
+
+También aparece `join_attempts` sin clave primaria (11 filas observadas) y un índice `seasons_meta_owner_id_idx` no utilizado. No se añade una PK ni se elimina el índice automáticamente: primero se debe revisar si existen duplicados, el uso real tras más tráfico y las rutas de limpieza de intentos. La ausencia de PK es un aviso de diseño/rendimiento, no una exposición de datos.
