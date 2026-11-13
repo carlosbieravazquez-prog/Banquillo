@@ -36,7 +36,7 @@ const Store = {
   // Un director puede editar la temporada vinculada a su club sin convertirse
   // en entrenador/editor. La autorización definitiva sigue en RLS (can_edit).
   S.isClubManagerForSeason = sid => !!sid && (S.clubLinks || []).some(link =>
-    link.season_id === sid && link.manager === true && link.archived !== true
+    link.season_id === sid && link.manager === true && link.archived !== true && link.can_edit === true
   );
   S.readOnly = () => !!S.sid && !(
     S.roles[S.sid] === "owner" ||
@@ -164,8 +164,20 @@ const Store = {
     S.clubLinksReady = false;
     try {
       const data = await Cloud.rpc("banquillo_my_season_context");
+      const contexts = Array.isArray(data) ? data : [];
+      // Activar el modo edición solo cuando RLS confirma que can_edit ya reconoce
+      // al director. Así el frontend sigue en solo lectura hasta aplicar la migración.
+      const enriched = await Promise.all(contexts.map(async link => {
+        if (!link.manager || link.archived) return { ...link, can_edit: false };
+        try {
+          const allowed = await Cloud.rpc("can_edit", { sid: link.season_id });
+          return { ...link, can_edit: allowed === true };
+        } catch (e) {
+          return { ...link, can_edit: false };
+        }
+      }));
       if (S.user?.uid !== uid) return;
-      S.clubLinks = Array.isArray(data) ? data : [];
+      S.clubLinks = enriched;
       S.clubLinksReady = true;
     } catch (e) {
       if (S.user?.uid === uid) { S.clubLinks = []; S.clubLinksReady = false; }
