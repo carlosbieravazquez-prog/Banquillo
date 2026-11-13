@@ -54,7 +54,7 @@ Pendiente: auditoría manual función por función de los argumentos, control de
 
 Estado observado por Security Advisor: desactivada.
 
-La documentación actual de Supabase indica que esta opción utiliza Pwned Passwords de HaveIBeenPwned y está disponible en Pro y superiores. Para habilitarla, si el plan del proyecto lo permite: Dashboard → Authentication → Settings (Auth settings) → Password security → Prevent use of leaked passwords. Mantener longitud mínima de 8 caracteres como mínimo; valorar mayor longitud y requisitos razonables sin dificultar innecesariamente el acceso. No se ha cambiado porque no hay una acción de configuración Auth disponible en la conexión actual.
+La documentación actual de Supabase indica que esta opción utiliza Pwned Passwords de HaveIBeenPwned y está disponible en Pro y superiores. La organización Banquillo está actualmente en el plan Free, por lo que la función no está disponible con el plan actual. Si en el futuro se cambia a Pro o superior, se puede habilitar desde: Dashboard → Authentication → Settings (Auth settings) → Password security → Prevent use of leaked passwords. Mantener longitud mínima de 8 caracteres como mínimo; valorar mayor longitud y requisitos razonables sin dificultar innecesariamente el acceso. No se ha cambiado porque no hay una acción de configuración Auth disponible en la conexión actual.
 
 Referencia oficial: https://supabase.com/docs/guides/auth/password-security
 
@@ -86,4 +86,4 @@ Estado: preparada y versionada en GitHub, **no aplicada a producción**. La UI c
 - No se han revocado permisos de funciones en bloque.
 - No se ha activado ni desactivado RLS adicional.
 - No se ha aplicado la migración de directores a producción.
-- No se ha confirmado una restauración de backup ni se ha creado una rama Supabase, para evitar costes o cambios no autorizados.
+- No se ha confirmado una restauración de backup ni se ha creado una rama Supabase, para evitar costes o cambios no autorizados. La organización está en Free; la cotización actual de una rama es 0,01344 USD por hora (coste recurrente por hora mientras exista). Una rama nueva recibe migraciones pero no copia los datos de producción.
