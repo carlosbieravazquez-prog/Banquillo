@@ -33,7 +33,16 @@ const Store = {
   S.player = id => S.players.find(p => p.id === id) || null;
   S.isLoaded = () => !!S.loaded.seasons && (!S.sid || (S.loaded.players && S.loaded.matches && S.loaded.training && S.loaded.reports));
   S.role = () => S.roles[S.sid] || null;
-  S.readOnly = () => !!S.sid && !(S.roles[S.sid] === "owner" || S.roles[S.sid] === "editor");
+  // Un director puede editar la temporada vinculada a su club sin convertirse
+  // en entrenador/editor. La autorización definitiva sigue en RLS (can_edit).
+  S.isClubManagerForSeason = sid => !!sid && (S.clubLinks || []).some(link =>
+    link.season_id === sid && link.manager === true && link.archived !== true
+  );
+  S.readOnly = () => !!S.sid && !(
+    S.roles[S.sid] === "owner" ||
+    S.roles[S.sid] === "editor" ||
+    S.isClubManagerForSeason(S.sid)
+  );
 
   const setStatus = st => { S.status = st; S.onChange("status"); };
 
