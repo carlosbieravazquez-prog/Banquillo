@@ -9,3 +9,14 @@
 body:has(#landing):not(.in-app){overflow:hidden}#landing{height:100svh}#landing .cinema{height:calc(100svh - var(--header-height,76px));min-height:0}.cinema-stage{position:relative;isolation:isolate;width:calc(100% / var(--scene-scale,1));height:850px;transform:scale(var(--scene-scale,1));transform-origin:top left}#landing main>.l-sec,#landing>.l-foot{display:none}#landing .scene-dialog{color:#eaf5f8;background:#06151eee;border:1px solid #51cee866;border-radius:20px;padding:48px 35px 30px;width:min(1000px,calc(100% - 32px));max-height:calc(100svh - 40px);box-shadow:0 30px 100px #000b;overscroll-behavior:contain}#landing .scene-dialog::backdrop{background:#000a;backdrop-filter:blur(10px)}#landing .scene-dialog:not([open]){display:none}#landing .scene-dialog[open]{display:block}#landing .scene-close{position:absolute;right:14px;top:12px;background:#18303b;color:white;border:1px solid #73daef44;width:32px;height:32px;border-radius:50%;cursor:pointer}#landing .scene-dialog .entry-grid{gap:40px}#landing .scene-dialog h2{color:#f0f8fa}#landing .scene-dialog p{color:#adc3ce}#landing .scene-info-content>.l-sec{display:block;padding:0;border:0;background:transparent}#landing .scene-dialog[data-view=demo]{width:min(580px,calc(100% - 32px))}#landing .scene-dialog[data-view=demo] .entry-grid{display:block}#landing .scene-dialog[data-view=demo] .l-auth{display:none}#landing .scene-dialog .l-in{opacity:1;transform:none}#landing .scene-dialog .l-demo-access{margin-bottom:0}.cinema-features{bottom:45px}
 @media(max-width:560px){.cinema-stage{height:810px}#landing .scene-dialog{padding:48px 20px 25px}#landing .scene-dialog .entry-grid{grid-template-columns:1fr}#landing .scene-dialog[data-view=auth] .entry-grid>div:first-child{display:none}.cinema-features{bottom:20px}}
 @media(max-width:560px){#landing .cinema h1{font-size:min(64px,12.6vw);white-space:nowrap;letter-spacing:0}}
+/* Reset legacy named grid placement inside the access dialog. */
+#landing .scene-dialog .entry-grid{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:start;
+}
+#landing .scene-dialog .entry-grid>div{grid-area:auto;min-width:0}
+#landing .scene-dialog .entry-grid h2{margin-top:0}
+@media(max-width:700px){
+  #landing .scene-dialog .entry-grid{grid-template-columns:minmax(0,1fr)}
+  #landing .scene-dialog[data-view=auth] .entry-grid>div:first-child{display:none}
+}
