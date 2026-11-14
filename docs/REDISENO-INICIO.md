@@ -2,6 +2,10 @@
 
 Rama: `test/home-cinematica`. No se modifica ni despliega la rama oficial.
 
+La portada ocupa una sola pantalla, sin desplazamiento vertical ni secciones inferiores. Acceso, registro, recuperación, demostraciones e información se abren en ventanas nativas `dialog` con cierre por Escape y control de foco.
+
+Vistas: [Escritorio](preview-desktop.png) · [Móvil](preview-mobile.png).
+
 ## Archivos
 - `index.html`: nueva portada; conserva `authSlot`, aplicación, scripts, formularios y destinos de las demos.
 - `css/cinematic.css`: capa visual aislada en `#landing`, adaptación móvil y movimiento reducido.
@@ -23,3 +27,5 @@ Chromium con Playwright: portada, acceso al registro y recuperación, navegació
 No se envían formularios a cuentas reales. El envío de correos, inicio de sesión válido y operaciones con permisos de director/entrenador requieren una cuenta de pruebas y quedan pendientes de prueba integral. Los módulos de autenticación, nube, permisos, datos y SQL permanecen idénticos a la base.
 
 La escena utiliza fotografía y capas CSS/SVG con perspectiva; no es una reconstrucción tridimensional exacta de la imagen de referencia. Los paneles del escenario muestran datos ficticios. La página conserva el contenido y funcionalidades de la plataforma.
+
+Última verificación: cinco ventanas (1440×900, 390×844, 768×1024, 1366×768 y 390×667) sin desplazamiento horizontal o vertical; apertura y cierre por Escape de acceso, registro, recuperación, demos e información. Once hologramas y tres formaciones. La consulta de conectividad a Supabase desde Chromium falló con `Failed to fetch` en este entorno; no se confirma conectividad real ni acceso autenticado.
