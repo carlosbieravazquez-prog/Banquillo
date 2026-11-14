@@ -10,7 +10,7 @@ Vistas: [Escritorio](preview-desktop.png) · [Móvil](preview-mobile.png).
 - `index.html`: nueva portada; conserva `authSlot`, aplicación, scripts, formularios y destinos de las demos.
 - `css/cinematic.css`: capa visual aislada en `#landing`, adaptación móvil y movimiento reducido.
 - `js/cinematic.js`: paralaje con requestAnimationFrame, aparición de hologramas, selector táctico, estadísticas ilustrativas y animaciones de entrada con IntersectionObserver.
-- `assets/stadium.jpg`: fotografía de estadio descargada de Unsplash (https://images.unsplash.com/photo-1522778119026-d647f0596c20), servida localmente. Aproximadamente 788 KB; sin dependencias JS añadidas.
+- `assets/stadium-neutral.webp`: fondo editado con generación de imagen a partir de la fotografía inicial; estadio neutral sin jugadores sobre el campo, escudos ni publicidad de clubes. Servido localmente, aproximadamente 420 KB; sin dependencias JS añadidas.
 
 ## Vista previa local
 Desde la raíz del repositorio:
@@ -29,3 +29,5 @@ No se envían formularios a cuentas reales. El envío de correos, inicio de sesi
 La escena utiliza fotografía y capas CSS/SVG con perspectiva; no es una reconstrucción tridimensional exacta de la imagen de referencia. Los paneles del escenario muestran datos ficticios. La página conserva el contenido y funcionalidades de la plataforma.
 
 Última verificación: cinco ventanas (1440×900, 390×844, 768×1024, 1366×768 y 390×667) sin desplazamiento horizontal o vertical; apertura y cierre por Escape de acceso, registro, recuperación, demos e información. Once hologramas y tres formaciones. La consulta de conectividad a Supabase desde Chromium falló con `Failed to fetch` en este entorno; no se confirma conectividad real ni acceso autenticado.
+
+Revisión de acceso: formulario centrado y ampliado, sin texto lateral ni demostraciones en las vistas de acceso/registro/recuperación; demos disponibles por separado. FAQ con superficies oscuras y texto claro. Comprobado en Chromium a 1440, 951, 768 y 390 px, sin desbordamientos ni errores JavaScript. Capturas actualizadas: preview-acceso.png, preview-registro.png, preview-preguntas.png, preview-desktop.png y preview-mobile.png.
