@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "El Banquillo del Entrenador",
+  "short_name": "Banquillo",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101419",
+  "theme_color": "#101419",
+  "icons": [
+    {
+      "src": "assets/icons/banquillo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/banquillo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
