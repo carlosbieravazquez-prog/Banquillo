@@ -5,14 +5,14 @@ const Store = {
   players: [], matches: [], reports: {}, training: { absences: {}, skipped: [], extra: [] },
   loaded: {}, slow: false, offline: false, clubLinks: [], clubLinksReady: false,
   status: "idle", // idle | saving | saved | error
-  subs: [], pending: new Map(), inflight: new Set(), timer: null, flushing: false, retryTimer: null, onChange: () => {},
+  subs: [], pending: new Map(), inflight: new Set(), timer: null, flushing: false, retryTimer: null, epoch: 0, onChange: () => {},
 };
 
 (function () {
   const S = Store;
   const SEASON_FIELDS = ["name", "club", "category", "status", "settings", "createdAt"];
   const PLAYER_FIELDS = ["name", "dorsal", "order", "active", "notes"];
-  const MATCH_FIELDS = ["n", "date", "rival", "home", "rest", "notes", "ourGoals", "rivalGoals", "scorers", "players", "noCall", "subs", "callDone"];
+  const MATCH_FIELDS = ["n", "date", "time", "rival", "home", "rest", "notes", "ourGoals", "rivalGoals", "scorers", "players", "noCall", "subs", "callDone", "cards", "sanctions", "sanctionsConfirmed", "closed", "ocrSource"];
   const REPORT_FIELDS = ["text", "source", "updatedAt"];
   const pick = (o, f) => { const r = {}; f.forEach(k => { if (o[k] !== undefined) r[k] = o[k]; }); return JSON.parse(JSON.stringify(r)); };
 
@@ -38,10 +38,9 @@ const Store = {
   S.isClubManagerForSeason = sid => !!sid && (S.clubLinks || []).some(link =>
     link.season_id === sid && link.manager === true && link.archived !== true && link.can_edit === true
   );
-  S.readOnly = () => !!S.sid && !(
-    S.roles[S.sid] === "owner" ||
-    S.roles[S.sid] === "editor" ||
-    S.isClubManagerForSeason(S.sid)
+  S.readOnly = () => !!S.sid && (
+    S.season()?.status === "closed" || S.clubLinks.some(link => link.season_id === S.sid && link.archived) ||
+    (S.roles[S.sid] !== "owner" && S.roles[S.sid] !== "editor" && !S.isClubManagerForSeason(S.sid))
   );
 
   const setStatus = st => { S.status = st; S.onChange("status"); };
@@ -49,13 +48,24 @@ const Store = {
   /* ---------- escritura con cola (una a la vez por documento) ---------- */
   S.save = (kind, obj) => {
     if (!S.db || S.readOnly()) return;
+    queueSave(kind, obj);
+  };
+  S.setIndependentSeasonStatus = (sid, status) => {
+    const season = S.seasons.find(item => item.id === sid);
+    if (!S.db || !S.clubLinksReady || S.roles[sid] !== "owner" || !season ||
+        S.clubLinks.some(link => link.season_id === sid)) return false;
+    season.status = status;
+    queueSave("season", season);
+    return true;
+  };
+  function queueSave(kind, obj) {
     const sid = kind === "season" ? obj.id : S.sid;
     const path = S.pathOf(kind, obj.id || "main", sid);
     S.pending.set(path, { path, data: S.serialize(kind, obj) });
     setStatus("saving");
     clearTimeout(S.timer);
     S.timer = setTimeout(S.flush, 350);
-  };
+  }
   S.remove = (kind, id) => {
     if (!S.db || S.readOnly()) return;
     const path = S.pathOf(kind, id);
@@ -67,22 +77,24 @@ const Store = {
   S.flush = async () => {
     if (S.flushing) return;
     S.flushing = true;
+    const epoch = S.epoch, db = S.db;
     let failed = false;
     try {
-      while (S.pending.size) {
+      while (epoch === S.epoch && S.pending.size) {
         const [path, w] = S.pending.entries().next().value;
         S.pending.delete(path);
         S.inflight.add(path);
         try {
-          if (w.del) await S.db.doc(path).delete(); else await S.db.doc(path).set(w.data);
+          if (w.del) await db.doc(path).delete(); else await db.doc(path).set(w.data);
         } catch (e) {
           failed = true;
-          if (!S.pending.has(path)) S.pending.set(path, w);
-          S.lastError = e;
+          if (epoch === S.epoch && !S.pending.has(path)) S.pending.set(path, w);
+          if (epoch === S.epoch) S.lastError = e;
           break;
-        } finally { S.inflight.delete(path); }
+        } finally { if (epoch === S.epoch) S.inflight.delete(path); }
       }
-    } finally { S.flushing = false; }
+    } finally { if (epoch === S.epoch) S.flushing = false; }
+    if (epoch !== S.epoch) return;
     if (failed) {
       setStatus("error");
       clearTimeout(S.retryTimer);
@@ -155,11 +167,14 @@ const Store = {
   };
 
   S.loadRoles = async () => {
-    const { data, error } = await Cloud.sb.from("season_members").select("season_id,role").eq("user_id", S.user.uid);
+    if (!S.user) return;
+    const epoch = S.epoch, userId = S.user.uid;
+    const { data, error } = await Cloud.sb.from("season_members").select("season_id,role").eq("user_id", userId);
+    if (epoch !== S.epoch || !S.user || S.user.uid !== userId) return;
     if (!error && data) { S.roles = {}; data.forEach(r => { S.roles[r.season_id] = r.role; }); }
   };
   S.loadClubLinks = async () => {
-    const uid = S.user?.uid;
+    const uid = S.user?.uid, epoch = S.epoch;
     if (!uid) { S.clubLinks = []; S.clubLinksReady = false; return; }
     S.clubLinksReady = false;
     try {
@@ -176,26 +191,29 @@ const Store = {
           return { ...link, can_edit: false };
         }
       }));
-      if (S.user?.uid !== uid) return;
+      if ((S.epoch !== epoch || S.user?.uid !== uid)) return;
       S.clubLinks = enriched;
       S.clubLinksReady = true;
     } catch (e) {
-      if (S.user?.uid === uid) { S.clubLinks = []; S.clubLinksReady = false; }
+      if ((S.epoch === epoch && S.user?.uid === uid)) { S.clubLinks = []; S.clubLinksReady = false; }
     }
     S.onChange("data");
   };
-  S.reset = () => { unsubAll(); S.seasonsUnsub && S.seasonsUnsub(); S.seasonsUnsub = null; if (S.db && S.db.reset) S.db.reset(); clearTimeout(S.timer); clearTimeout(S.retryTimer); S.pending.clear(); S.inflight.clear();
-    S.clubLinks = []; S.clubLinksReady = false; S.seasons = []; S.sid = null; S.players = []; S.matches = []; S.reports = {}; S.training = { absences: {}, skipped: [], extra: [] }; S.loaded = {}; S.roles = {}; S.offline = false; S.slow = false; S.db = null; S.user = null; };
+  S.reset = () => { S.epoch++; unsubAll(); S.seasonsUnsub && S.seasonsUnsub(); S.seasonsUnsub = null; if (S.db && S.db.reset) S.db.reset(); clearTimeout(S.timer); clearTimeout(S.retryTimer); S.pending.clear(); S.inflight.clear();
+    S.flushing = false; S.clubLinks = []; S.clubLinksReady = false; S.seasons = []; S.sid = null; S.players = []; S.matches = []; S.reports = {}; S.training = { absences: {}, skipped: [], extra: [] }; S.loaded = {}; S.roles = {}; S.offline = false; S.slow = false; S.db = null; S.user = null; };
 
   S.init = async (db, user) => {
     S.db = db; S.user = user;
+    const epoch = S.epoch, userId = user.uid;
     try { await S.loadRoles(); } catch (e) { /* se reintenta con la lista de temporadas */ }
+    if (epoch !== S.epoch || !S.user || S.user.uid !== userId) return;
     await S.loadClubLinks();
-    const slowT = setTimeout(() => { if (!S.isLoaded()) { S.slow = true; S.onChange("data"); } }, 10000);
+    if (epoch !== S.epoch || !S.user || S.user.uid !== userId) return;
+    const slowT = setTimeout(() => { if (epoch === S.epoch && !S.isLoaded()) { S.slow = true; S.onChange("data"); } }, 10000);
     S.seasonsUnsub = db.collection("seasons").onSnapshot(async snap => {
-      if (!S.user) return;
+      if (epoch !== S.epoch || !S.user || S.user.uid !== userId) return;
       const hadUnknown = snap.docs.some(d => !S.roles[d.id]);
-      if (hadUnknown) { try { await S.loadRoles(); } catch (e) { /* noop */ } if (!S.user) return; }
+      if (hadUnknown) { try { await S.loadRoles(); } catch (e) { /* noop */ } if (epoch !== S.epoch || !S.user || S.user.uid !== userId) return; }
       S.offline = false;
       S.seasons = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.name < b.name ? 1 : -1));
       S.pending.forEach((w, path) => {
@@ -215,7 +233,7 @@ const Store = {
         S.subscribeSeason(pickS.id);
       }
       S.onChange("data");
-    }, e => { S.offline = true; S.onChange("data"); console.warn("db seasons", e); });
+    }, e => { if (epoch !== S.epoch) return; S.offline = true; S.onChange("data"); console.warn("db seasons", e); });
   };
 
   // Tras unirse con un código: recarga permisos y temporadas y abre la temporada

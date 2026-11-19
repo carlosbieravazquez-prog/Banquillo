@@ -40,13 +40,26 @@ const Cloud = { sb: null, cfg: window.BQ_CONFIG || {}, profile: null, db: null, 
 
   /* ---------- Perfil y Silbatos ---------- */
   C.loadProfile = async () => {
-    try { C.profile = await C.rpc("my_profile"); } catch (e) { C.profile = C.profile || null; }
+    const epoch = C.profileEpoch || 0;
+    try {
+      const profile = await C.rpc("my_profile");
+      if (epoch === (C.profileEpoch || 0)) C.profile = profile;
+    } catch (e) {
+      if (epoch === (C.profileEpoch || 0)) C.profile = C.profile || null;
+    }
     return C.profile;
   };
   C.tokens = () => (C.profile ? C.profile.tokens : 0);
 
   /* ---------- IA (Edge Function: descuenta Silbatos y llama a Claude en el servidor) ---------- */
-  C.ai = async (prompt, kind, signal) => {
+  // Consentimiento por sesión: se envían estadísticas seudonimizadas, nunca nombres ni notas libres.
+  C.aiPrivacyAccepted = false;
+    C.ai = async (prompt, kind, signal) => {
+    if (!C.aiPrivacyAccepted) {
+      const accepted = window.confirm("Privacidad de IA: se enviarán estadísticas deportivas sin nombres ni notas privadas a un proveedor externo para generar el texto. ¿Quieres continuar? Puedes cancelar y redactar el informe manualmente.");
+      if (!accepted) throw { code: "cancelled" };
+      C.aiPrivacyAccepted = true;
+    }
     const { data: s } = await C.sb.auth.getSession();
     if (!s.session) throw { code: "auth" };
     let res;
@@ -68,7 +81,7 @@ const Cloud = { sb: null, cfg: window.BQ_CONFIG || {}, profile: null, db: null, 
   function makeDb(sb) {
     const listeners = new Set();          // { parent, run }
     const timers = new Map();
-    let channel = null, poll = null;
+    let channel = null, poll = null, visibilityHandler = null;
 
     const fetchParent = async parent => {
       const { data, error } = await sb.from("docs").select("path,data").eq("parent", parent);
@@ -92,17 +105,35 @@ const Cloud = { sb: null, cfg: window.BQ_CONFIG || {}, profile: null, db: null, 
       if (!poll) {
         // por si el tiempo real se corta o no avisa de un borrado
         poll = setInterval(() => { if (document.visibilityState === "visible" && listeners.size) kickAll(); }, 20000);
-        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && listeners.size) kickAll(); });
+        visibilityHandler = () => { if (document.visibilityState === "visible" && listeners.size) kickAll(); };
+        document.addEventListener("visibilitychange", visibilityHandler);
       }
     };
     const listen = (parent, deliver, onErr) => {
       const l = { parent, alive: true };
+      l.running = false; l.again = false;
       l.run = async () => {
+        // Evita acumular peticiones y renderizados cuando se recupera una pestaña en segundo plano.
+        if (!l.alive) return;
+        if (l.running) { l.again = true; return; }
+        l.running = true;
         try { const rows = await fetchParent(parent); if (l.alive) deliver(rows); }
         catch (e) { if (l.alive && onErr) onErr(e); }
+        finally {
+          l.running = false;
+          if (l.alive && l.again) { l.again = false; l.run(); }
+        }
       };
       listeners.add(l); ensureChannel(); l.run();
-      return () => { l.alive = false; listeners.delete(l); if (!listeners.size) { if (channel) { sb.removeChannel(channel); channel = null; } clearInterval(poll); poll = null; } };
+      return () => {
+        l.alive = false; listeners.delete(l);
+        if (!listeners.size) {
+          if (channel) { sb.removeChannel(channel); channel = null; }
+          clearInterval(poll); poll = null;
+          timers.forEach(t => clearTimeout(t)); timers.clear();
+          if (visibilityHandler) { document.removeEventListener("visibilitychange", visibilityHandler); visibilityHandler = null; }
+        }
+      };
     };
 
     const api = {
@@ -144,6 +175,8 @@ const Cloud = { sb: null, cfg: window.BQ_CONFIG || {}, profile: null, db: null, 
         listeners.forEach(l => { l.alive = false; }); listeners.clear();
         if (channel) { sb.removeChannel(channel); channel = null; }
         clearInterval(poll); poll = null;
+        timers.forEach(t => clearTimeout(t)); timers.clear();
+        if (visibilityHandler) { document.removeEventListener("visibilitychange", visibilityHandler); visibilityHandler = null; }
       },
     };
     return api;

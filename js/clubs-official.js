@@ -760,7 +760,9 @@ async function loadDirectors(){if(!active())return;
 }
 async function refreshInvitation(rotate=false){
  if(!active())return;
- const info=await rpc("banquillo_director_invite",{p_club_id:state.clubId,p_rotate:rotate});
+ const clubId=state.clubId;
+ const info=await rpc("banquillo_director_invite",{p_club_id:clubId,p_rotate:rotate});
+ if(state.clubId!==clubId||state.view!=="directores")return;
  if(!info?.available){state.directorInvite=null;closeModal();await loadDirectors();notify("El club ya tiene dos directores.","error");return;}
  state.directorInvite=info;state.clubCode=info.code;
  const expires=new Date(info.expires_at).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
@@ -771,7 +773,21 @@ async function refreshInvitation(rotate=false){
  '<p class="bq-hint">El otro director debe iniciar sesión en su propia cuenta, abrir Dirección Deportiva y elegir «Entrar como segundo director». Nunca compartas tu contraseña.</p>');
 }
 
-async function loadTeamCode(){const t=team();if(!t?.season_id)return;try{state.teamCode=await rpc("banquillo_team_code",{p_team_id:t.id,p_rotate:false});if(state.teamTab==="code")render();}catch(e){notify(errText(e),"error");}}
+let teamCodeRequest=0;
+async function loadTeamCode(rotate=false){
+ const t=team();
+ if(!t?.season_id)return;
+ const request=++teamCodeRequest;
+ try{
+  const code=await rpc("banquillo_team_code",{p_team_id:t.id,p_rotate:rotate});
+  if(request!==teamCodeRequest||team()?.id!==t.id||state.view!=="equipo"||state.teamTab!=="code")return;
+  state.teamCode=code;
+  render();
+ }catch(e){
+  if(rotate)throw e;
+  if(request===teamCodeRequest&&team()?.id===t.id&&state.teamTab==="code")notify(errText(e),"error");
+ }
+}
 async function changeView(v){state.view=v;state.teamCode=null;render();
  if(v==="directores")await loadDirectors();
  if(v==="equipo")await loadTeamData();
@@ -926,7 +942,7 @@ async function accept(name,id){closeModal();try{
  if(name==="acceptRemoveDirector"){await rpc("banquillo_eject_director",{p_club_id:state.clubId,p_target_id:id});state.directorInvite=null;await refresh();await loadDirectors();}
  if(name==="acceptEjectDirector"){await rpc("banquillo_eject_director",{p_club_id:state.clubId,p_target_id:id});state.directorInvite=null;await refresh();await loadDirectors();}
  if(name==="acceptLeaveClub"){await rpc("banquillo_leave_club",{p_club_id:id});state.clubId=null;state.messages=[];state.events=[];state.directorInvite=null;state.view="resumen";await refresh();}
- if(name==="acceptRotateTeam"){state.teamCode=await rpc("banquillo_team_code",{p_team_id:id,p_rotate:true});render();}
+ if(name==="acceptRotateTeam"&&team()?.id===id)await loadTeamCode(true);
  if(name==="acceptRotateClub"){await refreshInvitation(true);}
  if(name==="acceptCloseClub"){await rpc("banquillo_close_club_season",{p_club_id:id});await refresh();state.view="temporadas";render();}
  if(name==="acceptRestoreClub"){await rpc("banquillo_restore_club",{p_club_id:id});state.clubId=id;state.view="resumen";await refresh();state.clubCode=null;render();}
@@ -1016,6 +1032,7 @@ async function submit(form){const f=new FormData(form),get=k=>String(f.get(k)||"
  if(form.id==="linkTeamForm"){const sid=get("season_id");if(!state.members.some(m=>m.season_id===sid&&m.role==="owner"))throw Error("No eres propietario de esa temporada.");const {data,error}=await state.sb.from("banquillo_teams").update({season_id:sid}).eq("id",state.teamId).select("id");if(error)throw error;if(!data?.length)throw Error("No se ha vinculado la temporada.");await refresh();state.teamTab="code";await loadTeamData();notify("Temporada vinculada. Ya puedes compartir el código.");return;}
  }catch(e){notify(errText(e),"error");const b=form.querySelector('button[type="submit"]');if(b)b.disabled=false;}}
 document.addEventListener("click",e=>{
+ if(!state.loaded)return;
  const close=e.target.closest("[data-modal-close]");if(close&&(e.target===close||e.target.matches("button[data-modal-close]"))){closeModal();return;}
  const acceptBtn=e.target.closest("[data-accept-action]");if(acceptBtn){accept(acceptBtn.dataset.acceptAction,acceptBtn.dataset.id);return;}
  const switcher=e.target.closest("#clubSwitcher");
@@ -1034,7 +1051,10 @@ document.addEventListener("keydown",e=>{
 document.addEventListener("submit",e=>{if(!e.target.closest("form"))return;e.preventDefault();const f=e.target;const submitBtn=f.querySelector('button[type="submit"]');if(submitBtn)submitBtn.disabled=true;submit(f).finally(()=>{if(submitBtn?.isConnected)submitBtn.disabled=false;});});
 async function start(){try{const cfg=window.BQ_CONFIG||{};if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||!window.supabase)throw Error("Falta configurar Supabase.");
  state.sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
- const {data:{user},error}=await state.sb.auth.getUser();if(error||!user){notify("Inicia sesión desde Banquillo antes de entrar al club.","error");rview().innerHTML='<div class="panel"><h2>Accede a tu cuenta</h2><a href="index.html" class="btn primary">Entrar o registrarme</a></div>';return;}
+ const {data,error}=await state.sb.auth.getUser();
+ if(error&&error.name!=="AuthSessionMissingError"&&![401,403].includes(error.status))throw error;
+ const user=data?.user;
+ if(error||!user){notify("Inicia sesión desde Banquillo antes de entrar al club.","error");rview().innerHTML='<div class="panel"><h2>Accede a tu cuenta</h2><a href="index.html?acceso=entrar" class="btn primary">Entrar o registrarme</a></div>';return;}
  state.uid=user.id;state.accountEmail=user.email||"";state.profileName=(user.email||"Mi cuenta").split("@")[0];try{const p=await calls(state.sb.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle());if(p?.display_name)state.profileName=p.display_name;}catch(e){}await refresh();
  const incoming=new URLSearchParams(window.location.search);
  const deepClub=incoming.get("club"),deepTeam=incoming.get("team");
@@ -1045,6 +1065,9 @@ async function start(){try{const cfg=window.BQ_CONFIG||{};if(!cfg.SUPABASE_URL||
    }
  }
  notify("Conectado a Supabase.");window.setInterval(()=>{if(state.loaded&&state.clubId)loadMessaging(true).catch(()=>{});if(state.directorInvite&&document.querySelector("[data-invite-code]")&&Date.now()>=new Date(state.directorInvite.expires_at).getTime()-5000)refreshInvitation().catch(()=>{});if(state.teamId&&state.view==="equipo"&&state.teamTab==="coaches")loadTeamData().catch(()=>{});},20000);
-}catch(e){notify(errText(e),"error");}}
+}catch(e){
+ notify(errText(e),"error");
+ if(!state.loaded)rview().innerHTML='<div class="panel"><h2>No se ha podido cargar Clubes</h2><a href="clubes.html" class="btn primary">Reintentar</a></div>';
+}}
 start();
 })();

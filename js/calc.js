@@ -36,7 +36,7 @@ const Calc = (() => {
 
   /** Estadísticas de un jugador en todos los partidos. */
   function playerStats(pid, matches) {
-    const s = { goals: 0, conv: 0, noconv: 0, DT: 0, LS: 0, MP: 0, T: 0, S: 0, played: 0, min: 0, gk: 0, clean: 0 };
+    const s = { goals: 0, conv: 0, noconv: 0, DT: 0, LS: 0, MP: 0, SA: 0, T: 0, S: 0, played: 0, min: 0, gk: 0, clean: 0 };
     matches.forEach(m => {
       if (m.rest) return;
       const nc = noCallMap(m);
@@ -44,6 +44,9 @@ const Calc = (() => {
         if (pid in nc) { s.noconv++; if (nc[pid] in s) s[nc[pid]]++; } else s.conv++;
       }
       if (pid in nc) return;
+      // Solo sumar participación, minutos y goles de partidos con resultado registrado.
+      // Preparar titulares para una jornada futura no equivale a haber jugado.
+      if (!matchInfo(m).played) return;
       const d = (m.players || {})[pid];
       if (d) {
         const mins = isNum(d.min) ? d.min : 0;
@@ -100,7 +103,7 @@ const Calc = (() => {
   /** Minutos de cada jugador a partir de titulares y cambios. */
   function calcMinutes(m, dur) {
     const nc = noCallMap(m);
-    const ev = (m.subs || []).filter(e => isNum(e.min)).slice().sort((a, b) => a.min - b.min);
+    const ev = (m.subs || []).filter(e => isNum(e.min) && e.min >= 0 && e.min <= dur).slice().sort((a, b) => a.min - b.min);
     const res = {};
     Object.entries(m.players || {}).forEach(([pid, d]) => {
       if (pid in nc || !d.role) return;
@@ -122,7 +125,7 @@ const Calc = (() => {
   }
 
   function ownGoals(matches) {
-    return matches.reduce((t, m) => t + (isNum(m.ourGoals) ? (m.scorers || []).slice(0, m.ourGoals).filter(x => x === "og").length : 0), 0);
+    return matches.reduce((t, m) => t + (matchInfo(m).played ? (m.scorers || []).slice(0, m.ourGoals).filter(x => x === "og").length : 0), 0);
   }
 
   return { isNum, matchInfo, isRegistered, noCallMap, record, playerStats, sessionList, trainingStats, calcMinutes, scorersTable, ownGoals, pd, dk };

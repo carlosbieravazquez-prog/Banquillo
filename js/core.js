@@ -5,10 +5,10 @@ const V = {};      // vistas
 const ACT = {};    // acciones (clic)
 const CHG = {};    // cambios (change)
 const INP = {};    // entrada de texto (sin re-render)
-const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "toggleSkip0", "openMatch", "openCoachNotice", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "openTeamJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode", "openClubPanel", "refreshSeasonLinks", "leaveTeamAsk", "leaveTeamConfirmed", "withdrawTeamRequest", "leaveClubFromSeasonAsk", "leaveClubFromSeasonConfirmed", "archiveTeamFromSeasonAsk", "archiveTeamFromSeasonConfirmed", "deleteClubFromSeasonAsk"]);
+const READ_OK = new Set(["go", "closeSheet", "setTab", "setFilter", "trainMode", "trainNav", "trainPick", "openReport", "dlPdf", "dlZip", "dlXlsx", "downloadActaXlsx", "downloadActaPdf", "printActa", "jumpActaExcel", "toggleSkip0", "openMatch", "openSeason", "trainToday", "copyCron", "noop", "openAccount", "openJoin", "joinSeason", "openShare", "leaveAsk", "leaveSeason", "signOut", "openSilbatos", "deleteAccountAsk", "deleteAccount", "wizStart", "copyCode", "openConvocationMessage", "setMessageMode", "setMessageKit", "copyConvocationMessage", "openCoachNotice", "openTeamJoin", "openClubPanel", "refreshSeasonLinks", "leaveTeamAsk", "leaveTeamConfirmed", "withdrawTeamRequest", "leaveClubFromSeasonAsk", "leaveClubFromSeasonConfirmed", "archiveTeamFromSeasonAsk", "archiveTeamFromSeasonConfirmed", "deleteClubFromSeasonAsk", "clubGo", "teamCloudSettings", "teamCloudClub", "openDemoChooser", "teamCloudEdit", "teamCloudMembers", "teamCloudSeasonStatus", "seasonDelAsk"]);
 const inWizard = a => !!UI.wiz && /^(w[A-Z]|wiz)/.test(a);
-const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"]];
-const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Temporadas" };
+const NAV = [["inicio", "Inicio", "home"], ["partidos", "Partidos", "cal"], ["plantilla", "Plantilla", "users"], ["entrenos", "Entrenos", "check"], ["informes", "Informes", "doc"], ["clubes", "Clubes", "layers"]];
+const ROUTE_TITLE = { inicio: "Inicio", partidos: "Partidos", partido: "Partido", plantilla: "Plantilla", jugador: "Jugador", entrenos: "Entrenos", informes: "Informes", temporadas: "Mis equipos", clubes: "Dirección deportiva" };
 
 /* ---------- router ---------- */
 function parseHash() {
@@ -19,6 +19,7 @@ function parseHash() {
   return ROUTE_TITLE[name] ? { name, arg: i < 0 ? null : h.slice(i + 1) } : { name: "inicio", arg: null };
 }
 function go(name, arg) {
+  if (name === "clubes") { openClubManagement(); return; }
   const h = arg != null ? `${name}-${arg}` : name;
   UI.route = { name, arg: arg == null ? null : String(arg) };
   UI.matchTab = null;
@@ -26,7 +27,16 @@ function go(name, arg) {
   window.scrollTo(0, 0);
   render(true);
 }
-window.addEventListener("hashchange", () => { UI.route = parseHash(); UI.matchTab = null; render(true); });
+// La gestión oficial tiene su propia página y su propio esquema de datos.
+function openClubManagement({ replace = false } = {}) {
+  if (replace) window.location.replace("clubes.html");
+  else window.location.assign("clubes.html");
+}
+window.addEventListener("hashchange", () => {
+  UI.route = parseHash(); UI.matchTab = null;
+  if (UI.route.name === "clubes") { openClubManagement({ replace: true }); return; }
+  render(true);
+});
 
 /* ---------- avisos ---------- */
 function toast(msg, kind = "") {
@@ -55,13 +65,14 @@ const matchScore = m => { const i = Calc.matchInfo(m); return i.played ? `${m.ou
 function bodyView() {
   if (Store.connecting && !Store.db) return `<div class="loading"><div class="spin"></div><p>Conectando con tus datos…</p></div>`;
   if (!Store.db) return empty("Sin conexión con los datos", "No se ha podido abrir la base de datos. Recarga la página e inténtalo de nuevo.");
+  if (UI.route.name === "clubes") return empty("Dirección deportiva", "Abre la gestión oficial de clubes.", `<a class="btn primary" href="clubes.html">Abrir Dirección Deportiva</a>`);
   if (!Store.isLoaded()) {
     return `<div class="loading"><div class="spin"></div><p>${Store.offline ? "No se puede conectar con los datos. Se reintentará automáticamente." : Store.slow ? "Tarda más de lo normal en responder. Comprueba tu conexión." : "Cargando tus datos…"}</p></div>`;
   }
   if (!Store.seasons.length) {
     return '<div class="bq-onboard"><div class="bq-onboard-head"><span>BIENVENIDO A BANQUILLO</span><h1>Empieza a organizar tu fútbol base</h1><p>Una única cuenta para gestionar un equipo o coordinar un club. Elige cómo empezar.</p></div><div class="bq-onboard-grid">'+
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">⚽</div><h2>Crear equipo</h2><p>Configura categoría, plantilla, calendario y entrenadores desde tu primera temporada.</p>'+btn("Crear mi equipo","wizStart",{first:1},"primary","plus")+'</article>'+
-      '<article class="bq-onboard-card"><div class="bq-onboard-icon">🏟️</div><h2>Crear club</h2><p>Organiza equipos, temporadas y dirección deportiva. Completa la configuración poco a poco.</p><a class="btn primary" href="clubes.html">Gestionar mi club →</a></article>'+
+      '<article class="bq-onboard-card"><div class="bq-onboard-icon">🏟️</div><h2>Crear club</h2><p>Organiza equipos, temporadas y dirección deportiva. Completa la configuración poco a poco.</p>'+btn("Crear o gestionar un club","clubGo",{},"primary")+'</article>'+
       '<article class="bq-onboard-card"><div class="bq-onboard-icon">◈</div><h2>Mostrar prueba</h2><p>Explora una demostración profesional con jornadas, estadísticas y datos ficticios.</p>'+btn("Ver demostraciones","openDemoChooser",{},"ghost")+'</article></div>'+
       (typeof TeamRequests!=="undefined"?TeamRequests.panel():"")+
       '<div class="bq-onboard-join"><span>¿Te han invitado a un equipo?</span>'+btn("Introducir código de equipo","openTeamJoin",{},"ghost")+btn("Código antiguo de temporada","openJoin",{},"ghost")+'</div></div>';
@@ -83,19 +94,20 @@ function shell() {
     return '<div class="bq-entry-shell"><header class="bq-entry-header"><div class="bq-entry-brand"><span class="mark">'+icon("ball")+'</span><b>BANQUILLO</b><small>Fútbol base · Gestión profesional</small></div>'+accountBtn()+'</header><main class="bq-entry-main">'+bodyView()+'</main></div>';
   }
   const s = Store.season();
+  const crest = s ? ClubCrest.preview(ClubCrest.current(s)) : "";
   const rn = UI.route.name;
   const activeKey = rn === "partido" ? "partidos" : rn === "jugador" ? "plantilla" : rn;
   const nav = (cls) => NAV.map(([k, l, ic]) => `<button type="button" class="${cls} ${activeKey === k ? "on" : ""}" data-act="go" data-to="${k}" ${activeKey === k ? 'aria-current="page"' : ""}>${icon(ic)}<span>${l}</span></button>`).join("");
   const seasonChip = s ? `<button type="button" class="schip" data-act="go" data-to="temporadas" title="Cambiar de temporada">${esc(s.name)}${s.status === "closed" ? " · cerrada" : ""}${icon("chev")}</button>` : "";
   return `<div class="shell ${Store.readOnly() ? "ro" : ""}">
     <aside class="side">
-      <div class="brand"><span class="mark">${icon("ball")}</span><div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
-      <nav class="snav" aria-label="Menú del entrenador">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas" ${activeKey === "temporadas" ? 'aria-current="page"' : ""}>${icon("layers")}<span>Temporadas</span></button></nav>
+      <div class="brand">${crest || `<span class="mark">${icon("ball")}</span>`}<div><b>Banquillo</b><small>${esc((s && s.club) || "Tu equipo")}</small></div></div>
+      <nav class="snav" aria-label="Menú del entrenador">${nav("sitem")}<button type="button" class="sitem ${activeKey === "temporadas" ? "on" : ""}" data-act="go" data-to="temporadas">${icon("layers")}<span>Mis equipos</span></button></nav>
       <div class="side-foot">${seasonChip}${syncBadge()}${accountBtn()}</div>
     </aside>
     <div class="col">
       <header class="top"><div class="top-in">
-        <div class="top-l"><span class="mark sm">${icon("ball")}</span><b class="top-t">${ROUTE_TITLE[rn] === "Inicio" ? "Banquillo" : ROUTE_TITLE[rn]}</b></div>
+        <div class="top-l">${crest || `<span class="mark sm">${icon("ball")}</span>`}<b class="top-t">${ROUTE_TITLE[rn] === "Inicio" ? "Banquillo" : ROUTE_TITLE[rn]}</b></div>
         <div class="top-r mob-only">${seasonChip}${accountBtn(true)}</div><div class="top-r desk-only">${syncBadge()}</div>
       </div></header>
       <main id="main" class="main">${Store.readOnly() ? "" : ""}${bodyView()}</main>
@@ -121,6 +133,8 @@ ACT.closeSheet = () => { UI.sheet = null; render(true); };
 ACT.noop = () => {};
 ACT.retrySave = () => Store.retry();
 ACT.go = el => go(el.dataset.to, el.dataset.arg);
+// Acceso directo desde la pantalla sin temporadas.
+ACT.clubGo = () => go("clubes");
 
 /* ---------- render ---------- */
 const isEditing = () => { const a = document.activeElement; return !!a && a !== document.body &&  !!a.matches && a.matches("input:not([type=checkbox]):not([type=radio]):not([type=button]),textarea"); };
@@ -131,9 +145,10 @@ function render(force) {
   raf = requestAnimationFrame(doRender);
 }
 function doRender() {
-  if (typeof Auth !== "undefined" && Auth.state !== "in") { UI.force = false; UI.dirty = false; Auth.render(); return; }
+  if (typeof Auth !== "undefined" && Auth.state !== "in") { if(typeof ClubTheme!=="undefined")ClubTheme.apply(null); UI.force = false; UI.dirty = false; Auth.render(); return; }
   if (!UI.force && isEditing()) { UI.dirty = true; return; }
   UI.force = false; UI.dirty = false;
+  if(typeof ClubTheme!=="undefined")ClubTheme.apply(Store.season());
   const keep = { y: window.scrollY, sc: {} };
   $$("[data-scroll]").forEach(e => { keep.sc[e.dataset.scroll] = [e.scrollLeft, e.scrollTop]; });
   const sheetBody = $("#sheetRoot .sheet");
@@ -165,6 +180,9 @@ document.addEventListener("click", e => {
   if (!el || el.disabled) return;
   const fn = ACT[el.dataset.act];
   if (!fn) return;
+  const lockedMatch = UI.route.name === "partido" && !!(Store.match(UI.route.arg) || {}).closed;
+  const lockedAllowed = new Set(["go", "setTab", "printActa", "downloadActaXlsx", "downloadActaPdf", "jumpActaExcel", "reopenActa", "setRedSanction", "copyCron", "genCron", "closeSheet"]);
+  if (lockedMatch && !lockedAllowed.has(el.dataset.act) && !READ_OK.has(el.dataset.act)) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (Store.readOnly() && !READ_OK.has(el.dataset.act) && !inWizard(el.dataset.act)) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
   render(true);
@@ -174,6 +192,7 @@ document.addEventListener("change", e => {
   if (!el) return;
   const fn = CHG[el.dataset.chg];
   if (!fn) return;
+  if (UI.route.name === "partido" && (Store.match(UI.route.arg) || {}).closed) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (Store.readOnly() && !UI.wiz) { toast("Estás en modo solo lectura: no puedes cambiar datos.", "err"); return; }
   fn(el, e);
   UI.dirty = true; lateRender();
@@ -182,6 +201,7 @@ document.addEventListener("input", e => {
   const el = e.target.closest("[data-inp]");
   if (!el) return;
   const fn = INP[el.dataset.inp];
+  if (UI.route.name === "partido" && (Store.match(UI.route.arg) || {}).closed) { toast("El acta está cerrada. Reábrela para modificar sus datos.", "err"); return; }
   if (fn && (!Store.readOnly() || UI.wiz || UI.sheet && UI.sheet.type === "join")) fn(el, e);
 });
 document.addEventListener("focusout", () => { if (UI.dirty) lateRender(); });

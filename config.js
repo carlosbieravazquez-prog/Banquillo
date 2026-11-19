@@ -5,6 +5,7 @@
 window.BQ_CONFIG = {
   SUPABASE_URL: "https://dsewztxveqgwhyuyyyoq.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_gkgXrDToGr-_dtZ27H1LdQ_e9LFv-wL",              // empieza por eyJ...
+  TURNSTILE_SITE_KEY: "",                                   // Clave pública, si se habilita CAPTCHA en Supabase.
   CONTACT_EMAIL: "",                                         // correo de contacto (aparece en Mi cuenta y en los textos legales)
   PREMIUM_URL: ""                                            // (opcional) enlace de pago del plan premium; vacío = "próximamente"
 };

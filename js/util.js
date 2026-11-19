@@ -6,8 +6,8 @@ const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLow
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const DIAS3 = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const MOTIVOS = { DT: "Decisión técnica", LS: "Lesionado", MP: "Motivos personales" };
-const MOTIVO_COD = { DT: "D.T", LS: "L.S", MP: "M.P" };
+const MOTIVOS = { DT: "Decisión técnica", LS: "Lesionado", MP: "Motivos personales", SA: "Sancionado" };
+const MOTIVO_COD = { DT: "D.T", LS: "L.S", MP: "M.P", SA: "Sancionado" };
 const pd = Calc.pd, dk = Calc.dk;
 const todayKey = () => dk(new Date());
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;

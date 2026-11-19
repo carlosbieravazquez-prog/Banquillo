@@ -1,0 +1,211 @@
+/* Banquillo Premium V4.2 — accesibilidad y distribución.
+   Solo presentación: no altera permisos, eventos, formularios ni consultas.
+   Cargar DESPUÉS de banquillo-premium-v4.css. */
+
+/* Tipografía y tamaños interactivos: evitar que el texto quede tapado. */
+#landing .auth-card, .app-shell .panel, .app-shell .club-switch {
+  box-sizing: border-box;
+}
+#landing .auth-card :is(h1,h2,h3,p),
+.app-shell .panel :is(h1,h2,h3,p) {
+  position: static;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+#landing .auth-card h2 {
+  color:#172e3a;
+  font-size:clamp(22px,2.5vw,28px);
+  line-height:1.22;
+  margin:0 0 18px;
+}
+#landing .auth-card .btn,
+#landing .auth-card button,
+#landing .auth-card a.btn {
+  box-sizing:border-box;
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1.35;
+  min-height:44px;
+  height:auto;
+  max-width:100%;
+  padding:11px 17px;
+  white-space:normal;
+  text-align:center;
+  overflow-wrap:anywhere;
+  vertical-align:middle;
+}
+#landing .auth-card .form {gap:14px}
+#landing .auth-card .form :is(input,textarea,select) {
+  min-height:44px;
+  background:#ffffff;
+  border:1px solid #9db2ad;
+  color:#152d32;
+}
+#landing .auth-card .form label {color:#283e43}
+#landing .auth-card .form input::placeholder {color:#61747a}
+#landing .auth-card .auth-tabs {
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  padding:5px;
+}
+#landing .auth-card .auth-tabs button {flex:1 1 135px}
+#landing .auth-card .auth-tabs button.on {
+  background:#173a2b;
+  color:#ffffff;
+}
+#landing .auth-card :is(.muted,small,.help) {color:#4d6369}
+
+/* Estado de acceso sin cuenta en Dirección Deportiva.
+   El botón debe quedar DEBAJO del título y no superpuesto. */
+.app-shell #viewRoot > .panel:has(> h2 + a.btn.primary) {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:18px;
+  padding:clamp(20px,3vw,30px);
+  background:#ffffff;
+  color:#17313c;
+}
+.app-shell #viewRoot > .panel:has(> h2 + a.btn.primary) > h2 {
+  font-size:clamp(23px,2.5vw,30px);
+  line-height:1.25;
+  margin:0;
+  color:#17313c;
+}
+.app-shell #viewRoot > .panel:has(> h2 + a.btn.primary) > a.btn.primary {
+  position:static;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:auto;
+  min-height:44px;
+  max-width:100%;
+  padding:12px 18px;
+  background:#17784e;
+  color:#ffffff;
+  border:1px solid #17784e;
+  border-radius:12px;
+  font-size:14px;
+  line-height:1.3;
+  white-space:normal;
+  text-align:center;
+  text-decoration:none;
+  box-shadow:none;
+}
+
+/* Selector de club/equipo: restituye contraste perdido por selectores generales. */
+.app-shell .sidebar .club-switch.bq-workspace-toggle {
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr) 24px;
+  align-items:center;
+  gap:11px;
+  padding:13px;
+  min-height:76px;
+  height:auto;
+  background:#182f39!important;
+  border:1px solid #567782!important;
+  color:#f4fbf9!important;
+}
+.app-shell .sidebar .club-switch.bq-workspace-toggle .club-crest {
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  color:#152c19;
+  background:#b7eb52;
+}
+.app-shell .sidebar .club-switch.bq-workspace-toggle .bq-switcher-label {
+  display:block;
+  min-width:0;
+  overflow:hidden;
+}
+.app-shell .sidebar .club-switch.bq-workspace-toggle .bq-switcher-label b {
+  color:#ffffff!important;
+  font-size:14px;
+  font-weight:800;
+  line-height:1.3;
+  margin:0 0 4px;
+}
+.app-shell .sidebar .club-switch.bq-workspace-toggle .bq-switcher-label small {
+  color:#c2d5da!important;
+  font-size:12px;
+  line-height:1.35;
+  margin:0;
+}
+.app-shell .sidebar .club-switch.bq-workspace-toggle .bq-switcher-chevron {
+  color:#eff9f4!important;
+  font-size:18px;
+  justify-self:center;
+}
+.app-shell .sidebar :is(.bq-workspace-menu,.bq-workspace-menu-head) {
+  color:#f1f8fa;
+}
+.app-shell .sidebar .bq-workspace-menu small,
+.app-shell .sidebar .bq-workspace-option small {color:#c6dadd!important}
+.app-shell .sidebar .bq-workspace-option b,
+.app-shell .sidebar .bq-workspace-menu-head b {color:#ffffff!important}
+.app-shell .sidebar .nav-label {color:#b6c6c9!important}
+.app-shell .sidebar .nav-item {color:#dae9e8!important}
+.app-shell .sidebar .nav-item.active {color:#18300d!important}
+.app-shell .sidebar .nav-item:hover {color:#ffffff!important}
+
+/* Contenido: contrastes acotados a tarjetas claras, sin recolorear sidebar. */
+.app-shell .main :is(.panel,.card,.stat,.role-chip):not(.de-lead) {
+  overflow-wrap:anywhere;
+}
+.app-shell .main .role-chip :is(.muted,.meta,small) {
+  color:#4f6570;
+}
+.app-shell .main :is(.panel,.card,.stat,.role-chip) :is(h1,h2,h3,strong) {
+  line-height:1.3;
+}
+.app-shell :is(button,a.btn,.nav-item):focus-visible,
+#landing :is(a,button,input,select):focus-visible {
+  outline:3px solid #9be33d!important;
+  outline-offset:3px;
+}
+.app-shell .main :is(input,select,textarea) {
+  max-width:100%;
+}
+.app-shell :is(.topbar,.top-actions,.page-head,.role-chip) {min-width:0}
+.app-shell .topbar,.app-shell .top-actions {flex-wrap:wrap}
+
+/* Mantener responsividad sin tapas ni texto en microcolumnas. */
+@media(max-width:700px) {
+  #landing .bq-preview-grid {grid-template-columns:minmax(0,1fr)}
+  #landing .auth-card {padding:20px}
+  #landing .auth-card .btn.block {width:100%}
+  .app-shell .sidebar .club-switch.bq-workspace-toggle {grid-template-columns:40px minmax(0,1fr) 22px}
+}
+@media(prefers-reduced-motion:reduce) {
+  #landing .bq-cinema-bg, #landing .bq-hero-copy {animation:none!important}
+  .app-shell .nav-item {transition:none!important;transform:none!important}
+}
+
+
+/* BANQUILLO CONTRASTE CLUB V42 */
+#landing .l-mode-card.club{background:#eef6e5!important;border:1px solid #d5e4c8!important}
+#landing .l-mode-card.club h3{color:#142b24!important}
+#landing .l-mode-card.club p{color:#304d46!important}
+#landing .l-mode-card.club .l-mode-label{color:#355916!important}
+#landing .l-mode-card.club button.l-mode-link{background:#164a36!important;color:#ffffff!important;border:1px solid #164a36!important;border-radius:10px!important;padding:12px 16px!important;font-weight:700!important;cursor:pointer!important}
+#landing .l-mode-card.club button.l-mode-link:hover{background:#103c2b!important}
+#landing .l-mode-card.club a.l-mode-link{color:#205535!important;font-weight:700!important}
+#landing .l-mode-card.club .l-mode-note{color:#36534c!important}
+#landing .l-mode-card.club .l-mode-note a{color:#1c5b40!important;text-decoration:underline!important}
+
+/* BANQUILLO CONTRASTE GLOBAL INICIO V42 */
+#landing .l-sec{color:#172b34!important}
+#landing .l-sec>.l-in>h2{color:#122632!important}
+#landing .l-section-lead{color:#405962!important}
+#landing #creador{background:#edf3ef!important;color:#173039!important}
+#landing #creador h2,#landing #creador h3{color:#142c35!important}
+#landing #creador p,#landing #creador .l-creator p,#landing #creador small,#landing #creador span{color:#39545e!important}
+#landing #creador a{color:#17563b!important;text-decoration:underline!important;font-weight:700!important}
+#landing .l-mode-card.club h3{color:#142b24!important}
+#landing .l-mode-card.club p{color:#304d46!important}
+#landing .l-mode-card.club .l-mode-note{color:#36534c!important}
