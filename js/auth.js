@@ -4,7 +4,7 @@ const FORM = {};
 
 (function () {
   const A = Auth;
-  const redirectUrl = () => location.origin + location.pathname;
+  const redirectUrl = () => location.origin + location.pathname.replace(/\/index\.html$/, "/");
   const MSG = {
     "Invalid login credentials": "El correo o la contraseña no son correctos.",
     "Email not confirmed": "Aún no has confirmado tu correo. Abre el mensaje que te enviamos y pulsa el enlace.",
