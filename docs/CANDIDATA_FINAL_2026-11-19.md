@@ -18,7 +18,11 @@ Rama `release/candidata-final-20261119`, basada en `9741c1a`. Candidata para rev
 - **Prueba aislada de PostgreSQL superada.** Se aplicó la propuesta existente de `can_edit` sobre un esquema mínimo ficticio. Se comprobaron titular, segundo director, entrenador, cuenta ajena, archivo del equipo, revocación y escritura limitada a su temporada. Código en `tests/director-permissions.database.cjs`, ejecutable con `@electric-sql/pglite`.
 - En Supabase se consultaron exclusivamente avisos y catálogos. Se verificó la presencia y el permiso de ejecución autenticado de las 27 RPC `banquillo_*` invocadas directamente por los módulos activos. La consulta de catálogos verifica el contrato visible, mientras que las pruebas con cuentas separadas en una copia aislada deben validar las políticas y los efectos reales.
 
-## Bloqueos de publicación
+## Validación posterior
+
+La [validación de Supabase de la candidata](VALIDACION_SUPABASE_CANDIDATA.md) recoge el resultado de reproducir los flujos en el esquema reconstruido y los pasos pendientes para publicar.
+
+## Bloqueos identificados inicialmente
 
 | Prioridad | Hallazgo | Validación que falta |
 | --- | --- | --- |
